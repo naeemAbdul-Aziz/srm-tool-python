@@ -7,6 +7,7 @@ from utils import summarize_grades, calculate_grade
 from logger import get_logger
 from report_utils import export_summary_report_txt, export_summary_report_pdf
 from auth import sign_up, login
+from file_handler import read_student_records
 
 logger = get_logger(__name__)
 
@@ -15,11 +16,9 @@ def show_admin_menu():
     print("1. View all student records")
     print("2. View student by index number")
     print("3. Update student score")
-    print("4. Export summary report to text file")
-    print("5. Export summary report to PDF")
-    print("6. Insert a new student manually")
-    print("7. Analyze grade summary")
-    print("8. Logout")
+    print("4. Export summary report to file")
+    print("5. Bulk Import Student Records")  # New option
+    print("6. Logout")
 
 def show_student_menu():
     print("\n===== STUDENT MENU =====")
@@ -198,3 +197,35 @@ def run_menu():
             break
         else:
             print("Invalid option. Please choose between 1 and 3.")
+
+def bulk_import():
+    file_path = input("Enter the path to the CSV/TXT file: ").strip()
+    valid_records, errors = read_student_records(file_path)
+
+    if errors:
+        print("\nErrors encountered during file reading:")
+        for error in errors:
+            print(error)
+
+    if not valid_records:
+        print("\nNo valid records to import.")
+        return
+
+    conn = connect_to_db()
+    if conn is None:
+        print("Error: Could not connect to database.")
+        return
+
+    successful_imports = 0
+    for record in valid_records:
+        try:
+            record["grade"] = calculate_grade(record["score"])
+            insert_student_record(conn, record)
+            successful_imports += 1
+        except Exception as e:
+            print(f"Error importing record {record}: {e}")
+
+    print("\nBulk Import Summary:")
+    print(f"Total Records: {len(valid_records)}")
+    print(f"Successfully Imported: {successful_imports}")
+    print(f"Skipped: {len(valid_records) - successful_imports}")

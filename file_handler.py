@@ -2,6 +2,7 @@
 # 12345678, John Doe, CS101, 85
 
 import os
+import csv
 from venv import logger
 from logger import get_logger
 from utils import calculate_grade
@@ -84,6 +85,39 @@ def read_student_file(file_path):
         logger.error(f"Error reading file {file_path}: {e}")
     return students  # return the list of student dictionaries
 
+def read_student_records(file_path):
+    """
+    Reads student records from a CSV or TXT file.
+    Each line should have: IndexNumber, FullName, Course, Score.
+    Returns a list of valid records and a list of errors.
+    """
+    valid_records = []
+    errors = []
+
+    try:
+        with open(file_path, "r") as f:
+            reader = csv.reader(f)
+            for i, row in enumerate(reader):
+                if len(row) != 4:
+                    errors.append(f"Line {i + 1}: Invalid format - {row}")
+                    continue
+
+                index_number, full_name, course, score = row
+                if not index_number.isdigit() or not score.isdigit():
+                    errors.append(f"Line {i + 1}: Invalid data - {row}")
+                    continue
+
+                valid_records.append({
+                    "index_number": index_number,
+                    "full_name": full_name,
+                    "course": course,
+                    "score": int(score),
+                })
+    except Exception as e:
+        errors.append(f"Error reading file: {e}")
+
+    return valid_records, errors
+
 def process_file_and_insert(file_path):
     """
     Reads student records from file and inserts them into the configured database.
@@ -109,4 +143,3 @@ def process_file_and_insert(file_path):
         logger.error(f"Error closing database connection: {e}")
     logger.info(f"Inserted {inserted_count} student record(s) from file upload.")
     return inserted_count
-        
