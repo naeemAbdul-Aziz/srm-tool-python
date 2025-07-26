@@ -10,7 +10,10 @@ logger = logging.getLogger(__name__)
 
 def export_summary_report_txt(records, filename="summary_report.txt"):
     try:
-        with open(filename, "w") as f:
+        # Ensure filename ends with .txt
+        if not filename.endswith(".txt"):
+            filename += ".txt"
+        with open(filename, "w", encoding="utf-8") as f:
             f.write("Summary Report\n==============\n")
             f.write(f"Total students: {len(records)}\n")
             f.write("Grade distribution:\n")
@@ -18,8 +21,8 @@ def export_summary_report_txt(records, filename="summary_report.txt"):
             for grade, count in grade_counts.items():
                 f.write(f"{grade}: {count}\n")
             f.write("\nStudent Grades:\n")
-            # Sort by name (A-Z), then grade (A-F)
-            sorted_records = sorted(records, key=lambda r: (str(r['full_name']).lower(), r['grade']))
+            # Sort by grade (descending), then name (A-Z)
+            sorted_records = sorted(records, key=lambda r: (-ord(r['grade']), str(r['full_name']).lower()))
             for r in sorted_records:
                 f.write(f"{r['full_name']} (index: {r['index_number']}) - {r['grade']}\n")
         logger.info(f"Summary report exported to {filename}.")
@@ -30,6 +33,9 @@ def export_summary_report_txt(records, filename="summary_report.txt"):
 
 def export_summary_report_pdf(records, filename="summary_report.pdf"):
     try:
+        # Ensure filename ends with .pdf
+        if not filename.endswith(".pdf"):
+            filename += ".pdf"
         from fpdf import FPDF
         pdf = FPDF()
         pdf.add_page()
@@ -61,7 +67,7 @@ def export_summary_report_pdf(records, filename="summary_report.pdf"):
             pdf.cell(0, 9, f"{grade}: {count}", ln=1, align="L")
         pdf.set_font("Arial", 'B', 15)
         pdf.set_text_color(0, 102, 204)
-        pdf.cell(0, 12, "Student Grades (sorted by name, then grade):", ln=1, align="L")
+        pdf.cell(0, 12, "Student Grades (sorted by grade, then name):", ln=1, align="L")
         pdf.set_font("Arial", 'B', 12)
         pdf.set_fill_color(220, 220, 220)
         pdf.set_text_color(0, 0, 0)
@@ -71,8 +77,8 @@ def export_summary_report_pdf(records, filename="summary_report.pdf"):
         pdf.cell(20, 8, "Score", border=1, align="C", fill=True)
         pdf.cell(15, 8, "Grade", border=1, align="C", fill=True)
         pdf.ln()
-        # Sort by name (A-Z), then grade (A-F)
-        sorted_students = sorted(records, key=lambda r: (str(r['full_name']).lower(), r['grade']))
+        # Sort by grade (ascending: A-F), then name (A-Z)
+        sorted_students = sorted(records, key=lambda r: (ord(r['grade']), str(r['full_name']).lower()))
         row_colors = [(255,255,255), (245,245,245)]
         for i, r in enumerate(sorted_students):
             grade = r['grade']
