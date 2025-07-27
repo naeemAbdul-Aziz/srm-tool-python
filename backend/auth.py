@@ -3,6 +3,9 @@
 import hashlib
 import getpass
 from db import connect_to_db
+from logger import get_logger # Import logger for auth file
+
+logger = get_logger(__name__)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -10,7 +13,7 @@ def hash_password(password):
 def create_user(username, password, role):
     conn = connect_to_db()
     if conn is None:
-        print("Error: Could not connect to database.")
+        logger.error("Error: Could not connect to database for user creation.")
         return False
     try:
         with conn.cursor() as cur:
@@ -19,9 +22,10 @@ def create_user(username, password, role):
                 VALUES (%s, %s, %s)
             """, (username, hash_password(password), role))
             conn.commit()
+        logger.info(f"User '{username}' created successfully with role '{role}'.")
         return True
     except Exception as e:
-        print(f"Error creating user: {e}")
+        logger.error(f"Error creating user '{username}': {e}")
         conn.rollback()
         return False
     finally:
@@ -30,18 +34,20 @@ def create_user(username, password, role):
 def authenticate_user(username, password):
     conn = connect_to_db()
     if conn is None:
-        print("Error: Could not connect to database.")
+        logger.error("Error: Could not connect to database for user authentication.")
         return None
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT password, role FROM users WHERE username = %s", (username,))
             result = cur.fetchone()
             if result and result[0] == hash_password(password):
+                logger.info(f"User '{username}' authenticated successfully.")
                 return result[1]  # Return role
             else:
+                logger.warning(f"Authentication failed for user '{username}'.")
                 return None
     except Exception as e:
-        print(f"Error authenticating user: {e}")
+        logger.error(f"Error authenticating user '{username}': {e}")
         return None
     finally:
         conn.close()
@@ -60,7 +66,7 @@ def sign_up():
         # Check if index number exists in student_results table
         conn = connect_to_db()
         if conn is None:
-            print("Error: Could not connect to database.")
+            print("Error: Could not connect to database. Cannot verify index number.")
             return False
         try:
             with conn.cursor() as cur:
@@ -69,6 +75,10 @@ def sign_up():
                 if not exists:
                     print("Index number not found in student records. Please contact admin.")
                     return False
+        except Exception as e:
+            logger.error(f"Error checking index number during sign-up: {e}")
+            print("An error occurred while verifying index number.")
+            return False
         finally:
             conn.close()
     else:
@@ -84,6 +94,8 @@ def sign_up():
 def login():
     print("\n--- Login ---")
     role_hint = input("Are you logging in as admin or student? ").strip().lower()
+    # It's better to just get the username and let authenticate_user figure out the role
+    # This `role_hint` is mostly for guiding the user on what to enter as 'username'
     if role_hint == "student":
         username = input("Enter your index number: ")
         if not username.isdigit() or len(username) < 5:
@@ -99,5 +111,3 @@ def login():
     else:
         print("Login failed. Invalid credentials.")
         return None, None
-# auth.py
-# Authentication and user management module

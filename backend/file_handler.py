@@ -3,7 +3,6 @@
 
 import os
 import csv
-from venv import logger
 from logger import get_logger
 from grade_util import calculate_grade
 from db import insert_student_record

@@ -582,3 +582,21 @@
 2025-07-27 10:54:27,992 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
 2025-07-27 10:54:28,010 - INFO - [fetch_all_records] Number of rows fetched: 75
 2025-07-27 10:54:28,011 - INFO - Fetched 75 records from the database.
+2025-07-27 12:45:48,395 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 12:48:14,052 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 12:48:22,676 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 14:20:53,025 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 14:20:53,282 - INFO - 'role' column already exists in 'users' table.
+2025-07-27 14:20:53,282 - INFO - Tables checked/created successfully.
+2025-07-27 14:21:01,453 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 14:21:01,558 - INFO - User 'naeem' authenticated successfully.
+2025-07-27 14:21:05,541 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 14:21:05,618 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 14:21:05,623 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-27 14:21:05,628 - INFO - Fetched 75 records from the database.
+2025-07-27 14:21:43,466 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 14:21:43,571 - INFO - Fetched record for index number: 12345713
+2025-07-27 14:21:56,115 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 14:21:56,348 - INFO - Student 12345713 score updated to 56.
+2025-07-27 14:22:32,483 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 14:22:32,566 - INFO - Inserted/Updated student record: 12345719

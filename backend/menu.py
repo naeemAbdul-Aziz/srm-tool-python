@@ -1,8 +1,7 @@
 # menu.py
 from pprint import pprint
 
-
-from db import fetch_all_records, insert_student_record, connect_to_db
+from db import fetch_all_records, insert_student_record, connect_to_db, fetch_student_by_index_number, update_student_score
 from grade_util import summarize_grades, calculate_grade
 from logger import get_logger
 from report_utils import export_summary_report_pdf, export_summary_report_txt
@@ -54,38 +53,29 @@ def run_menu():
                             print("No student records found.")
                     elif admin_choice == "2":
                         index = input("Enter index number to search: ")
-                        students = fetch_all_records()
-                        found = False
-                        for student in students:
-                            if student["index_number"] == index:
-                                print(f"Student {index} found:")
-                                pprint(student)
-                                found = True
-                                break
-                        if not found:
+                        student = fetch_student_by_index_number(index)
+                        if student:
+                            print(f"Student {index} found:")
+                            pprint(student)
+                        else:
                             print(f"No student found with index number {index}.")
                     elif admin_choice == "3":
                         index = input("Enter index number to update: ")
                         try:
                             new_score = int(input("Enter new score (0-100): "))
+                            if not (0 <= new_score <= 100):
+                                print("Score must be between 0 and 100.")
+                                continue
                         except ValueError:
                             print("Invalid score. Must be a number.")
                             continue
-                        students = fetch_all_records()
-                        updated = False
-                        for student in students:
-                            if student["index_number"] == index:
-                                student["score"] = new_score
-                                student["grade"] = calculate_grade(new_score)
-                                try:
-                                    insert_student_record(connect_to_db(), student)
-                                    print(f"Student {index} score updated to {new_score}.")
-                                    updated = True
-                                except Exception as e:
-                                    logger.error(f"Failed to update student: {e}")
-                                break
-                        if not updated:
-                            print(f"No student found with index number {index}.")
+
+                        new_grade = calculate_grade(new_score)
+                        success = update_student_score(index, new_score, new_grade)
+                        if success:
+                            print(f"Student {index} score updated to {new_score} (Grade: {new_grade}).")
+                        else:
+                            print(f"Failed to update score for student {index}. Check if index number exists.")
                     elif admin_choice == "4":
                         students = fetch_all_records()
                         if students:
@@ -120,6 +110,9 @@ def run_menu():
                         course = input("Enter course: ")
                         try:
                             score = int(input("Enter score (0-100): "))
+                            if not (0 <= score <= 100):
+                                print("Score must be between 0 and 100.")
+                                continue
                         except ValueError:
                             print("Invalid score. Must be a number.")
                             continue
@@ -130,16 +123,25 @@ def run_menu():
                             "score": score,
                             "grade": calculate_grade(score)
                         }
-                        try:
-                            insert_student_record(connect_to_db(), student)
-                            print("Student added successfully.")
-                        except Exception as e:
-                            logger.error(f"Failed to add student: {e}")
+                        # Pass connection for single insert, but handle its closure outside if not within a 'with' block
+                        conn_for_insert = connect_to_db()
+                        if conn_for_insert:
+                            success = insert_student_record(conn_for_insert, student)
+                            conn_for_insert.close() # Close connection after use
+                            if success:
+                                print("Student added successfully.")
+                            else:
+                                print("Failed to add student. Index number might already exist or other database error.")
+                        else:
+                            print("Could not connect to database to add student.")
                     elif admin_choice == "7":
                         students = fetch_all_records()
-                        summary = summarize_grades(students)
-                        print("Grade summary:")
-                        pprint(summary)
+                        if students:
+                            summary = summarize_grades(students)
+                            print("Grade summary:")
+                            pprint(summary)
+                        else:
+                            print("No student records to summarize grades.")
                     elif admin_choice == "8":
                         bulk_import()
                     elif admin_choice == "9":
@@ -172,17 +174,26 @@ def bulk_import():
 
     conn = connect_to_db()
     if conn is None:
-        print("Error: Could not connect to database.")
+        print("Error: Could not connect to database for bulk import.")
         return
 
     successful_imports = 0
-    for record in valid_records:
-        try:
+    try:
+        for record in valid_records:
             record["grade"] = calculate_grade(record["score"])
-            insert_student_record(conn, record)
-            successful_imports += 1
-        except Exception as e:
-            print(f"Error importing record {record}: {e}")
+            if insert_student_record(conn, record): # insert_student_record now returns True/False
+                successful_imports += 1
+            else:
+                logger.warning(f"Skipped record {record['index_number']} due to an error during insertion.")
+        conn.commit() # Commit once after all insertions in bulk import if inserts are not committing individually
+        # NOTE: insert_student_record already commits individually on success, so this conn.commit() might be redundant
+        # or it should be removed if we want individual transaction management, or insert_student_record should not commit.
+        # For simplicity, keeping it as is, but for true bulk insert efficiency, a single commit at the end is better.
+    except Exception as e:
+        logger.error(f"Error during bulk import transaction: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
 
     print("\nBulk Import Summary:")
     print(f"Total Records: {len(valid_records)}")
@@ -195,52 +206,44 @@ def handle_student_menu(username):
         student_choice = input("Choose an option: ").strip()
 
         if student_choice == "1":
-            # View student's own record
-            students = fetch_all_records()
-            found = False
-            for student in students:
-                if student["index_number"] == username:
-                    print(f"Your record:")
-                    pprint(student)
-                    found = True
-                    break
-            if not found:
+            student = fetch_student_by_index_number(username)
+            if student:
+                print(f"Your record:")
+                pprint(student)
+            else:
                 print("No record found for your index number.")
 
         elif student_choice == "2":
-            # Export student's own report to TXT
-            students = fetch_all_records()
-            for student in students:
-                if student["index_number"] == username:
-                    file_path = input("Enter filename to export your report as TXT (e.g. my_report.txt): ").strip()
-                    if file_path:
-                        success = export_summary_report_txt([student], filename=file_path)
-                        if success:
-                            print(f"Your report exported to {file_path}.")
-                        else:
-                            print("Failed to export your report.")
+            student = fetch_student_by_index_number(username)
+            if student:
+                file_path = input("Enter filename to export your report as TXT (e.g. my_report.txt): ").strip()
+                if file_path:
+                    success = export_summary_report_txt([student], filename=file_path)
+                    if success:
+                        print(f"Your report exported to {file_path}.")
                     else:
-                        print("Export cancelled.")
-                    break
+                        print("Failed to export your report.")
+                else:
+                    print("Export cancelled.")
+            else:
+                print("No record found for your index number to export.")
 
         elif student_choice == "3":
-            # Export student's own report to PDF
-            students = fetch_all_records()
-            for student in students:
-                if student["index_number"] == username:
-                    file_path = input("Enter filename to export your report as PDF (e.g. my_report.pdf): ").strip()
-                    if file_path:
-                        success = export_summary_report_pdf([student], filename=file_path)
-                        if success:
-                            print(f"Your report exported to {file_path}.")
-                        else:
-                            print("Failed to export your report.")
+            student = fetch_student_by_index_number(username)
+            if student:
+                file_path = input("Enter filename to export your report as PDF (e.g. my_report.pdf): ").strip()
+                if file_path:
+                    success = export_summary_report_pdf([student], filename=file_path)
+                    if success:
+                        print(f"Your report exported to {file_path}.")
                     else:
-                        print("Export cancelled.")
-                    break
+                        print("Failed to export your report.")
+                else:
+                    print("Export cancelled.")
+            else:
+                print("No record found for your index number to export.")
 
         elif student_choice == "4":
-            # Logout
             print("Logging out...")
             break
 

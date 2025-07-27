@@ -41,10 +41,17 @@ def create_tables(conn):
         """)
         # Try to add 'role' column if it doesn't exist (migration for legacy table)
         try:
-            cursor.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student';")
+            # Check if column exists before adding
+            cursor.execute("SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role';")
+            if not cursor.fetchone():
+                cursor.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student';")
+                logger.info("Added 'role' column to 'users' table.")
+            else:
+                logger.info("'role' column already exists in 'users' table.")
             conn.commit()
-        except Exception:
-            conn.rollback()  # Ignore if column already exists
+        except Exception as e:
+            logger.warning(f"Could not add 'role' column to 'users' table (might already exist or other error): {e}")
+            conn.rollback()  # Rollback if ALTER TABLE fails
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -54,6 +61,7 @@ def create_tables(conn):
             );
         """)
         conn.commit()  # Commit the changes to the database
+        logger.info("Tables checked/created successfully.")
     except Exception as e:
         logger.error(f"Error creating tables: {e}")
         conn.rollback()  # Rollback in case of error
@@ -62,8 +70,8 @@ def create_tables(conn):
 
 def insert_student_record(conn, student):
     """
-    inserts a single student record into the database.
-    expects a connection object and a student dictionary with index, number, full_name, course, score and grade.
+    Inserts a single student record into the database.
+    Expects a connection object and a student dictionary with index, number, full_name, course, score and grade.
     """
     try:
         with conn.cursor() as cur:
@@ -84,28 +92,29 @@ def insert_student_record(conn, student):
                 student['grade']
             ))
             conn.commit()
-            logger.info(f"Inserted student record: {student['index_number']}")
+            logger.info(f"Inserted/Updated student record: {student['index_number']}")
+            return True # Indicate success
     except Exception as e:
-        logger.error(f"Error inserting student record {student['index_number']}: {e}")
+        logger.error(f"Error inserting/updating student record {student['index_number']}: {e}")
         conn.rollback()
+        return False # Indicate failure
 
 def fetch_all_records():
     """
-    fetches all student records from the database.
-    returns a list of dictionaries, eaxh repesenting a student record.
+    Fetches all student records from the database.
+    Returns a list of dictionaries, each representing a student record.
     """
-
     conn = connect_to_db()
     if conn is None:
         logger.error("Failed to connect to the database. Cannot fetch records.")
         return []
     logger.info(f"[fetch_all_records] Connected to database with params: dbname={DB_NAME}, user={DB_USER}, host={DB_HOST}, port={DB_PORT}")
     cur = conn.cursor()
+    results = []
     try:
         cur.execute("SELECT index_number, full_name, course, score, grade FROM student_results;")
         rows  = cur.fetchall() # returns all rows as a list of tuples
         logger.info(f"[fetch_all_records] Number of rows fetched: {len(rows)}")
-        results = []
         for row in rows:
             results.append({
                 'index_number': row[0],
@@ -121,3 +130,65 @@ def fetch_all_records():
         cur.close()
         conn.close()
     return results
+
+def fetch_student_by_index_number(index_number):
+    """
+    Fetches a single student record by index number from the database.
+    Returns a dictionary if found, None otherwise.
+    """
+    conn = connect_to_db()
+    if conn is None:
+        logger.error("Failed to connect to the database. Cannot fetch record by index number.")
+        return None
+    cur = conn.cursor()
+    student_record = None
+    try:
+        cur.execute("SELECT index_number, full_name, course, score, grade FROM student_results WHERE index_number = %s;", (index_number,))
+        row = cur.fetchone()
+        if row:
+            student_record = {
+                'index_number': row[0],
+                'full_name': row[1],
+                'course': row[2],
+                'score': row[3],
+                'grade': row[4]
+            }
+            logger.info(f"Fetched record for index number: {index_number}")
+        else:
+            logger.info(f"No record found for index number: {index_number}")
+    except Exception as e:
+        logger.error(f"Error fetching record for index number {index_number}: {e}")
+    finally:
+        cur.close()
+        conn.close()
+    return student_record
+
+def update_student_score(index_number, new_score, new_grade):
+    """
+    Updates the score and grade for a student based on their index number.
+    Returns True on success, False on failure.
+    """
+    conn = connect_to_db()
+    if conn is None:
+        logger.error("Failed to connect to the database. Cannot update student score.")
+        return False
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE student_results
+                SET score = %s, grade = %s
+                WHERE index_number = %s;
+            """, (new_score, new_grade, index_number))
+            conn.commit()
+            if cur.rowcount > 0:
+                logger.info(f"Student {index_number} score updated to {new_score}.")
+                return True
+            else:
+                logger.warning(f"No student found with index number {index_number} to update.")
+                return False
+    except Exception as e:
+        logger.error(f"Error updating student score for {index_number}: {e}")
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
