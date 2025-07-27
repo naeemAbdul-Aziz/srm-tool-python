@@ -17,9 +17,11 @@ def show_admin_menu():
     print("2. View student by index number")
     print("3. Update student score")
     print("4. Export summary report to TXT")
-    print("5. Export summary report to PDF")  # New option
-    print("6. Bulk Import Student Records")
-    print("7. Logout")
+    print("5. Export summary report to PDF")
+    print("6. Add a single student record")
+    print("7. View grade summary")
+    print("8. Bulk Import Student Records")
+    print("9. Logout")
 
 def show_student_menu():
     print("\n===== STUDENT MENU =====")
@@ -139,10 +141,12 @@ def run_menu():
                         print("Grade summary:")
                         pprint(summary)
                     elif admin_choice == "8":
+                        bulk_import()
+                    elif admin_choice == "9":
                         print("Logging out...")
                         break
                     else:
-                        print("Invalid option. Please choose between 1 and 8.")
+                        print("Invalid option. Please choose between 1 and 9.")
             elif role == "student":
                 handle_student_menu(username)
         elif choice == "2":

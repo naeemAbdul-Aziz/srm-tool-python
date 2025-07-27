@@ -567,3 +567,18 @@
 2025-07-27 10:32:07,319 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
 2025-07-27 10:32:07,323 - INFO - [fetch_all_records] Number of rows fetched: 75
 2025-07-27 10:32:07,324 - INFO - Fetched 75 records from the database.
+2025-07-27 10:37:47,437 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:37:59,583 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:38:07,577 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:38:19,348 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:38:19,432 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:38:19,440 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-27 10:38:19,441 - INFO - Fetched 75 records from the database.
+2025-07-27 10:53:45,851 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:53:53,174 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:54:16,181 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:54:23,797 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:54:27,916 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:54:27,992 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:54:28,010 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-27 10:54:28,011 - INFO - Fetched 75 records from the database.
