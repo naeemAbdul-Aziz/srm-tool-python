@@ -1,0 +1,569 @@
+2025-07-24 16:04:03,791 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-24 16:04:03,791 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-24 16:05:47,571 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-24 16:05:47,571 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-24 16:16:10,351 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-24 16:16:10,351 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-24 16:30:26,442 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-24 16:30:26,442 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-24 16:46:14,627 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-24 16:46:14,628 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-24 17:02:47,738 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-24 17:02:47,739 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-24 23:24:54,670 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-24 23:24:54,673 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-24 23:30:35,942 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-24 23:30:35,948 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-24 23:30:36,063 - ERROR - Error inserting student record 12345678: 'grade'
+2025-07-24 23:30:36,063 - ERROR - Error inserting student record 12345679: 'grade'
+2025-07-24 23:30:36,063 - ERROR - Error inserting student record 12345680: 'grade'
+2025-07-25 05:52:45,889 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-25 05:52:45,893 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-25 05:52:46,059 - ERROR - Error inserting student record 12345678: 'grade'
+2025-07-25 05:52:46,059 - ERROR - Error inserting student record 12345679: 'grade'
+2025-07-25 05:52:46,059 - ERROR - Error inserting student record 12345680: 'grade'
+2025-07-25 09:16:04,923 - WARNING - Invalid format on line 4: 12345681, Lily Ann, CS102, ninety
+2025-07-25 09:16:04,924 - WARNING - Invalid format on line 5: 12345682, Empty Line
+2025-07-25 09:16:05,068 - ERROR - Error inserting student record 12345678: 'grade'
+2025-07-25 09:16:05,068 - ERROR - Error inserting student record 12345679: 'grade'
+2025-07-25 09:16:05,068 - ERROR - Error inserting student record 12345680: 'grade'
+2025-07-25 09:27:47,077 - WARNING - Invalid format on line 1: student_id,full_name,major,grade
+2025-07-25 09:27:47,146 - INFO - Inserted student record: 45678
+2025-07-25 09:27:47,148 - INFO - Inserted student record: 32145
+2025-07-25 09:27:47,148 - INFO - Inserted student record: 78901
+2025-07-25 09:27:47,149 - INFO - Inserted student record: 56789
+2025-07-25 09:27:47,150 - INFO - Inserted student record: 65432
+2025-07-25 09:27:47,150 - INFO - Inserted student record: 23456
+2025-07-25 09:27:47,151 - INFO - Inserted student record: 87654
+2025-07-25 09:27:47,151 - INFO - Inserted student record: 34567
+2025-07-25 09:27:47,152 - INFO - Inserted student record: 67890
+2025-07-25 09:27:47,152 - INFO - Inserted student record: 12345
+2025-07-25 09:27:47,152 - INFO - Inserted student record: 54321
+2025-07-25 09:27:47,153 - INFO - Inserted student record: 98765
+2025-07-25 09:27:47,153 - INFO - Inserted student record: 43210
+2025-07-25 09:27:47,153 - INFO - Inserted student record: 76543
+2025-07-25 09:27:47,154 - INFO - Inserted student record: 21098
+2025-07-25 09:39:24,137 - WARNING - Invalid format on line 1: student_id,full_name,major,grade
+2025-07-25 09:39:24,302 - INFO - Inserted student record: 45678
+2025-07-25 09:39:24,304 - INFO - Inserted student record: 32145
+2025-07-25 09:39:24,305 - INFO - Inserted student record: 78901
+2025-07-25 09:39:24,306 - INFO - Inserted student record: 56789
+2025-07-25 09:39:24,307 - INFO - Inserted student record: 65432
+2025-07-25 09:39:24,308 - INFO - Inserted student record: 23456
+2025-07-25 09:39:24,309 - INFO - Inserted student record: 87654
+2025-07-25 09:39:24,309 - INFO - Inserted student record: 34567
+2025-07-25 09:39:24,310 - INFO - Inserted student record: 67890
+2025-07-25 09:39:24,311 - INFO - Inserted student record: 12345
+2025-07-25 09:39:24,312 - INFO - Inserted student record: 54321
+2025-07-25 09:39:24,313 - INFO - Inserted student record: 98765
+2025-07-25 09:39:24,314 - INFO - Inserted student record: 43210
+2025-07-25 09:39:24,316 - INFO - Inserted student record: 76543
+2025-07-25 09:39:24,319 - INFO - Inserted student record: 21098
+2025-07-25 09:51:23,378 - WARNING - Invalid format on line 1: student_id,full_name,major,grade
+2025-07-25 09:51:23,469 - INFO - Inserted student record: 45678
+2025-07-25 09:51:23,470 - INFO - Inserted student record: 32145
+2025-07-25 09:51:23,470 - INFO - Inserted student record: 78901
+2025-07-25 09:51:23,471 - INFO - Inserted student record: 56789
+2025-07-25 09:51:23,471 - INFO - Inserted student record: 65432
+2025-07-25 09:51:23,472 - INFO - Inserted student record: 23456
+2025-07-25 09:51:23,473 - INFO - Inserted student record: 87654
+2025-07-25 09:51:23,473 - INFO - Inserted student record: 34567
+2025-07-25 09:51:23,473 - INFO - Inserted student record: 67890
+2025-07-25 09:51:23,474 - INFO - Inserted student record: 12345
+2025-07-25 09:51:23,475 - INFO - Inserted student record: 54321
+2025-07-25 09:51:23,475 - INFO - Inserted student record: 98765
+2025-07-25 09:51:23,476 - INFO - Inserted student record: 43210
+2025-07-25 09:51:23,476 - INFO - Inserted student record: 76543
+2025-07-25 09:51:23,477 - INFO - Inserted student record: 21098
+2025-07-25 09:56:53,116 - INFO - ===== student result management =====
+2025-07-25 09:56:53,117 - INFO - 1. view all student records
+2025-07-25 09:56:53,117 - INFO - 2. view student by index number
+2025-07-25 09:56:53,117 - INFO - 3. update student score
+2025-07-25 09:56:53,117 - INFO - 4. export summary report to file
+2025-07-25 09:56:53,117 - INFO - 5. insert a new student manually
+2025-07-25 09:56:53,117 - INFO - 6. analyze grade summary
+2025-07-25 09:56:53,117 - INFO - 7. load students from file (gui)
+2025-07-25 09:56:53,117 - INFO - 8. exit
+2025-07-25 10:07:34,735 - WARNING - Invalid format on line 1: student_id,full_name,major,grade
+2025-07-25 10:07:34,925 - INFO - Inserted student record: 45678
+2025-07-25 10:07:34,926 - INFO - Inserted student record: 32145
+2025-07-25 10:07:34,927 - INFO - Inserted student record: 78901
+2025-07-25 10:07:34,928 - INFO - Inserted student record: 56789
+2025-07-25 10:07:34,929 - INFO - Inserted student record: 65432
+2025-07-25 10:07:34,929 - INFO - Inserted student record: 23456
+2025-07-25 10:07:34,930 - INFO - Inserted student record: 87654
+2025-07-25 10:07:34,930 - INFO - Inserted student record: 34567
+2025-07-25 10:07:34,931 - INFO - Inserted student record: 67890
+2025-07-25 10:07:34,932 - INFO - Inserted student record: 12345
+2025-07-25 10:07:34,932 - INFO - Inserted student record: 54321
+2025-07-25 10:07:34,933 - INFO - Inserted student record: 98765
+2025-07-25 10:07:34,934 - INFO - Inserted student record: 43210
+2025-07-25 10:07:34,934 - INFO - Inserted student record: 76543
+2025-07-25 10:07:34,935 - INFO - Inserted student record: 21098
+2025-07-25 10:07:43,805 - INFO - Fetched 15 records from the database.
+2025-07-25 10:15:11,948 - INFO - Fetched 15 records from the database.
+2025-07-25 10:16:18,208 - INFO - Fetched 15 records from the database.
+2025-07-25 10:20:15,602 - WARNING - Invalid format on line 1: student_id,full_name,major,grade
+2025-07-25 10:20:15,663 - INFO - Inserted student record: 45678
+2025-07-25 10:20:15,663 - INFO - Inserted student record: 32145
+2025-07-25 10:20:15,665 - INFO - Inserted student record: 78901
+2025-07-25 10:20:15,665 - INFO - Inserted student record: 56789
+2025-07-25 10:20:15,665 - INFO - Inserted student record: 65432
+2025-07-25 10:20:15,666 - INFO - Inserted student record: 23456
+2025-07-25 10:20:15,667 - INFO - Inserted student record: 87654
+2025-07-25 10:20:15,667 - INFO - Inserted student record: 34567
+2025-07-25 10:20:15,668 - INFO - Inserted student record: 67890
+2025-07-25 10:20:15,669 - INFO - Inserted student record: 12345
+2025-07-25 10:20:15,669 - INFO - Inserted student record: 54321
+2025-07-25 10:20:15,670 - INFO - Inserted student record: 98765
+2025-07-25 10:20:15,670 - INFO - Inserted student record: 43210
+2025-07-25 10:20:15,670 - INFO - Inserted student record: 76543
+2025-07-25 10:20:15,671 - INFO - Inserted student record: 21098
+2025-07-25 10:20:24,991 - INFO - Fetched 15 records from the database.
+2025-07-25 10:21:36,563 - WARNING - Invalid format on line 9: 12345703, John Mensimah, CS101, absent
+2025-07-25 10:21:36,564 - WARNING - Invalid format on line 15: 12345709, Akua Serwaa, MATH201,
+2025-07-25 10:21:36,613 - INFO - Inserted student record: 12345695
+2025-07-25 10:21:36,614 - INFO - Inserted student record: 12345696
+2025-07-25 10:21:36,615 - INFO - Inserted student record: 12345697
+2025-07-25 10:21:36,615 - INFO - Inserted student record: 12345698
+2025-07-25 10:21:36,616 - INFO - Inserted student record: 12345699
+2025-07-25 10:21:36,617 - INFO - Inserted student record: 12345700
+2025-07-25 10:21:36,618 - INFO - Inserted student record: 12345701
+2025-07-25 10:21:36,618 - INFO - Inserted student record: 12345702
+2025-07-25 10:21:36,619 - INFO - Inserted student record: 12345704
+2025-07-25 10:21:36,619 - INFO - Inserted student record: 12345705
+2025-07-25 10:21:36,619 - INFO - Inserted student record: 12345706
+2025-07-25 10:21:36,620 - INFO - Inserted student record: 12345707
+2025-07-25 10:21:36,621 - INFO - Inserted student record: 12345708
+2025-07-25 10:21:36,621 - INFO - Inserted student record: 12345710
+2025-07-25 10:21:36,621 - INFO - Inserted student record: 12345711
+2025-07-25 10:21:36,622 - INFO - Inserted student record: 12345712
+2025-07-25 10:21:36,623 - INFO - Inserted student record: 12345713
+2025-07-25 10:21:36,624 - INFO - Inserted student record: 12345714
+2025-07-25 10:21:53,037 - INFO - Fetched 33 records from the database.
+2025-07-25 10:24:07,636 - INFO - Fetched 33 records from the database.
+2025-07-25 10:27:36,675 - WARNING - Invalid format on line 9: 12345703, John Mensimah, CS101, absent
+2025-07-25 10:27:36,675 - WARNING - Invalid format on line 15: 12345709, Akua Serwaa, MATH201,
+2025-07-25 10:27:36,731 - WARNING - Invalid format on line 9: 12345703, John Mensimah, CS101, absent
+2025-07-25 10:27:36,731 - WARNING - Invalid format on line 15: 12345709, Akua Serwaa, MATH201,
+2025-07-25 10:27:36,737 - INFO - Inserted student record: 12345695
+2025-07-25 10:27:36,738 - INFO - Inserted student record: 12345696
+2025-07-25 10:27:36,740 - INFO - Inserted student record: 12345697
+2025-07-25 10:27:36,741 - INFO - Inserted student record: 12345698
+2025-07-25 10:27:36,742 - INFO - Inserted student record: 12345699
+2025-07-25 10:27:36,743 - INFO - Inserted student record: 12345700
+2025-07-25 10:27:36,744 - INFO - Inserted student record: 12345701
+2025-07-25 10:27:36,745 - INFO - Inserted student record: 12345702
+2025-07-25 10:27:36,746 - INFO - Inserted student record: 12345704
+2025-07-25 10:27:36,747 - INFO - Inserted student record: 12345705
+2025-07-25 10:27:36,748 - INFO - Inserted student record: 12345706
+2025-07-25 10:27:36,749 - INFO - Inserted student record: 12345707
+2025-07-25 10:27:36,750 - INFO - Inserted student record: 12345708
+2025-07-25 10:27:36,751 - INFO - Inserted student record: 12345710
+2025-07-25 10:27:36,752 - INFO - Inserted student record: 12345711
+2025-07-25 10:27:36,752 - INFO - Inserted student record: 12345712
+2025-07-25 10:27:36,753 - INFO - Inserted student record: 12345713
+2025-07-25 10:27:36,754 - INFO - Inserted student record: 12345714
+2025-07-25 10:27:36,754 - INFO - Inserted 18 student record(s) from file upload.
+2025-07-25 10:27:43,482 - INFO - Fetched 33 records from the database.
+2025-07-25 10:30:02,474 - INFO - Fetched 33 records from the database.
+2025-07-25 10:31:32,937 - WARNING - Invalid format on line 9: 22345703, Nana Akua, CS101, absent
+2025-07-25 10:31:32,938 - WARNING - Invalid format on line 15: 22345709, Kwesi Badu, MATH201,
+2025-07-25 10:31:32,938 - WARNING - Invalid format on line 34: 22345728, Nana Ama, CS101, absent
+2025-07-25 10:31:32,938 - WARNING - Invalid format on line 41: 22345735, Ama Owusu, MATH201,
+2025-07-25 10:31:32,986 - WARNING - Invalid format on line 9: 22345703, Nana Akua, CS101, absent
+2025-07-25 10:31:32,986 - WARNING - Invalid format on line 15: 22345709, Kwesi Badu, MATH201,
+2025-07-25 10:31:32,986 - WARNING - Invalid format on line 34: 22345728, Nana Ama, CS101, absent
+2025-07-25 10:31:32,986 - WARNING - Invalid format on line 41: 22345735, Ama Owusu, MATH201,
+2025-07-25 10:31:32,997 - INFO - Inserted student record: 22345695
+2025-07-25 10:31:32,998 - INFO - Inserted student record: 22345696
+2025-07-25 10:31:32,999 - INFO - Inserted student record: 22345697
+2025-07-25 10:31:33,000 - INFO - Inserted student record: 22345698
+2025-07-25 10:31:33,000 - INFO - Inserted student record: 22345699
+2025-07-25 10:31:33,001 - INFO - Inserted student record: 22345700
+2025-07-25 10:31:33,001 - INFO - Inserted student record: 22345701
+2025-07-25 10:31:33,002 - INFO - Inserted student record: 22345702
+2025-07-25 10:31:33,003 - INFO - Inserted student record: 22345704
+2025-07-25 10:31:33,004 - INFO - Inserted student record: 22345705
+2025-07-25 10:31:33,005 - INFO - Inserted student record: 22345706
+2025-07-25 10:31:33,006 - INFO - Inserted student record: 22345707
+2025-07-25 10:31:33,006 - INFO - Inserted student record: 22345708
+2025-07-25 10:31:33,007 - INFO - Inserted student record: 22345710
+2025-07-25 10:31:33,007 - INFO - Inserted student record: 22345711
+2025-07-25 10:31:33,008 - INFO - Inserted student record: 22345712
+2025-07-25 10:31:33,008 - INFO - Inserted student record: 22345713
+2025-07-25 10:31:33,009 - INFO - Inserted student record: 22345714
+2025-07-25 10:31:33,009 - INFO - Inserted student record: 22345715
+2025-07-25 10:31:33,009 - INFO - Inserted student record: 22345716
+2025-07-25 10:31:33,010 - INFO - Inserted student record: 22345717
+2025-07-25 10:31:33,011 - INFO - Inserted student record: 22345718
+2025-07-25 10:31:33,011 - INFO - Inserted student record: 22345719
+2025-07-25 10:31:33,011 - INFO - Inserted student record: 22345720
+2025-07-25 10:31:33,012 - INFO - Inserted student record: 22345721
+2025-07-25 10:31:33,013 - INFO - Inserted student record: 22345722
+2025-07-25 10:31:33,013 - INFO - Inserted student record: 22345723
+2025-07-25 10:31:33,014 - INFO - Inserted student record: 22345724
+2025-07-25 10:31:33,015 - INFO - Inserted student record: 22345725
+2025-07-25 10:31:33,015 - INFO - Inserted student record: 22345726
+2025-07-25 10:31:33,016 - INFO - Inserted student record: 22345727
+2025-07-25 10:31:33,016 - INFO - Inserted student record: 22345729
+2025-07-25 10:31:33,017 - INFO - Inserted student record: 22345730
+2025-07-25 10:31:33,017 - INFO - Inserted student record: 22345731
+2025-07-25 10:31:33,018 - INFO - Inserted student record: 22345732
+2025-07-25 10:31:33,019 - INFO - Inserted student record: 22345733
+2025-07-25 10:31:33,019 - INFO - Inserted student record: 22345734
+2025-07-25 10:31:33,020 - INFO - Inserted student record: 22345736
+2025-07-25 10:31:33,021 - INFO - Inserted student record: 22345737
+2025-07-25 10:31:33,022 - INFO - Inserted student record: 22345738
+2025-07-25 10:31:33,023 - INFO - Inserted student record: 22345739
+2025-07-25 10:31:33,023 - INFO - Inserted student record: 22345740
+2025-07-25 10:31:33,023 - INFO - Inserted 42 student record(s) from file upload.
+2025-07-25 10:31:37,672 - INFO - Fetched 75 records from the database.
+2025-07-25 10:33:21,811 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:33:23,821 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:33:23,891 - INFO - Fetched 75 records from the database.
+2025-07-25 10:33:50,882 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:33:50,965 - INFO - Fetched 75 records from the database.
+2025-07-25 10:34:40,327 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:34:44,985 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:34:45,075 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:34:45,080 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:34:45,081 - INFO - Fetched 75 records from the database.
+2025-07-25 10:42:42,405 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:42:45,790 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:42:45,868 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:42:45,885 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:42:45,885 - INFO - Fetched 75 records from the database.
+2025-07-25 10:48:19,726 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:49:49,679 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:49:53,987 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:49:54,059 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:49:54,069 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:49:54,069 - INFO - Fetched 75 records from the database.
+2025-07-25 10:50:05,823 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:50:05,907 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:50:05,911 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:50:05,912 - INFO - Fetched 75 records from the database.
+2025-07-25 10:52:10,628 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:52:10,721 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:52:10,730 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:52:10,730 - INFO - Fetched 75 records from the database.
+2025-07-25 10:52:10,730 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:52:10,801 - INFO - Inserted student record: 12345701
+2025-07-25 10:52:16,546 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:52:16,622 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:52:16,625 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:52:16,626 - INFO - Fetched 75 records from the database.
+2025-07-25 10:55:36,621 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:55:36,724 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:55:36,728 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:55:36,729 - INFO - Fetched 75 records from the database.
+2025-07-25 10:55:51,097 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:55:53,609 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:55:53,694 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:55:53,699 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:55:53,699 - INFO - Fetched 75 records from the database.
+2025-07-25 10:56:03,550 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:56:03,615 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:56:03,619 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:56:03,619 - INFO - Fetched 75 records from the database.
+2025-07-25 10:56:11,561 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:56:11,645 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:56:11,649 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:56:11,650 - INFO - Fetched 75 records from the database.
+2025-07-25 10:56:57,845 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:56:57,918 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:56:57,923 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:56:57,924 - INFO - Fetched 75 records from the database.
+2025-07-25 10:57:06,334 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:57:10,147 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:57:10,226 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 10:57:10,229 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 10:57:10,229 - INFO - Fetched 75 records from the database.
+2025-07-25 11:02:49,345 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:03:01,384 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:03:01,473 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:03:01,479 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 11:03:01,479 - INFO - Fetched 75 records from the database.
+2025-07-25 11:16:31,189 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:19:15,362 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:19:22,055 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:19:22,138 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:19:22,155 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 11:19:22,155 - INFO - Fetched 75 records from the database.
+2025-07-25 11:25:27,696 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:28:30,040 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:28:30,113 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 11:28:30,124 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 11:28:30,124 - INFO - Fetched 75 records from the database.
+2025-07-25 12:26:52,125 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:26:57,087 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:26:57,168 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:26:57,186 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:26:57,186 - INFO - Fetched 75 records from the database.
+2025-07-25 12:31:46,383 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:31:50,820 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:31:50,896 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:31:50,905 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:31:50,905 - INFO - Fetched 75 records from the database.
+2025-07-25 12:35:55,916 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:35:56,031 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:35:56,046 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:35:56,046 - INFO - Fetched 75 records from the database.
+2025-07-25 12:36:03,295 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:36:03,375 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:36:03,380 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:36:03,380 - INFO - Fetched 75 records from the database.
+2025-07-25 12:36:13,212 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:36:13,264 - WARNING - Invalid format on line 9: 12345703, John Mensimah, CS101, absent
+2025-07-25 12:36:13,264 - WARNING - Invalid format on line 15: 12345709, Akua Serwaa, MATH201,
+2025-07-25 12:36:13,280 - INFO - Inserted student record: 12345695
+2025-07-25 12:36:13,280 - INFO - Inserted student record: 12345696
+2025-07-25 12:36:13,281 - INFO - Inserted student record: 12345697
+2025-07-25 12:36:13,281 - INFO - Inserted student record: 12345698
+2025-07-25 12:36:13,282 - INFO - Inserted student record: 12345699
+2025-07-25 12:36:13,282 - INFO - Inserted student record: 12345700
+2025-07-25 12:36:13,283 - INFO - Inserted student record: 12345701
+2025-07-25 12:36:13,283 - INFO - Inserted student record: 12345702
+2025-07-25 12:36:13,283 - INFO - Inserted student record: 12345704
+2025-07-25 12:36:13,284 - INFO - Inserted student record: 12345705
+2025-07-25 12:36:13,284 - INFO - Inserted student record: 12345706
+2025-07-25 12:36:13,284 - INFO - Inserted student record: 12345707
+2025-07-25 12:36:13,285 - INFO - Inserted student record: 12345708
+2025-07-25 12:36:13,285 - INFO - Inserted student record: 12345710
+2025-07-25 12:36:13,285 - INFO - Inserted student record: 12345711
+2025-07-25 12:36:13,285 - INFO - Inserted student record: 12345712
+2025-07-25 12:36:13,286 - INFO - Inserted student record: 12345713
+2025-07-25 12:36:13,286 - INFO - Inserted student record: 12345714
+2025-07-25 12:36:13,286 - INFO - Inserted 18 student record(s) from file upload.
+2025-07-25 12:36:15,333 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:36:15,372 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:36:15,375 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:36:15,375 - INFO - Fetched 75 records from the database.
+2025-07-25 12:36:25,268 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:36:25,454 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:36:25,459 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:36:25,460 - INFO - Fetched 75 records from the database.
+2025-07-25 12:41:19,133 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:43:21,349 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:45:52,066 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:45:57,704 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:45:57,777 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:45:57,787 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:45:57,787 - INFO - Fetched 75 records from the database.
+2025-07-25 12:46:02,275 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:46:02,347 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:46:02,351 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:46:02,352 - INFO - Fetched 75 records from the database.
+2025-07-25 12:46:09,676 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:46:09,749 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:46:09,752 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:46:09,753 - INFO - Fetched 75 records from the database.
+2025-07-25 12:46:18,363 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:46:18,432 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 12:46:18,436 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 12:46:18,436 - INFO - Fetched 75 records from the database.
+2025-07-25 14:48:33,685 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 14:48:37,214 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 14:48:37,299 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 14:48:37,315 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 14:48:37,316 - INFO - Fetched 75 records from the database.
+2025-07-25 14:55:47,561 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 14:57:08,245 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 14:58:28,826 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:00:51,214 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:00:56,836 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:00:56,925 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:00:56,939 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:00:56,940 - INFO - Fetched 75 records from the database.
+2025-07-25 15:01:15,968 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:01:16,056 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:01:16,063 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:01:16,063 - INFO - Fetched 75 records from the database.
+2025-07-25 15:09:17,155 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:09:37,024 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:09:49,663 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:10:54,812 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:04,274 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:11,936 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:20,373 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:23,329 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:23,421 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:23,430 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:11:23,430 - INFO - Fetched 75 records from the database.
+2025-07-25 15:11:48,143 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:55,992 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:59,328 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:59,394 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:11:59,399 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:11:59,399 - INFO - Fetched 75 records from the database.
+2025-07-25 15:27:08,566 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:27:08,690 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:27:08,702 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:27:08,702 - INFO - Fetched 75 records from the database.
+2025-07-25 15:27:20,862 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:28:00,823 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:28:04,341 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:28:17,287 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:28:20,488 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:28:20,573 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:28:20,577 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:28:20,578 - INFO - Fetched 75 records from the database.
+2025-07-25 15:28:27,564 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:28:27,640 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:28:27,644 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:28:27,644 - INFO - Fetched 75 records from the database.
+2025-07-25 15:29:56,176 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:33:54,789 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:34:02,615 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:34:02,699 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:34:02,703 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:34:02,703 - INFO - Fetched 75 records from the database.
+2025-07-25 15:38:02,252 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:38:29,466 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:38:37,339 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:38:37,421 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:38:37,430 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:38:37,430 - INFO - Fetched 75 records from the database.
+2025-07-25 15:38:40,783 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:38:40,869 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:38:40,874 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:38:40,874 - INFO - Fetched 75 records from the database.
+2025-07-25 15:41:41,052 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:41:41,152 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:41:41,159 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:41:41,159 - INFO - Fetched 75 records from the database.
+2025-07-25 15:43:12,711 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:43:59,555 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:44:08,685 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:44:08,765 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:44:08,769 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:44:08,770 - INFO - Fetched 75 records from the database.
+2025-07-25 15:44:52,712 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:44:57,933 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:44:58,016 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:44:58,020 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:44:58,020 - INFO - Fetched 75 records from the database.
+2025-07-25 15:48:50,420 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:49:02,096 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:49:12,572 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:49:28,642 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:49:37,742 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:49:37,829 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:49:37,838 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:49:37,839 - INFO - Fetched 75 records from the database.
+2025-07-25 15:49:54,967 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:49:55,041 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:49:55,045 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:49:55,045 - INFO - Fetched 75 records from the database.
+2025-07-25 15:51:26,790 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:51:38,453 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:51:42,230 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:51:42,310 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 15:51:42,316 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 15:51:42,317 - INFO - Fetched 75 records from the database.
+2025-07-25 16:01:15,465 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:01:35,175 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:01:43,411 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:01:50,971 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:01:54,057 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:01:54,153 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:01:54,176 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 16:01:54,176 - INFO - Fetched 75 records from the database.
+2025-07-25 16:02:32,351 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:02:32,443 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:02:32,448 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 16:02:32,449 - INFO - Fetched 75 records from the database.
+2025-07-25 16:08:18,480 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:08:27,328 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:08:30,409 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:08:30,484 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:08:30,493 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 16:08:30,493 - INFO - Fetched 75 records from the database.
+2025-07-25 16:09:02,226 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:09:02,295 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:09:02,301 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 16:09:02,302 - INFO - Fetched 75 records from the database.
+2025-07-25 16:13:33,475 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:13:42,558 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:13:55,108 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:14:00,048 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:14:00,120 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:14:00,127 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 16:14:00,127 - INFO - Fetched 75 records from the database.
+2025-07-25 16:14:27,462 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:14:27,542 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:14:27,547 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 16:14:27,547 - INFO - Fetched 75 records from the database.
+2025-07-25 16:14:35,178 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:14:35,261 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:14:35,264 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 16:14:35,264 - INFO - Fetched 75 records from the database.
+2025-07-25 16:16:34,885 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:16:35,089 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-25 16:16:35,094 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-25 16:16:35,094 - INFO - Fetched 75 records from the database.
+2025-07-26 00:50:25,882 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 00:50:35,076 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 00:50:42,003 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 00:50:46,604 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 00:50:46,693 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 00:50:46,709 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 00:50:46,709 - INFO - Fetched 75 records from the database.
+2025-07-26 09:03:42,081 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:03:53,570 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:03:57,230 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:03:57,315 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:03:57,326 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 09:03:57,326 - INFO - Fetched 75 records from the database.
+2025-07-26 09:04:31,379 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:04:39,958 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:04:42,600 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:04:42,649 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:04:42,653 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 09:04:42,653 - INFO - Fetched 75 records from the database.
+2025-07-26 09:12:03,557 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:12:11,736 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:12:16,087 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:12:16,173 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:12:16,184 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 09:12:16,184 - INFO - Fetched 75 records from the database.
+2025-07-26 09:59:24,126 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:59:35,109 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:59:38,183 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:59:38,264 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 09:59:38,276 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 09:59:38,276 - INFO - Fetched 75 records from the database.
+2025-07-26 10:01:43,240 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 10:01:43,327 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 10:01:43,333 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 10:01:43,334 - INFO - Fetched 75 records from the database.
+2025-07-26 10:02:39,890 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 10:02:39,965 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 10:02:39,968 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 10:02:39,968 - INFO - Fetched 75 records from the database.
+2025-07-26 21:37:37,795 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:43:25,790 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:43:36,341 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:43:40,311 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:43:40,397 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:43:40,409 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 21:43:40,410 - INFO - Fetched 75 records from the database.
+2025-07-26 21:43:47,813 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:43:47,898 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:43:47,903 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 21:43:47,903 - INFO - Fetched 75 records from the database.
+2025-07-26 21:44:27,484 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:44:27,569 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:44:27,575 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 21:44:27,576 - INFO - Fetched 75 records from the database.
+2025-07-26 21:44:33,901 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:44:34,012 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-26 21:44:34,016 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-26 21:44:34,017 - INFO - Fetched 75 records from the database.
+2025-07-27 10:28:55,098 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:32:03,628 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:32:07,237 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:32:07,319 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 10:32:07,323 - INFO - [fetch_all_records] Number of rows fetched: 75
+2025-07-27 10:32:07,324 - INFO - Fetched 75 records from the database.

@@ -1,0 +1,4 @@
+psycopg2-binary == 2.9.10 # for establishing PostgreSQL connections
+bcrypt == 4.3.0 # bcrypt for secure password hashing
+python-dotenv == 1.1.1 # for loading environment variables from .env file
+fpdf == 1.7.2
