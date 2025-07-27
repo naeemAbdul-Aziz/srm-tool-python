@@ -600,3 +600,65 @@
 2025-07-27 14:21:56,348 - INFO - Student 12345713 score updated to 56.
 2025-07-27 14:22:32,483 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
 2025-07-27 14:22:32,566 - INFO - Inserted/Updated student record: 12345719
+2025-07-27 17:14:18,913 - INFO - Starting FastAPI server with Uvicorn...
+2025-07-27 17:15:21,948 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:15:22,081 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:15:22,116 - INFO - [fetch_all_records] Number of rows fetched: 76
+2025-07-27 17:15:22,116 - INFO - Fetched 76 records from the database.
+2025-07-27 17:16:08,238 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:16:08,330 - INFO - Inserted/Updated student record: princess
+2025-07-27 17:16:13,329 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:16:13,395 - INFO - Inserted/Updated student record: princess
+2025-07-27 17:18:14,530 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:18:14,613 - INFO - Fetched record for index number: 34567
+2025-07-27 17:18:17,559 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:18:17,613 - INFO - Fetched record for index number: 34567
+2025-07-27 17:19:00,435 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:19:00,497 - INFO - Student 34567 score updated to 67.
+2025-07-27 17:19:01,834 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:19:01,880 - INFO - Student 34567 score updated to 67.
+2025-07-27 17:19:44,834 - ERROR - File upload failed: 400: Only .txt files are allowed
+2025-07-27 17:19:46,405 - ERROR - File upload failed: 400: Only .txt files are allowed
+2025-07-27 17:30:13,169 - INFO - Starting FastAPI server with Uvicorn...
+2025-07-27 17:31:46,099 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:31:46,251 - WARNING - Invalid format on line 17: 12345703, John Mensimah, CS101, absent
+2025-07-27 17:31:46,253 - WARNING - Invalid format on line 29: 12345709, Akua Serwaa, MATH201,
+2025-07-27 17:31:46,295 - INFO - Inserted/Updated student record: 12345695
+2025-07-27 17:31:46,297 - INFO - Inserted/Updated student record: 12345696
+2025-07-27 17:31:46,298 - INFO - Inserted/Updated student record: 12345697
+2025-07-27 17:31:46,299 - INFO - Inserted/Updated student record: 12345698
+2025-07-27 17:31:46,301 - INFO - Inserted/Updated student record: 12345699
+2025-07-27 17:31:46,302 - INFO - Inserted/Updated student record: 12345700
+2025-07-27 17:31:46,302 - INFO - Inserted/Updated student record: 12345701
+2025-07-27 17:31:46,302 - INFO - Inserted/Updated student record: 12345702
+2025-07-27 17:31:46,302 - INFO - Inserted/Updated student record: 12345704
+2025-07-27 17:31:46,302 - INFO - Inserted/Updated student record: 12345705
+2025-07-27 17:31:46,302 - INFO - Inserted/Updated student record: 12345706
+2025-07-27 17:31:46,309 - INFO - Inserted/Updated student record: 12345707
+2025-07-27 17:31:46,311 - INFO - Inserted/Updated student record: 12345708
+2025-07-27 17:31:46,313 - INFO - Inserted/Updated student record: 12345710
+2025-07-27 17:31:46,313 - INFO - Inserted/Updated student record: 12345711
+2025-07-27 17:31:46,314 - INFO - Inserted/Updated student record: 12345712
+2025-07-27 17:31:46,316 - INFO - Inserted/Updated student record: 12345713
+2025-07-27 17:31:46,317 - INFO - Inserted/Updated student record: 12345714
+2025-07-27 17:31:49,407 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:31:49,478 - WARNING - Invalid format on line 17: 12345703, John Mensimah, CS101, absent
+2025-07-27 17:31:49,478 - WARNING - Invalid format on line 29: 12345709, Akua Serwaa, MATH201,
+2025-07-27 17:31:49,478 - INFO - Inserted/Updated student record: 12345695
+2025-07-27 17:31:49,478 - INFO - Inserted/Updated student record: 12345696
+2025-07-27 17:31:49,494 - INFO - Inserted/Updated student record: 12345697
+2025-07-27 17:31:49,494 - INFO - Inserted/Updated student record: 12345698
+2025-07-27 17:31:49,494 - INFO - Inserted/Updated student record: 12345699
+2025-07-27 17:31:49,494 - INFO - Inserted/Updated student record: 12345700
+2025-07-27 17:31:49,494 - INFO - Inserted/Updated student record: 12345701
+2025-07-27 17:31:49,504 - INFO - Inserted/Updated student record: 12345702
+2025-07-27 17:31:49,504 - INFO - Inserted/Updated student record: 12345704
+2025-07-27 17:31:49,504 - INFO - Inserted/Updated student record: 12345705
+2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345706
+2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345707
+2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345708
+2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345710
+2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345711
+2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345712
+2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345713
+2025-07-27 17:31:49,526 - INFO - Inserted/Updated student record: 12345714
