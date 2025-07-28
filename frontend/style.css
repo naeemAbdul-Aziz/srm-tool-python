@@ -1,0 +1,138 @@
+/* style.css */
+
+:root {
+  --bg: #F8FAFC;
+  --panel: #FFFFFF;
+  --panel-dark: #F1F5F9;
+  --text: #1F2937;
+  --text-muted: #6B7280;
+  --accent: #4F46E5;
+  --success: #10B981;
+  --error: #EF4444;
+  --border: #E5E7EB;
+  --shadow: rgba(0, 0, 0, 0.06);
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: var(--text);
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.panel {
+  background-color: var(--panel);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px var(--shadow);
+  border: 1px solid var(--border);
+  transition: background 0.3s ease;
+}
+
+.panel:hover {
+  background-color: var(--panel-dark);
+}
+
+.panel h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="file"] {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 1rem;
+  background-color: #F9FAFB;
+}
+
+input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+button {
+  padding: 0.75rem 1.25rem;
+  background-color: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #4338CA;
+}
+
+button:disabled {
+  background-color: #A5B4FC;
+  cursor: not-allowed;
+}
+
+.message-box {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background-color: #FFFFFF;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+table th,
+table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+table th {
+  background-color: #E5E7EB;
+  color: #374151;
+  font-weight: 600;
+}
+
+table tr:nth-child(even) {
+  background-color: #F1F5F9;
+}

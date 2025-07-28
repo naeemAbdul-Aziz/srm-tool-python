@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Result Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Student Result Manager</h1>
+    </header>
+
+    <main class="grid-layout">
+      <section class="panel">
+        <h2>Search Student</h2>
+        <input type="text" id="search-index" placeholder="Enter Index Number" />
+        <button id="search-btn">Search</button>
+        <div id="search-result" class="message-box"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Add Student</h2>
+        <form id="add-student-form">
+          <input type="text" id="add-index" placeholder="Index Number" required />
+          <input type="text" id="add-name" placeholder="Full Name" required />
+          <input type="text" id="add-course" placeholder="Course" required />
+          <input type="number" id="add-score" placeholder="Score (0–100)" required />
+          <button type="submit">Add</button>
+          <div id="add-student-message" class="message-box"></div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Update Score</h2>
+        <form id="update-score-form">
+          <input type="text" id="update-index" placeholder="Index Number" required />
+          <input type="number" id="update-score" placeholder="New Score" required />
+          <button type="submit">Update</button>
+          <div id="update-score-message" class="message-box"></div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Bulk Upload</h2>
+        <form id="upload-file-form">
+          <label for="upload-file">Select file to upload:</label>
+          <input type="file" id="upload-file" accept=".txt,.csv" title="Upload student data file" placeholder="Choose .txt or .csv file" />
+          <button type="submit">Upload</button>
+          <div id="upload-file-message" class="message-box"></div>
+      </section>
+
+      <section class="panel full-width">
+        <h2>All Students</h2>
+        <button id="refresh-students-btn">Refresh</button>
+        <div class="table-wrapper">
+          <table id="students-table">
+            <thead>
+              <tr>
+                <th>Index</th>
+                <th>Full Name</th>
+                <th>Course</th>
+                <th>Score</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
