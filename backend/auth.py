@@ -3,7 +3,7 @@
 import hashlib
 import getpass
 from db import connect_to_db
-from logger import get_logger # Import logger for auth file
+from logger import get_logger  # Import logger for auth file
 
 logger = get_logger(__name__)
 

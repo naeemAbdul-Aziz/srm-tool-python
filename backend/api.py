@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
-import os
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from typing import Optional
+import os
+from auth import create_user, authenticate_user  # Your auth.py functions
 from db import (
     fetch_all_records,
     fetch_student_by_index_number,
@@ -18,13 +19,15 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or specify ["http://localhost:5500"]
+    allow_origins=["*"],  # Adjust in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 logger = get_logger(__name__)
+
+# --- Data Models ---
 
 class Student(BaseModel):
     index_number: str
@@ -34,6 +37,17 @@ class Student(BaseModel):
 
 class UpdateScore(BaseModel):
     score: int
+
+class SignupData(BaseModel):
+    username: str
+    password: str
+    role: str  # "admin" or "student"
+
+class LoginData(BaseModel):
+    username: str
+    password: str
+
+# --- Student Endpoints ---
 
 @app.get("/students")
 def get_all_students():
@@ -96,22 +110,18 @@ def update_score(index_number: str, update: UpdateScore):
 @app.post("/students/upload")
 def upload_student_file(file: UploadFile = File(...)):
     try:
-        # Allow both .txt and .csv files
         if not file.filename or not (file.filename.endswith('.txt') or file.filename.endswith('.csv')):
             raise HTTPException(status_code=400, detail="Only .txt or .csv files are allowed")
 
-        # Save uploaded content to temp file
         contents = file.file.read().decode("utf-8")
         temp_path = "temp_upload.txt"
         with open(temp_path, "w", encoding="utf-8") as f:
             f.write(contents)
 
-        # Connect to database
         conn = connect_to_db()
         if not conn:
             raise HTTPException(status_code=500, detail="Database connection failed")
 
-        # Parse file contents
         students = read_student_file(temp_path)
         inserted = 0
         for student in students:
@@ -134,3 +144,41 @@ def upload_student_file(file: UploadFile = File(...)):
                 os.remove("temp_upload.txt")
         except Exception:
             pass
+
+# --- Authentication Endpoints ---
+
+@app.post("/signup")
+def signup(user: SignupData):
+    role = user.role.lower()
+    if role not in ("admin", "student"):
+        raise HTTPException(status_code=400, detail="Role must be 'admin' or 'student'")
+
+    # For students, verify index_number exists in student_results
+    if role == "student":
+        conn = connect_to_db()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database connection failed")
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM student_results WHERE index_number = %s", (user.username,))
+                if cur.fetchone() is None:
+                    raise HTTPException(status_code=400, detail="Index number not found in student records. Please contact admin.")
+        except Exception as e:
+            logger.error(f"Error verifying student index number on signup: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+        finally:
+            conn.close()
+
+    success = create_user(user.username, user.password, role)
+    if success:
+        return {"message": "User created successfully."}
+    else:
+        raise HTTPException(status_code=500, detail="User creation failed.")
+
+@app.post("/login")
+def login(user: LoginData):
+    role = authenticate_user(user.username, user.password)
+    if role:
+        return {"message": "Login successful.", "username": user.username, "role": role}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid username or password.")

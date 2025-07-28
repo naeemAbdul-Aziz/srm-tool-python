@@ -2,3 +2,4 @@
 venv/
 backend/__pycache__/
 backend/config.py
+backend/app.log
