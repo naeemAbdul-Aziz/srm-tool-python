@@ -662,3 +662,951 @@
 2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345712
 2025-07-27 17:31:49,510 - INFO - Inserted/Updated student record: 12345713
 2025-07-27 17:31:49,526 - INFO - Inserted/Updated student record: 12345714
+2025-07-27 17:44:43,889 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:44:44,043 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:44:44,078 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 17:44:44,078 - INFO - Fetched 77 records from the database.
+2025-07-27 17:44:52,733 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:44:52,838 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:44:52,847 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 17:44:52,848 - INFO - Fetched 77 records from the database.
+2025-07-27 17:47:26,479 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:47:26,586 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 17:47:26,629 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 17:47:26,630 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:02,742 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:02,904 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:02,946 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:02,946 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:03,350 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:03,495 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:03,504 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:03,504 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:03,749 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:03,869 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:03,884 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:03,884 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:04,094 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:04,200 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:04,207 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:04,209 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:04,519 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:04,630 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:04,638 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:04,638 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:04,949 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:05,072 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:05,078 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:05,078 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:05,330 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:05,451 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:05,460 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:05,460 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:05,754 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:05,859 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:05,867 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:05,867 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:06,273 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:06,403 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:06,409 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:06,411 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:06,665 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:06,796 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:06,802 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:06,802 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:07,048 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:07,161 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:07,166 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:07,166 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:07,467 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:07,579 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:07,584 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:07,584 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:07,879 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:07,999 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:08,008 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:08,016 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:08,266 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:08,358 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:08,367 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:08,367 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:08,649 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:08,765 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:08,765 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:08,772 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:09,057 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:09,159 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:09,167 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:09,167 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:09,501 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:09,601 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:09,605 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:09,605 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:09,889 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:09,993 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:10,010 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:10,010 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:10,307 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:10,418 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:10,426 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:10,426 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:10,721 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:10,828 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:10,836 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:10,836 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:11,125 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:11,260 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:11,269 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:11,269 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:11,539 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:11,689 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:11,697 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:11,697 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:11,922 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:12,036 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:12,044 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:12,044 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:12,306 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:12,411 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:12,411 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:12,411 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:12,717 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:12,807 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:12,815 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:12,815 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:13,145 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:13,253 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:13,261 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:13,261 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:13,538 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:13,640 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:13,648 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:13,648 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:13,952 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:14,059 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:14,063 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:14,063 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:14,361 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:14,462 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:14,470 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:14,470 - INFO - Fetched 77 records from the database.
+2025-07-27 18:26:15,089 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:15,184 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:26:15,191 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:26:15,191 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:20,001 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:20,103 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:20,112 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:20,112 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:20,723 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:20,813 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:20,820 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:20,820 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:21,120 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:21,201 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:21,209 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:21,209 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:21,572 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:21,663 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:21,672 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:21,672 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:21,941 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:22,037 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:22,042 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:22,043 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:22,326 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:22,406 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:22,409 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:22,409 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:22,729 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:22,819 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:22,827 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:22,827 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:23,140 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:23,220 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:23,228 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:23,228 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:23,533 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:23,621 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:23,621 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:23,621 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:23,935 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:24,036 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:24,036 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:24,036 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:24,361 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:24,443 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:24,451 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:24,451 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:24,740 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:24,832 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:24,837 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:24,837 - INFO - Fetched 77 records from the database.
+2025-07-27 18:30:25,445 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:25,525 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:30:25,529 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:30:25,529 - INFO - Fetched 77 records from the database.
+2025-07-27 18:37:51,285 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:37:51,414 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:37:51,452 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:37:51,452 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:41,132 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:41,279 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:41,286 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:41,286 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:42,176 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:42,300 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:42,310 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:42,310 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:42,564 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:42,713 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:42,721 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:42,721 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:42,979 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:43,080 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:43,088 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:43,088 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:43,363 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:43,470 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:43,479 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:43,479 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:43,757 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:43,861 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:43,867 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:43,867 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:44,172 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:44,280 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:44,287 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:44,287 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:44,582 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:44,706 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:44,712 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:44,712 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:44,989 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:45,104 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:45,112 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:45,120 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:45,397 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:45,509 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:45,517 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:45,517 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:45,764 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:45,884 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:45,892 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:45,892 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:46,173 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:46,296 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:46,305 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:46,305 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:46,560 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:46,690 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:46,696 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:46,697 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:46,972 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:47,080 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:47,089 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:47,089 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:47,367 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:47,472 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:47,480 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:47,480 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:47,760 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:47,863 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:47,871 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:47,871 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:48,170 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:48,284 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:48,292 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:48,292 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:48,571 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:48,677 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:48,686 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:48,686 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:48,986 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:49,095 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:49,100 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:49,100 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:49,370 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:49,472 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:49,483 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:49,483 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:49,761 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:49,879 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:49,885 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:49,885 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:50,171 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:50,267 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:50,274 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:50,275 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:50,560 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:50,652 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:50,652 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:50,652 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:50,957 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:51,064 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:51,064 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:51,064 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:51,396 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:51,512 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:51,519 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:51,519 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:51,802 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:51,913 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:51,918 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:51,918 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:52,190 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:52,303 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:52,311 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:52,311 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:52,596 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:52,700 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:52,706 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:52,706 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:52,984 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:53,085 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:53,092 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:53,092 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:53,386 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:53,486 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:53,490 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:53,490 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:53,769 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:53,884 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:53,886 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:53,893 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:54,203 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:54,309 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:54,317 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:54,317 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:54,597 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:54,699 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:54,707 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:54,707 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:54,979 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:55,090 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:55,097 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:55,097 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:55,405 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:55,518 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:55,523 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:55,523 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:55,790 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:55,913 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:55,919 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:55,919 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:56,202 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:56,322 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:56,334 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:56,334 - INFO - Fetched 77 records from the database.
+2025-07-27 18:44:56,908 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:57,020 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 18:44:57,020 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 18:44:57,028 - INFO - Fetched 77 records from the database.
+2025-07-27 21:24:20,559 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 21:24:20,731 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 21:24:20,797 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 21:24:20,804 - INFO - Fetched 77 records from the database.
+2025-07-27 23:34:49,246 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 23:34:49,438 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-27 23:34:49,466 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-27 23:34:49,467 - INFO - Fetched 77 records from the database.
+2025-07-28 07:13:00,858 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:13:00,981 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:13:01,012 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:13:01,012 - INFO - Fetched 77 records from the database.
+2025-07-28 07:13:03,156 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:13:03,292 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:13:03,300 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:13:03,300 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:01,239 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:01,448 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:01,476 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:01,476 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:01,507 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:01,584 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:01,589 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:01,591 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:01,832 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:01,930 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:01,933 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:01,933 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:02,025 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:02,210 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:02,214 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:02,214 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:02,611 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:02,706 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:02,712 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:02,712 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:02,969 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:03,057 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:03,060 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:03,060 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:03,734 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:03,812 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:03,812 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:03,812 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:07,196 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:07,299 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:07,304 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:07,304 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:07,785 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:07,872 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:07,877 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:07,877 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:08,248 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:08,337 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:08,340 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:08,342 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:08,556 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:08,630 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:08,637 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:08,637 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:08,948 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:09,029 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:09,033 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:09,033 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:09,756 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:09,853 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:09,853 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:09,853 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:10,441 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:10,522 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:10,528 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:10,528 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:10,689 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:10,796 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:10,801 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:10,801 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:11,082 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:11,157 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:11,164 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:11,164 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:11,483 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:11,555 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:11,559 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:11,560 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:11,892 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:11,970 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:11,975 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:11,977 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:12,136 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:12,220 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:12,224 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:12,225 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:12,684 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:12,769 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:12,772 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:12,772 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:14,763 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:14,847 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:14,852 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:14,852 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:19,588 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:19,667 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:19,676 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:19,676 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:19,795 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:19,874 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:19,879 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:19,879 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:20,081 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:20,161 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:20,170 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:20,170 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:20,474 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:20,551 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:20,559 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:20,559 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:21,002 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:21,083 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:21,088 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:21,088 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:21,267 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:21,348 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:21,352 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:21,352 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:21,674 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:21,754 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:21,754 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:21,754 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:22,089 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:22,156 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:22,159 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:22,161 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:22,512 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:22,579 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:22,585 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:22,585 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:22,903 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:22,985 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:22,991 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:22,991 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:24,276 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:24,346 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:24,346 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:24,346 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:25,129 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:25,200 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:25,207 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:25,207 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:25,331 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:25,407 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:25,415 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:25,415 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:25,655 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:25,736 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:25,736 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:25,736 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:27,163 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:27,243 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:27,247 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:27,247 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:30,351 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:30,439 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:30,439 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:30,445 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:30,709 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:30,798 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:30,798 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:30,798 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:31,231 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:31,339 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:31,348 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:31,350 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:31,489 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:31,569 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:31,569 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:31,569 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:31,791 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:31,914 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:31,914 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:31,914 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:33,797 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:33,885 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:33,885 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:33,885 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:35,456 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:35,552 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:35,554 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:35,554 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:35,667 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:35,754 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:35,754 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:35,754 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:36,012 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:36,113 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:36,119 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:36,120 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:36,263 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:36,350 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:36,357 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:36,357 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:36,509 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:36,589 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:36,595 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:36,595 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:36,881 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:36,956 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:36,963 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:36,963 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:37,251 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:37,337 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:37,339 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:37,339 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:37,658 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:37,753 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:37,763 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:37,763 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:38,162 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:38,257 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:38,257 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:38,257 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:38,501 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:38,595 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:38,595 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:38,603 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:38,880 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:38,978 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:38,986 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:38,986 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:39,266 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:39,373 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:39,382 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:39,382 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:39,657 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:39,770 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:39,770 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:39,770 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:40,034 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:40,137 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:40,137 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:40,137 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:40,437 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:40,538 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:40,546 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:40,546 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:40,792 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:40,873 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:40,879 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:40,879 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:41,185 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:41,286 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:41,286 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:41,286 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:41,599 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:41,686 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:41,696 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:41,696 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:42,115 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:42,190 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:42,190 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:42,190 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:42,421 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:42,535 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:42,535 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:42,535 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:42,781 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:42,892 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:42,895 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:42,895 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:43,145 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:43,218 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:43,218 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:43,218 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:43,778 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:43,857 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:43,862 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:43,862 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:45,152 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:45,231 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:45,237 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:45,237 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:45,505 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:45,591 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:45,596 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:45,597 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:45,872 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:45,976 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:45,983 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:45,983 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:46,192 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:46,296 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:46,303 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:46,303 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:46,400 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:46,494 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:46,497 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:46,497 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:46,628 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:46,722 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:46,727 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:46,727 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:46,970 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:47,053 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:47,064 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:47,064 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:47,234 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:47,319 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:47,319 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:47,319 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:47,553 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:47,643 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:47,651 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:47,651 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:47,852 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:48,012 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:48,030 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:48,030 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:48,099 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:48,289 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:48,295 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:48,295 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:48,461 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:48,545 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:48,552 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:48,552 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:48,796 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:48,880 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:48,890 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:48,890 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:49,061 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:49,155 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:49,163 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:49,163 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:49,399 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:49,487 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:49,499 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:49,499 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:49,643 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:49,730 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:49,738 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:49,738 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:49,912 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:50,091 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:50,094 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:50,094 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:50,145 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:50,218 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:50,227 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:50,227 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:50,454 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:50,545 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:50,551 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:50,551 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:50,718 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:50,812 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:50,812 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:50,812 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:51,008 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:51,106 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:51,113 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:51,113 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:51,284 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:51,384 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:51,384 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:51,384 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:51,619 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:51,704 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:51,711 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:51,711 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:51,895 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:51,990 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:51,996 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:51,996 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:52,329 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:52,438 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:52,446 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:52,446 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:52,708 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:52,808 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:52,816 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:52,816 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:53,106 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:53,217 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:53,228 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:53,228 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:53,380 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:53,462 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:53,462 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:53,462 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:53,607 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:53,699 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:53,712 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:53,712 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:53,939 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:54,029 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:54,042 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:54,042 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:54,229 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:54,327 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:54,336 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:54,339 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:54,425 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:54,512 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:54,513 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:54,513 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:54,728 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:54,821 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:54,828 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:54,828 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:54,964 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:55,062 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:55,062 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:55,069 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:55,158 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:55,266 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:55,268 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:55,268 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:55,509 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:55,595 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:55,595 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:55,595 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:55,778 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:55,872 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:55,878 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:55,878 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:56,083 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:56,166 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:56,180 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:56,183 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:56,382 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:56,472 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:56,480 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:56,480 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:56,743 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:56,845 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:56,845 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:56,845 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:57,180 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:57,285 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:57,285 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:57,285 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:57,478 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:57,579 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:57,586 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:57,586 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:57,758 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:57,861 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:57,863 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:57,863 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:58,086 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:58,201 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:58,203 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:58,203 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:58,337 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:58,448 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:58,452 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:58,452 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:58,668 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:58,748 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:58,755 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:58,755 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:58,924 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:59,031 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:59,033 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:59,033 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:59,253 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:59,353 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:59,362 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:59,362 - INFO - Fetched 77 records from the database.
+2025-07-28 07:14:59,538 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:59,635 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:14:59,635 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:14:59,635 - INFO - Fetched 77 records from the database.
+2025-07-28 07:15:00,659 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:00,772 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:00,781 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:15:00,781 - INFO - Fetched 77 records from the database.
+2025-07-28 07:15:01,160 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:01,272 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:01,278 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:15:01,278 - INFO - Fetched 77 records from the database.
+2025-07-28 07:15:01,598 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:01,712 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:01,717 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:15:01,717 - INFO - Fetched 77 records from the database.
+2025-07-28 07:15:01,969 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:02,068 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:02,081 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:15:02,082 - INFO - Fetched 77 records from the database.
+2025-07-28 07:15:02,555 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:02,648 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:02,648 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:15:02,648 - INFO - Fetched 77 records from the database.
+2025-07-28 07:15:03,113 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:03,243 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:03,249 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:15:03,251 - INFO - Fetched 77 records from the database.
+2025-07-28 07:15:03,987 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:04,083 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:15:04,091 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:15:04,091 - INFO - Fetched 77 records from the database.
+2025-07-28 07:17:28,612 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:17:28,772 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:17:28,809 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:17:28,811 - INFO - Fetched 77 records from the database.
+2025-07-28 07:18:09,018 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:18:09,106 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:18:09,133 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:18:09,133 - INFO - Fetched 77 records from the database.
+2025-07-28 07:18:47,207 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:18:47,340 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:18:47,373 - INFO - [fetch_all_records] Number of rows fetched: 77
+2025-07-28 07:18:47,373 - INFO - Fetched 77 records from the database.
+2025-07-28 07:21:10,150 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:21:10,371 - INFO - Fetched record for index number: 12345701
+2025-07-28 07:21:50,942 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:21:51,118 - INFO - Inserted/Updated student record: 22171812
+2025-07-28 07:21:51,134 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:21:51,222 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:21:51,232 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:21:51,232 - INFO - Fetched 78 records from the database.
+2025-07-28 07:22:46,318 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:22:46,519 - INFO - Student 12345701 score updated to 43.
+2025-07-28 07:22:46,546 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:22:46,638 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:22:46,649 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:22:46,649 - INFO - Fetched 78 records from the database.
+2025-07-28 07:23:03,103 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:23:03,198 - INFO - Fetched record for index number: 12345701
+2025-07-28 07:28:03,680 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:28:03,846 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:28:03,889 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:28:03,889 - INFO - Fetched 78 records from the database.
+2025-07-28 07:28:03,916 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:28:04,009 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:28:04,014 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:28:04,014 - INFO - Fetched 78 records from the database.
+2025-07-28 07:28:28,366 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:28:28,445 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:28:28,452 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:28:28,452 - INFO - Fetched 78 records from the database.
+2025-07-28 07:34:14,971 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:34:15,158 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:34:15,182 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:34:15,182 - INFO - Fetched 78 records from the database.
+2025-07-28 07:34:24,563 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:34:24,647 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:34:24,652 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:34:24,652 - INFO - Fetched 78 records from the database.
+2025-07-28 07:34:24,662 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:34:24,742 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:34:24,747 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:34:24,747 - INFO - Fetched 78 records from the database.
+2025-07-28 07:37:51,875 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:37:52,018 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:37:52,049 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:37:52,049 - INFO - Fetched 78 records from the database.
+2025-07-28 07:38:49,995 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:38:50,107 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:38:50,131 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:38:50,131 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:18,877 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:18,962 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:18,990 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:18,990 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:20,763 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:20,873 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:20,879 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:20,880 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:21,102 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:21,222 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:21,230 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:21,230 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:21,445 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:21,545 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:21,555 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:21,555 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:21,826 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:21,938 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:21,944 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:21,944 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:22,187 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:22,285 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:22,293 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:22,293 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:22,436 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:22,530 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:22,536 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:22,536 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:22,889 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:22,962 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:22,968 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:22,968 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:23,325 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:23,427 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:23,430 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:23,430 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:23,804 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:23,882 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:23,882 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:23,882 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:24,161 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:24,245 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:24,249 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:24,249 - INFO - Fetched 78 records from the database.
+2025-07-28 07:39:24,713 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:24,798 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 07:39:24,800 - INFO - [fetch_all_records] Number of rows fetched: 78
+2025-07-28 07:39:24,800 - INFO - Fetched 78 records from the database.

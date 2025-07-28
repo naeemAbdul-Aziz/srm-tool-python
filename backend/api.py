@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 import os
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -14,6 +15,15 @@ from file_handler import read_student_file
 from logger import get_logger
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify ["http://localhost:5500"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 logger = get_logger(__name__)
 
 class Student(BaseModel):
