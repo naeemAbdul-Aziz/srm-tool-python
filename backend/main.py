@@ -27,6 +27,7 @@ def main():
         logger.error(f"Error running menu: {e}", exc_info=True)
 
 if __name__ == "__main__":
+    # main() for cli application
     import uvicorn
     try:
         logger.info("Starting FastAPI server with Uvicorn...")

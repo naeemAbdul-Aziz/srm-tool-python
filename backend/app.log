@@ -1686,3 +1686,42 @@ DETAIL:  Key (username)=(naeem) already exists.
 2025-07-28 11:13:15,011 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
 2025-07-28 11:13:15,020 - INFO - [fetch_all_records] Number of rows fetched: 78
 2025-07-28 11:13:15,020 - INFO - Fetched 78 records from the database.
+2025-07-28 15:28:37,927 - INFO - Starting FastAPI server with Uvicorn...
+2025-07-28 15:32:44,724 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 15:32:44,932 - INFO - User 'naeem' authenticated successfully.
+2025-07-28 15:32:44,948 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 15:32:45,039 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 15:32:45,049 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 15:32:45,055 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-28 15:32:45,055 - INFO - Fetched 79 records from the database.
+2025-07-28 15:32:45,147 - INFO - User 'naeem' authenticated successfully.
+2025-07-28 15:32:45,161 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 15:32:45,243 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 15:32:45,243 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-28 15:32:45,243 - INFO - Fetched 79 records from the database.
+2025-07-28 16:52:32,820 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 16:52:32,992 - INFO - User 'naeem' authenticated successfully.
+2025-07-28 16:52:33,031 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 16:52:33,147 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 16:52:33,151 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-28 16:52:33,151 - INFO - Fetched 79 records from the database.
+2025-07-28 16:53:31,724 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 16:53:31,850 - INFO - User '12345707' authenticated successfully.
+2025-07-28 16:53:31,900 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 16:53:32,107 - INFO - Fetched record for index number: 12345707
+2025-07-28 17:30:13,071 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 17:30:13,330 - INFO - User 'naeem' authenticated successfully.
+2025-07-28 17:30:13,343 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 17:30:13,430 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 17:30:13,449 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-28 17:30:13,449 - INFO - Fetched 79 records from the database.
+2025-07-28 17:30:31,801 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 17:30:31,909 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 17:30:32,002 - ERROR - Error creating user '12345707': duplicate key value violates unique constraint "users_username_key"
+DETAIL:  Key (username)=(12345707) already exists.
+
+2025-07-28 17:30:38,064 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 17:30:38,144 - INFO - User '12345707' authenticated successfully.
+2025-07-28 17:30:38,159 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-28 17:30:38,244 - INFO - Fetched record for index number: 12345707
+2025-07-29 09:08:57,015 - INFO - Starting FastAPI server with Uvicorn...

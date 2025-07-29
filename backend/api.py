@@ -1,9 +1,12 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 import os
-from auth import create_user, authenticate_user  # Your auth.py functions
+import tempfile
+from report_utils import export_summary_report_pdf, export_summary_report_txt
+from auth import create_user, authenticate_user  # auth.py functions
 from db import (
     fetch_all_records,
     fetch_student_by_index_number,
@@ -19,7 +22,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust in production
+    allow_origins=["*"],  # adjust in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -182,3 +185,63 @@ def login(user: LoginData):
         return {"message": "Login successful.", "username": user.username, "role": role}
     else:
         raise HTTPException(status_code=401, detail="Invalid username or password.")
+
+
+# --- Export Endpoints ---
+
+@app.get("/export/{format}")
+def export_full_summary(format: str):
+    """
+    Admin-only export of all records to TXT or PDF.
+    """
+    if format.lower() not in ("pdf", "txt"):
+        raise HTTPException(status_code=400, detail="Format must be 'pdf' or 'txt'")
+    try:
+        records = fetch_all_records()
+        if not records:
+            raise HTTPException(status_code=404, detail="No student records found")
+
+        suffix = ".pdf" if format.lower() == "pdf" else ".txt"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            filepath = tmp.name
+            if format.lower() == "pdf":
+                success = export_summary_report_pdf(records, filepath)
+            else:
+                success = export_summary_report_txt(records, filepath)
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to generate export file")
+
+        return FileResponse(filepath, media_type="application/octet-stream", filename=f"student_summary{suffix}")
+    except Exception as e:
+        logger.error(f"Export failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/export/{index_number}/{format}")
+def export_individual_student(index_number: str, format: str):
+    """
+    Student-only export of their own result to TXT or PDF.
+    """
+    if format.lower() not in ("pdf", "txt"):
+        raise HTTPException(status_code=400, detail="Format must be 'pdf' or 'txt'")
+    try:
+        student = fetch_student_by_index_number(index_number)
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        suffix = ".pdf" if format.lower() == "pdf" else ".txt"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            filepath = tmp.name
+            records = [student]
+            if format.lower() == "pdf":
+                success = export_summary_report_pdf(records, filepath)
+            else:
+                success = export_summary_report_txt(records, filepath)
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to generate export file")
+
+        return FileResponse(filepath, media_type="application/octet-stream", filename=f"{index_number}_report{suffix}")
+    except Exception as e:
+        logger.error(f"Export for student {index_number} failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
