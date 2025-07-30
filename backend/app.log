@@ -1725,3 +1725,65 @@ DETAIL:  Key (username)=(12345707) already exists.
 2025-07-28 17:30:38,159 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
 2025-07-28 17:30:38,244 - INFO - Fetched record for index number: 12345707
 2025-07-29 09:08:57,015 - INFO - Starting FastAPI server with Uvicorn...
+2025-07-29 09:18:14,942 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 09:18:15,148 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 09:18:15,192 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 09:18:15,192 - INFO - Fetched 79 records from the database.
+2025-07-29 09:18:45,216 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 09:18:45,329 - INFO - Fetched record for index number: 12345702
+2025-07-29 09:18:50,318 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 09:18:50,385 - INFO - Fetched record for index number: 12345702
+2025-07-29 09:19:47,366 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 09:19:47,661 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 09:19:47,737 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 09:19:47,744 - INFO - Fetched 79 records from the database.
+2025-07-29 09:20:04,331 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 09:20:04,530 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 09:20:04,583 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 09:20:04,584 - INFO - Fetched 79 records from the database.
+2025-07-29 10:04:36,052 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:04:36,285 - INFO - User 'naeem' authenticated successfully.
+2025-07-29 10:04:36,354 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:04:36,414 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:04:36,424 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 10:04:36,426 - INFO - Fetched 79 records from the database.
+2025-07-29 10:05:08,548 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:05:08,671 - INFO - Student 12345702 score updated to 76.
+2025-07-29 10:05:33,786 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:05:33,877 - INFO - User 'naeem' authenticated successfully.
+2025-07-29 10:05:33,924 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:05:33,985 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:05:33,988 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 10:05:33,988 - INFO - Fetched 79 records from the database.
+2025-07-29 10:07:53,689 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:07:53,766 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:07:53,770 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 10:07:53,770 - INFO - Fetched 79 records from the database.
+2025-07-29 10:24:19,755 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:24:19,973 - INFO - User 'naeem' authenticated successfully.
+2025-07-29 10:24:20,097 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:24:20,165 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:24:20,175 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 10:24:20,176 - INFO - Fetched 79 records from the database.
+2025-07-29 10:41:14,621 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:41:14,764 - WARNING - Authentication failed for user 'NAEEM'.
+2025-07-29 10:41:24,196 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:41:24,287 - INFO - User 'naeem' authenticated successfully.
+2025-07-29 10:42:48,473 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:42:48,604 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:42:48,650 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 10:42:48,652 - INFO - Fetched 79 records from the database.
+2025-07-29 10:42:48,669 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:42:48,749 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:42:48,756 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 10:42:48,756 - INFO - Fetched 79 records from the database.
+2025-07-29 10:43:06,393 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:43:06,803 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:43:06,853 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 10:43:06,855 - INFO - Fetched 79 records from the database.
+2025-07-29 10:43:06,885 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:43:07,003 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-29 10:43:07,010 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-29 10:43:07,011 - INFO - Fetched 79 records from the database.
+2025-07-30 08:38:08,045 - INFO - Starting FastAPI server with Uvicorn...
+2025-07-30 08:38:57,919 - INFO - Starting FastAPI server with Uvicorn...

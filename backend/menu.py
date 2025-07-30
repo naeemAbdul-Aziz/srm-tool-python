@@ -1,12 +1,17 @@
-# menu.py
 from pprint import pprint
 
-from db import fetch_all_records, insert_student_record, connect_to_db, fetch_student_by_index_number, update_student_score
+from db import (
+    fetch_all_records,
+    insert_student_record,
+    connect_to_db,
+    fetch_student_by_index_number,
+    update_student_score
+)
 from grade_util import summarize_grades, calculate_grade
 from logger import get_logger
 from report_utils import export_summary_report_pdf, export_summary_report_txt
 from auth import sign_up, login
-from file_handler import read_student_records
+from bulk_importer import bulk_import_from_file  
 
 logger = get_logger(__name__)
 
@@ -123,11 +128,10 @@ def run_menu():
                             "score": score,
                             "grade": calculate_grade(score)
                         }
-                        # Pass connection for single insert, but handle its closure outside if not within a 'with' block
                         conn_for_insert = connect_to_db()
                         if conn_for_insert:
                             success = insert_student_record(conn_for_insert, student)
-                            conn_for_insert.close() # Close connection after use
+                            conn_for_insert.close()
                             if success:
                                 print("Student added successfully.")
                             else:
@@ -143,7 +147,17 @@ def run_menu():
                         else:
                             print("No student records to summarize grades.")
                     elif admin_choice == "8":
-                        bulk_import()
+                        file_path = input("Enter the path to the CSV/TXT file: ").strip()
+                        summary = bulk_import_from_file(file_path)
+                        print("\nBulk Import Summary:")
+                        print(f"Message: {summary['message']}")
+                        print(f"Total Records: {summary['total']}")
+                        print(f"Successfully Imported: {summary['successful']}")
+                        print(f"Skipped: {summary['skipped']}")
+                        if summary['errors']:
+                            print("Errors:")
+                            for err in summary['errors']:
+                                print(f"- {err}")
                     elif admin_choice == "9":
                         print("Logging out...")
                         break
@@ -159,47 +173,6 @@ def run_menu():
         else:
             print("Invalid option. Please choose between 1 and 3.")
 
-def bulk_import():
-    file_path = input("Enter the path to the CSV/TXT file: ").strip()
-    valid_records, errors = read_student_records(file_path)
-
-    if errors:
-        print("\nErrors encountered during file reading:")
-        for error in errors:
-            print(error)
-
-    if not valid_records:
-        print("\nNo valid records to import.")
-        return
-
-    conn = connect_to_db()
-    if conn is None:
-        print("Error: Could not connect to database for bulk import.")
-        return
-
-    successful_imports = 0
-    try:
-        for record in valid_records:
-            record["grade"] = calculate_grade(record["score"])
-            if insert_student_record(conn, record): # insert_student_record now returns True/False
-                successful_imports += 1
-            else:
-                logger.warning(f"Skipped record {record['index_number']} due to an error during insertion.")
-        conn.commit() # Commit once after all insertions in bulk import if inserts are not committing individually
-        # NOTE: insert_student_record already commits individually on success, so this conn.commit() might be redundant
-        # or it should be removed if we want individual transaction management, or insert_student_record should not commit.
-        # For simplicity, keeping it as is, but for true bulk insert efficiency, a single commit at the end is better.
-    except Exception as e:
-        logger.error(f"Error during bulk import transaction: {e}")
-        conn.rollback()
-    finally:
-        conn.close()
-
-    print("\nBulk Import Summary:")
-    print(f"Total Records: {len(valid_records)}")
-    print(f"Successfully Imported: {successful_imports}")
-    print(f"Skipped: {len(valid_records) - successful_imports}")
-
 def handle_student_menu(username):
     while True:
         show_student_menu()
@@ -208,7 +181,7 @@ def handle_student_menu(username):
         if student_choice == "1":
             student = fetch_student_by_index_number(username)
             if student:
-                print(f"Your record:")
+                print("Your record:")
                 pprint(student)
             else:
                 print("No record found for your index number.")

@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from bulk_importer import bulk_import_from_file
+
 from pydantic import BaseModel
 from typing import Optional
 import os
@@ -111,7 +113,7 @@ def update_score(index_number: str, update: UpdateScore):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/students/upload")
-def upload_student_file(file: UploadFile = File(...)):
+def upload_student_file_basic(file: UploadFile = File(...)):
     try:
         if not file.filename or not (file.filename.endswith('.txt') or file.filename.endswith('.csv')):
             raise HTTPException(status_code=400, detail="Only .txt or .csv files are allowed")
@@ -245,3 +247,36 @@ def export_individual_student(index_number: str, format: str):
     except Exception as e:
         logger.error(f"Export for student {index_number} failed: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+#bulk import endpoint
+@app.post("/students/upload")
+def upload_student_file(file: UploadFile = File(...)):
+    try:
+        if not file.filename or not (file.filename.endswith('.txt') or file.filename.endswith('.csv')):
+            raise HTTPException(status_code=400, detail="Only .txt or .csv files are allowed")
+
+        contents = file.file.read().decode("utf-8")
+        temp_path = "temp_upload.txt"
+        with open(temp_path, "w", encoding="utf-8") as f:
+            f.write(contents)
+
+        summary = bulk_import_from_file(temp_path)
+
+        return {
+            "message": summary["message"],
+            "total": summary["total"],
+            "successful": summary["successful"],
+            "skipped": summary["skipped"],
+            "errors": summary["errors"]
+        }
+
+    except Exception as e:
+        logger.error(f"File upload failed: {e}")
+        raise HTTPException(status_code=500, detail="File upload processing failed")
+    finally:
+        try:
+            file.file.close()
+            if os.path.exists("temp_upload.txt"):
+                os.remove("temp_upload.txt")
+        except Exception:
+            pass
