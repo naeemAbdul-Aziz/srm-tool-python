@@ -1,144 +1,172 @@
-# file format IndexNumber, FullName, Course, Score
-# 12345678, John Doe, CS101, 85
+# file_handler.py - handles file reading and validation for student records
 
 import os
 import csv
 from logger import get_logger
 from grade_util import calculate_grade
-from db import insert_student_record
 
 logger = get_logger(__name__)
 
-def is_valid_record(fields):
-    """
-    checks if the record has exactly 4 parts
-    and the score can be converted to an integer
+# required fields for student record import
+REQUIRED_FIELDS = [
+    "index_number", "name", "program", "year_of_study", "contact_info",
+    "course_code", "course_title", "score", "credit_hours", "semester", "academic_year"
+]
 
-    “first make sure the line has 4 parts, then try converting the score. If either fails, reject the record.”
-
-    """
-    if len(fields) != 4:
-        return False
+def validate_record_fields(record: dict) -> tuple:
+    """validate individual record fields and return validation status and errors"""
+    errors = []
+    
     try:
-        int(fields[3])  # test if score is an integer
-        return True
-    except ValueError:
-        return False
+        # check for missing or empty required fields
+        for field in REQUIRED_FIELDS:
+            if field not in record or not str(record[field]).strip():
+                errors.append(f"missing or empty field: {field}")
 
-def parse_record(fields):
-    """
-    takes the list of fields and returns a cleaned student dictionary with grade
-    """
-    index_number = fields[0]
-    full_name = fields[1]
-    course = fields[2]
-    score = int(fields[3])
-    grade = calculate_grade(score)
+        # validate index number format
+        if record.get("index_number"):
+            index_str = str(record["index_number"]).strip()
+            if not index_str.isdigit():
+                errors.append("index number must be numeric")
+        
+        # validate score range and format
+        if record.get("score"):
+            try:
+                score = float(record["score"])
+                if not (0 <= score <= 100):
+                    errors.append("score must be between 0 and 100")
+            except ValueError:
+                errors.append("score must be a valid number")
 
-    return {
-        "index_number": index_number,
-        "full_name": full_name,
-        "course": course,
-        "score": score,
-        "grade": grade
-    }
+        # validate credit hours format
+        if record.get("credit_hours"):
+            try:
+                credit_hours = int(record["credit_hours"])
+                if credit_hours <= 0:
+                    errors.append("credit hours must be a positive integer")
+            except ValueError:
+                errors.append("credit hours must be an integer")
+                
+        # validate year of study
+        if record.get("year_of_study"):
+            try:
+                year = int(record["year_of_study"])
+                if not (1 <= year <= 10):  # reasonable range for year of study
+                    errors.append("year of study must be between 1 and 10")
+            except ValueError:
+                errors.append("year of study must be an integer")
 
-
-def read_student_file(file_path):
-    """
-    reads a student .txt or .csv file and returns a list of valid student dictionaries.
-    """
-
-    students = []  # initialize an empty list to hold student data
-
-
-
-    #check if the file exists
-    if not os.path.isfile(file_path):
-        logger.error(f"File not found: {file_path}")
-        return students  # return empty list if file does not exist
-    try:
-        with open(file_path, 'r') as file:
-            lines = file.readlines()  # read all lines from the file
-
-            for line_number, line in enumerate(lines, start=1):
-                line = line.strip() #remove leading and trailing whitespace
-                if not line:  # skip empty lines    
-                    continue
-
-                parts = line.split(',')  # split the line by comma
-
-                if not is_valid_record(parts):  # check if the record is valid
-                    logger.warning(f"Invalid format on line {line_number}: {line}")
-                    continue  # skip invalid records
-
-                try:
-                    student = parse_record(parts)  # parse the record into a dictionary
-                    students.append(student)  # add the student dictionary to the list
-                except Exception as e:
-                    logger.error(f"Error parsing line {line_number}: {e}")
-                    continue
-    except FileNotFoundError:
-        logger.error(f'file {file_path} not found.')
     except Exception as e:
-        logger.error(f"Error reading file {file_path}: {e}")
-    return students  # return the list of student dictionaries
+        errors.append(f"validation error: {str(e)}")
+        logger.error(f"error during field validation: {e}")
+
+    return len(errors) == 0, errors
 
 def read_student_records(file_path):
-    """
-    Reads student records from a CSV or TXT file.
-    Each line should have: IndexNumber, FullName, Course, Score.
-    Returns a list of valid records and a list of errors.
-    """
+    """read and validate student records from csv or txt file"""
     valid_records = []
     errors = []
+    
+    logger.info(f"attempting to read student records from: {file_path}")
+
+    # check if file exists
+    if not os.path.exists(file_path):
+        error_msg = f"file does not exist: {file_path}"
+        errors.append(error_msg)
+        logger.error(error_msg)
+        return [], errors
+
+    # check file size to avoid processing very large files
+    try:
+        file_size = os.path.getsize(file_path)
+        if file_size > 10 * 1024 * 1024:  # 10mb limit
+            error_msg = f"file too large: {file_size} bytes (max 10mb)"
+            errors.append(error_msg)
+            logger.error(error_msg)
+            return [], errors
+    except Exception as e:
+        error_msg = f"error checking file size: {e}"
+        errors.append(error_msg)
+        logger.error(error_msg)
 
     try:
-        with open(file_path, "r") as f:
-            reader = csv.reader(f)
-            for i, row in enumerate(reader):
-                if len(row) != 4:
-                    errors.append(f"Line {i + 1}: Invalid format - {row}")
-                    continue
+        with open(file_path, 'r', encoding='utf-8') as f:
+            ext = os.path.splitext(file_path)[1].lower()
+            logger.info(f"processing file with extension: {ext}")
+            
+            # determine file format and create appropriate reader
+            if ext == '.csv':
+                reader = csv.DictReader(f)
+            elif ext == '.txt':
+                reader = csv.DictReader(f, delimiter='\t')
+            else:
+                error_msg = f"unsupported file format: {ext}. use csv or txt files only."
+                errors.append(error_msg)
+                logger.error(error_msg)
+                return [], errors
 
-                index_number, full_name, course, score = row
-                if not index_number.isdigit() or not score.isdigit():
-                    errors.append(f"Line {i + 1}: Invalid data - {row}")
-                    continue
+            # validate headers
+            fieldnames = reader.fieldnames
+            if not fieldnames:
+                error_msg = "no headers found in file"
+                errors.append(error_msg)
+                logger.error(error_msg)
+                return [], errors
+                
+            # check for missing required headers
+            missing_headers = []
+            for required_field in REQUIRED_FIELDS:
+                if required_field not in fieldnames:
+                    missing_headers.append(required_field)
+                    
+            if missing_headers:
+                error_msg = f"missing required headers: {', '.join(missing_headers)}"
+                errors.append(error_msg)
+                logger.error(error_msg)
+                return [], errors
 
-                valid_records.append({
-                    "index_number": index_number,
-                    "full_name": full_name,
-                    "course": course,
-                    "score": int(score),
-                })
+            # process each row
+            total_rows = 0
+            for i, row in enumerate(reader, start=1):
+                total_rows += 1
+                
+                # clean up the row data
+                try:
+                    record = {k.strip(): v.strip() if v else '' for k, v in row.items()}
+                    
+                    # validate the record
+                    is_valid, validation_errors = validate_record_fields(record)
+                    if is_valid:
+                        valid_records.append(record)
+                        logger.debug(f"valid record found on line {i}: {record['index_number']}")
+                    else:
+                        error_msg = f"line {i}: " + "; ".join(validation_errors)
+                        errors.append(error_msg)
+                        logger.warning(f"invalid record on line {i}: {validation_errors}")
+                        
+                except Exception as e:
+                    error_msg = f"line {i}: error processing row - {str(e)}"
+                    errors.append(error_msg)
+                    logger.error(f"error processing row {i}: {e}")
+
+            logger.info(f"processed {total_rows} rows, {len(valid_records)} valid records found")
+
+    except FileNotFoundError:
+        error_msg = f"file not found: {file_path}"
+        errors.append(error_msg)
+        logger.error(error_msg)
+    except PermissionError:
+        error_msg = f"permission denied accessing file: {file_path}"
+        errors.append(error_msg)
+        logger.error(error_msg)
+    except UnicodeDecodeError as e:
+        error_msg = f"file encoding error: {str(e)}. try saving file as utf-8."
+        errors.append(error_msg)
+        logger.error(error_msg)
     except Exception as e:
-        errors.append(f"Error reading file: {e}")
+        error_msg = f"unexpected error reading file: {str(e)}"
+        errors.append(error_msg)
+        logger.error(f"unexpected error reading {file_path}: {e}")
 
+    logger.info(f"file processing complete: {len(valid_records)} valid records, {len(errors)} errors")
     return valid_records, errors
-
-def process_file_and_insert(file_path):
-    """
-    Reads student records from file and inserts them into the configured database.
-    Only to be called from the GUI.
-    """
-    from db import connect_to_db
-    conn = connect_to_db()
-    if conn is None:
-        logger.error("Failed to connect to the database for file upload.")
-        return 0
-    students = read_student_file(file_path)
-    inserted_count = 0
-    for student in students:
-        try:
-            insert_student_record(conn, student)
-            inserted_count += 1
-        except Exception as e:
-            logger.error(f"Error inserting student record {student.get('index_number', 'Unknown')}: {e}")
-            continue
-    try:
-        conn.close()
-    except Exception as e:
-        logger.error(f"Error closing database connection: {e}")
-    logger.info(f"Inserted {inserted_count} student record(s) from file upload.")
-    return inserted_count

@@ -1,9 +1,10 @@
-# auth.py
-# Authentication and user management module
+# auth.py - authentication and user management module with session integration
+
 import hashlib
 import getpass
-from db import connect_to_db
-from logger import get_logger  # Import logger for auth file
+from db import connect_to_db, fetch_student_by_index_number
+from logger import get_logger
+from session import session_manager, set_user
 
 logger = get_logger(__name__)
 
@@ -32,23 +33,45 @@ def create_user(username, password, role):
         conn.close()
 
 def authenticate_user(username, password):
+    """authenticate user and gather additional user data"""
     conn = connect_to_db()
     if conn is None:
-        logger.error("Error: Could not connect to database for user authentication.")
-        return None
+        logger.error("error: could not connect to database for user authentication.")
+        return None, None
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT password, role FROM users WHERE username = %s", (username,))
             result = cur.fetchone()
             if result and result[0] == hash_password(password):
-                logger.info(f"User '{username}' authenticated successfully.")
-                return result[1]  # Return role
+                role = result[1]
+                logger.info(f"user '{username}' authenticated successfully.")
+                
+                # gather additional user data based on role
+                user_data = {}
+                if role == 'student':
+                    # get student profile and grades
+                    student_info = fetch_student_by_index_number(conn, username)
+                    if student_info:
+                        user_data = {
+                            'profile': student_info['profile'],
+                            'grades': student_info['grades'],
+                            'full_name': student_info['profile'].get('name', username)
+                        }
+                        logger.info(f"loaded student data for {username}")
+                elif role == 'admin':
+                    user_data = {
+                        'full_name': username,
+                        'admin_level': 'full_access'  # could be extended for different admin levels
+                    }
+                    logger.info(f"loaded admin data for {username}")
+                
+                return role, user_data
             else:
-                logger.warning(f"Authentication failed for user '{username}'.")
-                return None
+                logger.warning(f"authentication failed for user '{username}'.")
+                return None, None
     except Exception as e:
-        logger.error(f"Error authenticating user '{username}': {e}")
-        return None
+        logger.error(f"error authenticating user '{username}': {e}")
+        return None, None
     finally:
         conn.close()
 
@@ -63,17 +86,17 @@ def sign_up():
         if not username.isdigit() or len(username) < 5:
             print("Invalid index number. Must be numeric and at least 5 digits.")
             return False
-        # Check if index number exists in student_results table
+        # check if index number exists in student_profiles table
         conn = connect_to_db()
         if conn is None:
-            print("Error: Could not connect to database. Cannot verify index number.")
+            print("error: could not connect to database. cannot verify index number.")
             return False
         try:
             with conn.cursor() as cur:
-                cur.execute("SELECT 1 FROM student_results WHERE index_number = %s", (username,))
+                cur.execute("SELECT 1 FROM student_profiles WHERE index_number = %s", (username,))
                 exists = cur.fetchone()
                 if not exists:
-                    print("Index number not found in student records. Please contact admin.")
+                    print("index number not found in student records. please contact admin.")
                     return False
         except Exception as e:
             logger.error(f"Error checking index number during sign-up: {e}")
@@ -92,22 +115,54 @@ def sign_up():
         return False
 
 def login():
+    """handle user login with session creation"""
     print("\n--- Login ---")
     role_hint = input("Are you logging in as admin or student? ").strip().lower()
-    # It's better to just get the username and let authenticate_user figure out the role
-    # This `role_hint` is mostly for guiding the user on what to enter as 'username'
+    
+    # guide user on what to enter as 'username' based on role
     if role_hint == "student":
         username = input("Enter your index number: ")
         if not username.isdigit() or len(username) < 5:
-            print("Invalid index number. Must be numeric and at least 5 digits.")
+            print("invalid index number. must be numeric and at least 5 digits.")
             return None, None
     else:
         username = input("Username: ")
+    
     password = getpass.getpass("Password: ")
-    role = authenticate_user(username, password)
-    if role:
-        print(f"Login successful. Role: {role}")
+    role, user_data = authenticate_user(username, password)
+    
+    if role and user_data:
+        # create session with user data
+        session_id = session_manager.create_session(username, role, user_data)
+        set_user(username, role)  # legacy support
+        
+        # display personalized welcome message
+        full_name = user_data.get('full_name', username)
+        print(f"login successful! welcome, {full_name} ({role})")
+        
+        if role == 'student' and user_data.get('grades'):
+            grade_count = len(user_data['grades'])
+            print(f"you have {grade_count} course grades on record.")
+        elif role == 'admin':
+            print("you have full administrative access.")
+            
+        logger.info(f"session created with id: {session_id}")
         return username, role
     else:
-        print("Login failed. Invalid credentials.")
+        print("login failed. invalid credentials.")
         return None, None
+
+def logout():
+    """handle user logout and session cleanup"""
+    current_user = session_manager.get_current_user()
+    if current_user:
+        username = current_user['username']
+        role = current_user['role']
+        duration = session_manager.get_session_duration()
+        
+        session_manager.clear_session()
+        print(f"goodbye, {username}! session lasted {duration:.1f} minutes.")
+        logger.info(f"user {username} ({role}) logged out after {duration:.1f} minutes")
+    else:
+        print("no active session to logout from.")
+        logger.warning("logout attempted with no active session")

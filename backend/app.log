@@ -1787,3 +1787,393 @@ DETAIL:  Key (username)=(12345707) already exists.
 2025-07-29 10:43:07,011 - INFO - Fetched 79 records from the database.
 2025-07-30 08:38:08,045 - INFO - Starting FastAPI server with Uvicorn...
 2025-07-30 08:38:57,919 - INFO - Starting FastAPI server with Uvicorn...
+2025-07-30 08:44:15,563 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-30 08:44:16,750 - INFO - User 'naeem' authenticated successfully.
+2025-07-30 08:44:16,870 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-30 08:44:16,968 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-30 08:44:16,976 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-30 08:44:16,976 - INFO - Fetched 79 records from the database.
+2025-07-30 08:44:21,587 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-30 08:44:21,743 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-30 08:44:21,759 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-30 08:44:21,759 - INFO - Fetched 79 records from the database.
+2025-07-30 08:46:23,219 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-30 08:46:23,426 - INFO - User 'naeem' authenticated successfully.
+2025-07-30 08:46:23,515 - INFO - Connecting to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-30 08:46:23,606 - INFO - [fetch_all_records] Connected to database with params: dbname=students_db, user=postgres, host=localhost, port=5432
+2025-07-30 08:46:23,609 - INFO - [fetch_all_records] Number of rows fetched: 79
+2025-07-30 08:46:23,609 - INFO - Fetched 79 records from the database.
+2025-07-30 10:27:12,616 - INFO - session manager initialized
+2025-07-30 10:27:28,435 - INFO - session manager initialized
+2025-07-30 10:28:43,132 - INFO - session manager initialized
+2025-07-30 10:28:56,412 - INFO - session manager initialized
+2025-07-30 10:29:19,448 - INFO - session manager initialized
+2025-07-30 10:29:55,742 - INFO - session manager initialized
+2025-07-30 10:30:07,125 - INFO - session manager initialized
+2025-07-30 10:31:25,285 - INFO - session manager initialized
+2025-07-30 10:32:34,561 - INFO - session manager initialized
+2025-07-30 10:33:15,849 - INFO - session manager initialized
+2025-07-30 10:34:32,574 - INFO - session manager initialized
+2025-07-30 10:34:37,106 - INFO - connecting to database...
+2025-07-30 10:34:37,188 - INFO - tables created successfully.
+2025-07-30 10:34:37,212 - INFO - session manager initialized
+2025-07-30 10:34:37,223 - INFO - launching student result management cli...
+2025-07-30 10:34:37,225 - INFO - starting main menu loop
+2025-07-30 10:34:39,257 - DEBUG - user selected main menu option: 1
+2025-07-30 10:34:47,088 - ERROR - error: could not connect to database for user authentication.
+2025-07-30 10:34:47,088 - INFO - login failed or cancelled
+2025-07-30 10:36:34,438 - INFO - session manager initialized
+2025-07-30 10:37:44,218 - DEBUG - user selected main menu option: python -c "from db import connect_to_db; conn = connect_to_db(); print('Connection successful!' if conn else 'Connection failed!'); conn.close() if conn else None"
+2025-07-30 10:37:44,240 - WARNING - invalid main menu choice: python -c "from db import connect_to_db; conn = connect_to_db(); print('Connection successful!' if conn else 'Connection failed!'); conn.close() if conn else None"
+2025-07-30 10:38:12,516 - INFO - session manager initialized
+2025-07-30 10:38:18,642 - INFO - application interrupted by user
+2025-07-30 10:41:07,044 - INFO - connecting to database...
+2025-07-30 10:41:07,205 - INFO - tables created successfully.
+2025-07-30 10:41:07,216 - INFO - session manager initialized
+2025-07-30 10:41:07,225 - INFO - launching student result management cli...
+2025-07-30 10:41:07,225 - INFO - starting main menu loop
+2025-07-30 10:41:08,932 - DEBUG - user selected main menu option: 1
+2025-07-30 10:41:15,962 - INFO - user 'naeem' authenticated successfully.
+2025-07-30 10:41:15,963 - INFO - loaded admin data for naeem
+2025-07-30 10:41:15,964 - INFO - session created for naeem (admin) at 2025-07-30 10:41:15.964436
+2025-07-30 10:41:15,964 - INFO - session created for naeem (admin) at 2025-07-30 10:41:15.964436
+2025-07-30 10:41:15,964 - INFO - legacy session set for naeem (admin)
+2025-07-30 10:41:15,965 - INFO - session created with id: naeem_20250730_104115
+2025-07-30 10:41:15,965 - INFO - successful login: naeem as admin
+2025-07-30 10:41:15,965 - INFO - entering admin menu loop
+2025-07-30 10:41:24,501 - DEBUG - admin selected option: 1
+2025-07-30 10:41:24,502 - INFO - admin viewing all student records
+2025-07-30 10:41:24,599 - WARNING - no records found when admin tried to view all
+2025-07-30 10:42:47,708 - DEBUG - admin selected option: python -c "from db import connect_to_db; print('Testing connection...'); conn = connect_to_db(); print('Connection successful!' if conn else 'Connection failed!'); conn.close() if conn else None"
+2025-07-30 10:42:47,709 - WARNING - invalid admin menu choice: python -c "from db import connect_to_db; print('Testing connection...'); conn = connect_to_db(); print('Connection successful!' if conn else 'Connection failed!'); conn.close() if conn else None"
+2025-07-30 10:42:59,158 - DEBUG - admin selected option: 1
+2025-07-30 10:42:59,158 - INFO - admin viewing all student records
+2025-07-30 10:42:59,262 - WARNING - no records found when admin tried to view all
+2025-07-30 10:43:29,545 - DEBUG - admin selected option: 9
+2025-07-30 10:43:29,545 - INFO - admin logging out
+2025-07-30 10:44:01,703 - DEBUG - user selected main menu option: 3
+2025-07-30 10:44:01,703 - INFO - user exiting application
+2025-07-30 10:44:28,545 - INFO - connecting to database...
+2025-07-30 10:44:28,641 - INFO - tables created successfully.
+2025-07-30 10:44:28,651 - INFO - session manager initialized
+2025-07-30 10:44:28,659 - INFO - launching student result management cli...
+2025-07-30 10:44:28,659 - INFO - starting main menu loop
+2025-07-30 10:44:30,915 - DEBUG - user selected main menu option: 1
+2025-07-30 10:44:39,000 - INFO - user 'naeem' authenticated successfully.
+2025-07-30 10:44:39,000 - INFO - loaded admin data for naeem
+2025-07-30 10:44:39,001 - INFO - session created for naeem (admin) at 2025-07-30 10:44:39.001549
+2025-07-30 10:44:39,001 - INFO - session created for naeem (admin) at 2025-07-30 10:44:39.001549
+2025-07-30 10:44:39,001 - INFO - legacy session set for naeem (admin)
+2025-07-30 10:44:39,001 - INFO - session created with id: naeem_20250730_104439
+2025-07-30 10:44:39,001 - INFO - successful login: naeem as admin
+2025-07-30 10:44:39,001 - INFO - entering admin menu loop
+2025-07-30 10:44:55,673 - DEBUG - admin selected option: 6
+2025-07-30 10:44:55,673 - INFO - admin adding single student record
+2025-07-30 10:45:49,625 - INFO - successfully added student record for 2221233
+2025-07-30 10:46:47,648 - INFO - session manager initialized
+2025-07-30 10:46:58,599 - INFO - session manager initialized
+2025-07-30 10:47:15,383 - INFO - session manager initialized
+2025-07-30 10:47:32,107 - INFO - session manager initialized
+2025-07-30 10:47:52,267 - INFO - session manager initialized
+2025-07-30 10:48:13,146 - INFO - session manager initialized
+2025-07-30 10:48:35,164 - INFO - session manager initialized
+2025-07-30 10:48:43,629 - INFO - session manager initialized
+2025-07-30 10:49:04,604 - INFO - session manager initialized
+2025-07-30 10:49:12,597 - INFO - session manager initialized
+2025-07-30 10:49:21,415 - INFO - session manager initialized
+2025-07-30 10:49:37,545 - INFO - session manager initialized
+2025-07-30 10:49:54,824 - INFO - session manager initialized
+2025-07-30 10:50:38,566 - INFO - session manager initialized
+2025-07-30 10:50:47,824 - INFO - session manager initialized
+2025-07-30 10:51:02,329 - INFO - session manager initialized
+2025-07-30 10:52:00,038 - INFO - session manager initialized
+2025-07-30 10:52:00,114 - DEBUG - admin selected option: 3
+2025-07-30 10:52:12,081 - INFO - admin updating score for student: exit
+2025-07-30 10:52:12,270 - WARNING - no grades found for student exit during score update
+2025-07-30 10:52:15,786 - INFO - admin menu interrupted by user
+2025-07-30 10:52:20,971 - DEBUG - user selected main menu option: 3
+2025-07-30 10:52:20,972 - INFO - user exiting application
+2025-07-30 10:53:11,703 - INFO - session manager initialized
+2025-07-30 10:54:20,326 - INFO - connecting to database...
+2025-07-30 10:54:20,530 - INFO - tables created successfully.
+2025-07-30 10:54:20,544 - INFO - session manager initialized
+2025-07-30 10:54:20,551 - INFO - launching student result management cli...
+2025-07-30 10:54:20,551 - INFO - starting main menu loop
+2025-07-30 10:54:23,032 - DEBUG - user selected main menu option: 1
+2025-07-30 10:54:33,374 - INFO - user 'naeem' authenticated successfully.
+2025-07-30 10:54:33,375 - INFO - loaded admin data for naeem
+2025-07-30 10:54:33,376 - INFO - session created for naeem (admin) at 2025-07-30 10:54:33.375136
+2025-07-30 10:54:33,376 - INFO - session created for naeem (admin) at 2025-07-30 10:54:33.376136
+2025-07-30 10:54:33,376 - INFO - legacy session set for naeem (admin)
+2025-07-30 10:54:33,377 - INFO - session created with id: naeem_20250730_105433
+2025-07-30 10:54:33,377 - INFO - successful login: naeem as admin
+2025-07-30 10:54:33,377 - INFO - entering admin menu loop
+2025-07-30 10:54:44,003 - DEBUG - admin selected option: 1
+2025-07-30 10:54:44,003 - INFO - admin viewing all student records
+2025-07-30 10:54:44,109 - INFO - displayed 1 student records
+2025-07-30 10:55:12,864 - DEBUG - admin selected option: 5
+2025-07-30 10:55:12,865 - INFO - admin exporting summary report to pdf
+2025-07-30 10:55:13,816 - ERROR - failed to export pdf report
+2025-07-30 10:56:01,805 - INFO - session manager initialized
+2025-07-30 10:56:10,964 - INFO - session manager initialized
+2025-07-30 10:56:30,701 - INFO - session manager initialized
+2025-07-30 10:56:47,470 - INFO - session manager initialized
+2025-07-30 10:57:02,113 - INFO - session manager initialized
+2025-07-30 10:57:27,974 - INFO - session manager initialized
+2025-07-30 10:57:47,343 - INFO - session manager initialized
+2025-07-30 10:57:51,930 - INFO - admin menu interrupted by user
+2025-07-30 10:57:54,145 - DEBUG - user selected main menu option: 3
+2025-07-30 10:57:54,146 - INFO - user exiting application
+2025-07-30 10:57:59,732 - INFO - connecting to database...
+2025-07-30 10:57:59,873 - INFO - tables created successfully.
+2025-07-30 10:57:59,883 - INFO - session manager initialized
+2025-07-30 10:57:59,890 - INFO - launching student result management cli...
+2025-07-30 10:57:59,890 - INFO - starting main menu loop
+2025-07-30 10:58:01,999 - DEBUG - user selected main menu option: 1
+2025-07-30 10:58:10,305 - INFO - user 'naeem' authenticated successfully.
+2025-07-30 10:58:10,305 - INFO - loaded admin data for naeem
+2025-07-30 10:58:10,306 - INFO - session created for naeem (admin) at 2025-07-30 10:58:10.305503
+2025-07-30 10:58:10,306 - INFO - session created for naeem (admin) at 2025-07-30 10:58:10.306503
+2025-07-30 10:58:10,306 - INFO - legacy session set for naeem (admin)
+2025-07-30 10:58:10,306 - INFO - session created with id: naeem_20250730_105810
+2025-07-30 10:58:10,307 - INFO - successful login: naeem as admin
+2025-07-30 10:58:10,307 - INFO - entering admin menu loop
+2025-07-30 10:58:13,926 - DEBUG - admin selected option: 5
+2025-07-30 10:58:13,927 - INFO - admin exporting summary report to pdf
+2025-07-30 10:58:14,542 - INFO - successfully exported pdf report
+2025-07-30 11:03:40,076 - INFO - session manager initialized
+2025-07-30 11:04:13,076 - INFO - session manager initialized
+2025-07-30 11:04:15,184 - INFO - admin menu interrupted by user
+2025-07-30 11:04:16,923 - INFO - application interrupted by user
+2025-07-30 11:04:25,072 - INFO - connecting to database...
+2025-07-30 11:04:25,143 - INFO - tables created successfully.
+2025-07-30 11:04:25,153 - INFO - session manager initialized
+2025-07-30 11:04:25,157 - INFO - launching student result management cli...
+2025-07-30 11:04:25,157 - INFO - starting main menu loop
+2025-07-30 11:04:26,888 - DEBUG - user selected main menu option: 1
+2025-07-30 11:04:36,786 - INFO - user 'naeem' authenticated successfully.
+2025-07-30 11:04:36,786 - INFO - loaded admin data for naeem
+2025-07-30 11:04:36,786 - INFO - session created for naeem (admin) at 2025-07-30 11:04:36.786409
+2025-07-30 11:04:36,787 - INFO - session created for naeem (admin) at 2025-07-30 11:04:36.787914
+2025-07-30 11:04:36,787 - INFO - legacy session set for naeem (admin)
+2025-07-30 11:04:36,787 - INFO - session created with id: naeem_20250730_110436
+2025-07-30 11:04:36,787 - INFO - successful login: naeem as admin
+2025-07-30 11:04:36,787 - INFO - entering admin menu loop
+2025-07-30 11:04:40,963 - DEBUG - admin selected option: 5
+2025-07-30 11:04:40,964 - INFO - admin exporting summary report to pdf
+2025-07-30 11:04:41,500 - ERROR - failed to export pdf report
+2025-07-30 11:04:59,879 - DEBUG - admin selected option: 5
+2025-07-30 11:04:59,879 - INFO - admin exporting summary report to pdf
+2025-07-30 11:04:59,961 - ERROR - failed to export pdf report
+2025-07-30 11:08:05,825 - INFO - session manager initialized
+2025-07-30 11:08:06,942 - INFO - admin menu interrupted by user
+2025-07-30 11:08:07,799 - INFO - application interrupted by user
+2025-07-30 11:08:14,928 - INFO - connecting to database...
+2025-07-30 11:08:15,004 - INFO - tables created successfully.
+2025-07-30 11:08:15,012 - INFO - session manager initialized
+2025-07-30 11:08:15,017 - INFO - launching student result management cli...
+2025-07-30 11:08:15,018 - INFO - starting main menu loop
+2025-07-30 11:08:17,841 - DEBUG - user selected main menu option: 1
+2025-07-30 11:08:25,602 - INFO - user 'naeem' authenticated successfully.
+2025-07-30 11:08:25,602 - INFO - loaded admin data for naeem
+2025-07-30 11:08:25,603 - INFO - session created for naeem (admin) at 2025-07-30 11:08:25.602848
+2025-07-30 11:08:25,603 - INFO - session created for naeem (admin) at 2025-07-30 11:08:25.603846
+2025-07-30 11:08:25,603 - INFO - legacy session set for naeem (admin)
+2025-07-30 11:08:25,604 - INFO - session created with id: naeem_20250730_110825
+2025-07-30 11:08:25,604 - INFO - successful login: naeem as admin
+2025-07-30 11:08:25,604 - INFO - entering admin menu loop
+2025-07-30 11:08:29,136 - DEBUG - admin selected option: 5
+2025-07-30 11:08:29,136 - INFO - admin exporting summary report to pdf
+2025-07-30 11:08:29,623 - INFO - successfully exported pdf report
+2025-07-30 11:17:52,928 - INFO - session manager initialized
+2025-07-30 11:17:55,698 - INFO - admin menu interrupted by user
+2025-07-30 11:17:56,187 - INFO - application interrupted by user
+2025-07-30 11:18:05,782 - INFO - connecting to database...
+2025-07-30 11:18:05,857 - INFO - tables created successfully.
+2025-07-30 11:18:05,864 - INFO - session manager initialized
+2025-07-30 11:18:05,871 - INFO - launching student result management cli...
+2025-07-30 11:18:05,871 - INFO - starting main menu loop
+2025-07-30 11:18:07,858 - DEBUG - user selected main menu option: 1
+2025-07-30 11:18:14,004 - INFO - user 'naeem' authenticated successfully.
+2025-07-30 11:18:14,004 - INFO - loaded admin data for naeem
+2025-07-30 11:18:14,006 - INFO - session created for naeem (admin) at 2025-07-30 11:18:14.006442
+2025-07-30 11:18:14,007 - INFO - session created for naeem (admin) at 2025-07-30 11:18:14.007458
+2025-07-30 11:18:14,007 - INFO - legacy session set for naeem (admin)
+2025-07-30 11:18:14,007 - INFO - session created with id: naeem_20250730_111814
+2025-07-30 11:18:14,007 - INFO - successful login: naeem as admin
+2025-07-30 11:18:14,007 - INFO - entering admin menu loop
+2025-07-30 11:18:18,046 - DEBUG - admin selected option: 5
+2025-07-30 11:18:18,046 - INFO - admin exporting summary report to pdf
+2025-07-30 11:18:18,659 - INFO - successfully exported pdf report
+2025-07-30 11:34:13,339 - INFO - session manager initialized
+2025-07-30 11:40:03,424 - INFO - session manager initialized
+2025-07-30 11:40:36,943 - INFO - session manager initialized
+2025-07-30 11:40:50,836 - DEBUG - admin selected option: python setup_enhanced_db.py
+2025-07-30 11:40:50,856 - WARNING - invalid admin menu choice: python setup_enhanced_db.py
+2025-07-30 11:41:05,202 - INFO - admin menu interrupted by user
+2025-07-30 11:41:06,604 - INFO - application interrupted by user
+2025-07-30 11:41:42,736 - INFO - session manager initialized
+2025-07-30 11:42:02,503 - INFO - session manager initialized
+2025-07-30 11:43:03,161 - INFO - session manager initialized
+2025-07-30 11:43:07,337 - INFO - session manager initialized
+2025-07-30 11:43:11,198 - INFO - session manager initialized
+2025-07-30 11:43:14,470 - INFO - session manager initialized
+2025-07-30 11:45:05,635 - INFO - session manager initialized
+2025-07-30 11:45:28,753 - INFO - starting fastapi server with uvicorn...
+2025-07-30 11:45:29,474 - INFO - session manager initialized
+2025-07-30 11:46:12,492 - ERROR - Error in add_student: 500: Failed to insert student
+2025-07-30 11:46:15,979 - ERROR - Error in add_student: 500: Failed to insert student
+2025-07-30 11:47:02,946 - ERROR - Error in add_student: 500: Failed to insert student
+2025-07-30 11:50:58,016 - INFO - session manager initialized
+2025-07-30 11:52:17,430 - INFO - session manager initialized
+2025-07-30 11:52:17,430 - INFO - session manager initialized
+2025-07-30 11:53:54,876 - INFO - session manager initialized
+2025-07-30 11:53:54,876 - INFO - session manager initialized
+2025-07-30 11:54:16,711 - INFO - session manager initialized
+2025-07-30 11:54:16,812 - INFO - session manager initialized
+2025-07-30 11:55:01,241 - INFO - session manager initialized
+2025-07-30 11:59:00,476 - INFO - session manager initialized
+2025-07-30 11:59:00,476 - INFO - session manager initialized
+2025-07-30 11:59:02,176 - INFO - session manager initialized
+2025-07-30 11:59:02,442 - INFO - session manager initialized
+2025-07-30 11:59:12,006 - INFO - session manager initialized
+2025-07-30 11:59:12,004 - INFO - session manager initialized
+2025-07-30 11:59:13,213 - INFO - session manager initialized
+2025-07-30 11:59:13,213 - INFO - session manager initialized
+2025-07-30 11:59:14,863 - INFO - session manager initialized
+2025-07-30 11:59:14,863 - INFO - session manager initialized
+2025-07-30 12:02:47,525 - INFO - session manager initialized
+2025-07-30 12:03:07,201 - INFO - session manager initialized
+2025-07-30 12:03:07,205 - INFO - session manager initialized
+2025-07-30 12:03:24,734 - INFO - session manager initialized
+2025-07-30 12:03:24,736 - INFO - session manager initialized
+2025-07-30 12:04:18,746 - INFO - session manager initialized
+2025-07-30 12:04:18,748 - INFO - session manager initialized
+2025-07-30 12:05:29,568 - INFO - session manager initialized
+2025-07-30 12:05:29,568 - INFO - session manager initialized
+2025-07-30 12:05:53,724 - INFO - session manager initialized
+2025-07-30 12:05:53,724 - INFO - session manager initialized
+2025-07-30 12:10:31,598 - INFO - session manager initialized
+2025-07-30 12:10:38,715 - INFO - session manager initialized
+2025-07-30 12:10:38,715 - INFO - session manager initialized
+2025-07-30 12:10:46,914 - INFO - session manager initialized
+2025-07-30 12:10:46,914 - INFO - session manager initialized
+2025-07-30 12:11:50,394 - INFO - session manager initialized
+2025-07-30 12:11:50,394 - INFO - session manager initialized
+2025-07-30 12:11:59,643 - INFO - session manager initialized
+2025-07-30 12:11:59,704 - INFO - session manager initialized
+2025-07-30 12:12:06,621 - INFO - session manager initialized
+2025-07-30 12:12:06,636 - INFO - session manager initialized
+2025-07-30 12:12:20,555 - INFO - session manager initialized
+2025-07-30 12:12:20,712 - INFO - session manager initialized
+2025-07-30 12:12:31,113 - INFO - session manager initialized
+2025-07-30 12:12:31,310 - INFO - session manager initialized
+2025-07-30 12:12:56,432 - INFO - session manager initialized
+2025-07-30 12:12:56,432 - INFO - session manager initialized
+2025-07-30 12:13:25,130 - INFO - session manager initialized
+2025-07-30 12:13:25,130 - INFO - session manager initialized
+2025-07-30 12:14:11,347 - INFO - session manager initialized
+2025-07-30 12:14:11,363 - INFO - session manager initialized
+2025-07-30 12:14:50,986 - INFO - session manager initialized
+2025-07-30 12:16:31,668 - INFO - starting fastapi server with uvicorn...
+2025-07-30 12:16:32,735 - INFO - session manager initialized
+2025-07-30 12:17:32,087 - INFO - session manager initialized
+2025-07-30 12:17:32,100 - INFO - session manager initialized
+2025-07-30 12:17:32,468 - INFO - session manager initialized
+2025-07-30 12:19:10,722 - INFO - session manager initialized
+2025-07-30 12:19:10,754 - INFO - session manager initialized
+2025-07-30 12:19:11,251 - INFO - session manager initialized
+2025-07-30 12:19:19,537 - INFO - session manager initialized
+2025-07-30 12:19:19,567 - INFO - session manager initialized
+2025-07-30 12:19:19,779 - INFO - session manager initialized
+2025-07-30 12:22:19,934 - INFO - session manager initialized
+2025-07-30 12:22:20,553 - INFO - session manager initialized
+2025-07-30 12:22:37,653 - INFO - session manager initialized
+2025-07-30 12:22:37,653 - INFO - session manager initialized
+2025-07-30 12:22:37,972 - INFO - session manager initialized
+2025-07-30 12:23:07,852 - INFO - session manager initialized
+2025-07-30 12:23:07,953 - INFO - session manager initialized
+2025-07-30 12:23:08,237 - INFO - session manager initialized
+2025-07-30 12:23:27,652 - INFO - session manager initialized
+2025-07-30 12:23:28,424 - INFO - session manager initialized
+2025-07-30 12:25:21,995 - INFO - session manager initialized
+2025-07-30 12:25:22,169 - INFO - session manager initialized
+2025-07-30 12:25:22,690 - INFO - session manager initialized
+2025-07-30 12:27:08,068 - INFO - session manager initialized
+2025-07-30 12:27:08,680 - INFO - session manager initialized
+2025-07-30 12:27:18,030 - INFO - session manager initialized
+2025-07-30 12:27:18,123 - INFO - session manager initialized
+2025-07-30 12:27:18,330 - INFO - session manager initialized
+2025-07-30 12:28:38,797 - INFO - session manager initialized
+2025-07-30 12:28:38,797 - INFO - session manager initialized
+2025-07-30 12:28:39,155 - INFO - session manager initialized
+2025-07-30 12:30:51,906 - INFO - session manager initialized
+2025-07-30 12:31:37,300 - INFO - session manager initialized
+2025-07-30 12:31:37,300 - INFO - session manager initialized
+2025-07-30 12:31:37,431 - INFO - session manager initialized
+2025-07-30 12:34:23,111 - INFO - session manager initialized
+2025-07-30 12:34:23,452 - INFO - session manager initialized
+2025-07-30 12:34:58,434 - INFO - session manager initialized
+2025-07-30 12:34:58,577 - INFO - session manager initialized
+2025-07-30 12:34:59,243 - INFO - session manager initialized
+2025-07-30 12:36:22,063 - INFO - session manager initialized
+2025-07-30 12:36:22,063 - INFO - session manager initialized
+2025-07-30 12:36:22,365 - INFO - session manager initialized
+2025-07-30 12:36:27,345 - INFO - session manager initialized
+2025-07-30 12:36:27,427 - INFO - session manager initialized
+2025-07-30 12:36:27,756 - INFO - session manager initialized
+2025-07-30 12:38:37,678 - INFO - starting fastapi server with uvicorn...
+2025-07-30 12:38:38,399 - INFO - session manager initialized
+2025-07-30 12:39:06,608 - INFO - session manager initialized
+2025-07-30 12:39:06,744 - INFO - session manager initialized
+2025-07-30 12:39:06,830 - INFO - session manager initialized
+2025-07-30 12:39:07,149 - INFO - session manager initialized
+2025-07-30 12:39:47,796 - INFO - connecting to database...
+2025-07-30 12:39:47,889 - INFO - tables created successfully.
+2025-07-30 12:39:47,905 - INFO - session manager initialized
+2025-07-30 12:39:47,923 - INFO - launching student result management cli...
+2025-07-30 12:39:47,923 - INFO - starting main menu loop
+2025-07-30 12:39:49,559 - DEBUG - user selected main menu option: 1
+2025-07-30 12:39:55,089 - WARNING - authentication failed for user 'jd'.
+2025-07-30 12:39:55,090 - INFO - login failed or cancelled
+2025-07-30 12:39:56,680 - DEBUG - user selected main menu option: 1
+2025-07-30 12:40:02,610 - INFO - user 'naeem' authenticated successfully.
+2025-07-30 12:40:02,610 - INFO - loaded admin data for naeem
+2025-07-30 12:40:02,610 - INFO - session created for naeem (admin) at 2025-07-30 12:40:02.610757
+2025-07-30 12:40:02,610 - INFO - session created for naeem (admin) at 2025-07-30 12:40:02.610757
+2025-07-30 12:40:02,610 - INFO - legacy session set for naeem (admin)
+2025-07-30 12:40:02,610 - INFO - session created with id: naeem_20250730_124002
+2025-07-30 12:40:02,610 - INFO - successful login: naeem as admin
+2025-07-30 12:40:02,610 - INFO - entering admin menu loop
+2025-07-30 12:40:22,667 - DEBUG - admin selected option: 8
+2025-07-30 12:40:22,667 - INFO - admin starting bulk import process
+2025-07-30 12:41:03,223 - INFO - admin importing from file: j
+2025-07-30 12:41:03,223 - INFO - starting bulk import from file: j
+2025-07-30 12:41:03,223 - INFO - attempting to read student records from: j
+2025-07-30 12:41:03,223 - ERROR - file does not exist: j
+2025-07-30 12:41:03,223 - WARNING - no valid records found in file: j
+2025-07-30 12:41:03,233 - INFO - bulk import completed: 0/0 successful
+2025-07-30 12:41:06,615 - DEBUG - admin selected option: 9
+2025-07-30 12:41:06,615 - INFO - Admin accessing enhanced course & semester management
+2025-07-30 12:42:53,387 - INFO - session manager initialized
+2025-07-30 12:42:53,387 - INFO - session manager initialized
+2025-07-30 12:42:53,387 - INFO - session manager initialized
+2025-07-30 12:42:53,787 - INFO - session manager initialized
+2025-07-30 12:45:09,219 - INFO - session manager initialized
+2025-07-30 12:45:09,269 - INFO - session manager initialized
+2025-07-30 12:45:10,126 - INFO - session manager initialized
+2025-07-30 12:46:19,485 - INFO - session manager initialized
+2025-07-30 12:46:19,485 - INFO - session manager initialized
+2025-07-30 12:46:19,485 - INFO - session manager initialized
+2025-07-30 12:46:19,766 - INFO - session manager initialized
+2025-07-30 12:47:05,699 - INFO - session manager initialized
+2025-07-30 12:47:33,865 - INFO - session manager initialized
+2025-07-30 12:50:26,617 - INFO - session manager initialized
+2025-07-30 12:50:26,682 - INFO - session manager initialized
+2025-07-30 12:50:27,298 - INFO - session manager initialized
+2025-07-30 12:50:34,940 - INFO - session manager initialized
+2025-07-30 12:50:34,966 - INFO - session manager initialized
+2025-07-30 12:50:35,108 - INFO - session manager initialized
+2025-07-30 12:50:35,427 - INFO - session manager initialized
+2025-07-30 12:56:50,841 - INFO - admin menu interrupted by user
+2025-07-30 12:56:52,214 - INFO - application interrupted by user
