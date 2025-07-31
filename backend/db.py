@@ -1,5 +1,6 @@
 import psycopg2
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 import logging
 from psycopg2.extras import RealDictCursor
@@ -12,6 +13,14 @@ def connect_to_db():
     """establish connection to the postgresql database"""
     try:
         logger.debug("attempting database connection...")
+        # --- DIAGNOSTIC PRINTS FOR CONNECTION ---
+        logger.info(f"\n[DB_CONNECT] Attempting to connect to:")
+        logger.info(f"[DB_CONNECT]   DB_NAME: {DB_NAME}")
+        logger.info(f"[DB_CONNECT]   DB_USER: {DB_USER}")
+        logger.info(f"[DB_CONNECT]   DB_HOST: {DB_HOST}")
+        logger.info(f"[DB_CONNECT]   DB_PORT: {DB_PORT}")
+        # --- END DIAGNOSTIC PRINTS ---
+
         conn = psycopg2.connect(
             dbname=DB_NAME,
             user=DB_USER,
@@ -20,650 +29,673 @@ def connect_to_db():
             port=DB_PORT
         )
         logger.info("database connection established successfully")
+        logger.info("[DB_CONNECT] Database connection established successfully!") 
         return conn
     except psycopg2.OperationalError as e:
         logger.error(f"database connection failed - operational error: {e}")
+        logger.error(f"[DB_CONNECT ERROR] Database connection failed: {e}") 
         return None
     except Exception as e:
-        logger.error(f"database connection failed - unexpected error: {e}")
+        logger.error(f"an unexpected error occurred during database connection: {e}")
+        logger.error(f"[DB_CONNECT ERROR] An unexpected error occurred: {e}") 
         return None
 
-def create_tables():
-    """create database tables if they don't exist"""
-    logger.info("creating database tables...")
-    conn = connect_to_db()
+def create_tables_if_not_exist(conn):
+    """Create necessary tables if they don't exist."""
     if conn is None:
-        logger.error("cannot create tables - no database connection")
-        return
-
+        logger.error("No database connection to create tables.")
+        return False
     try:
-        cursor = conn.cursor()
+        with conn.cursor() as cur:
+            # Users table (for authentication)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id SERIAL PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    role VARCHAR(50) NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            logger.info("users table checked/created.")
 
-        # new student profile table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS student_profiles (
-                index_number VARCHAR(20) PRIMARY KEY,
-                name VARCHAR(100),
-                program VARCHAR(100),
-                year_of_study INTEGER,
-                contact_info VARCHAR(100)
-            );
-        """)
+            # Student Profiles table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS student_profiles (
+                    student_id SERIAL PRIMARY KEY,
+                    index_number VARCHAR(20) UNIQUE NOT NULL,
+                    full_name VARCHAR(255) NOT NULL,
+                    dob DATE,
+                    gender VARCHAR(10),
+                    contact_email VARCHAR(255),
+                    contact_phone VARCHAR(20),
+                    program VARCHAR(100),
+                    year_of_study INT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            logger.info("student_profiles table checked/created.")
 
-        # grades table - allows multiple course entries per student
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS grades (
-                id SERIAL PRIMARY KEY,
-                index_number VARCHAR(20) REFERENCES student_profiles(index_number) ON DELETE CASCADE,
-                course_code VARCHAR(20),
-                course_title VARCHAR(100),
-                score FLOAT,
-                credit_hours INTEGER,
-                letter_grade VARCHAR(2),
-                semester VARCHAR(20),
-                academic_year VARCHAR(20)
-            );
-        """)
+            # Courses table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS courses (
+                    course_id SERIAL PRIMARY KEY,
+                    course_code VARCHAR(20) UNIQUE NOT NULL,
+                    course_title VARCHAR(255) NOT NULL,
+                    credit_hours INT NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            logger.info("courses table checked/created.")
 
-        conn.commit()
-        logger.info("tables created or confirmed successfully")
-    except psycopg2.Error as e:
-        logger.error(f"database error creating tables: {e}")
-        conn.rollback()
-    except Exception as e:
-        logger.error(f"unexpected error creating tables: {e}")
-        conn.rollback()
-    finally:
-        conn.close()
+            # Semesters table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS semesters (
+                    semester_id SERIAL PRIMARY KEY,
+                    semester_name VARCHAR(100) UNIQUE NOT NULL,
+                    academic_year VARCHAR(20),
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    is_current BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            logger.info("semesters table checked/created.")
 
-def create_enhanced_tables():
-    """Create enhanced database tables for courses, semesters, and improved grades"""
-    logger.info("Creating enhanced database tables...")
-    conn = connect_to_db()
-    if conn is None:
-        logger.error("Cannot create enhanced tables - no database connection")
-        return False
+            # Set a unique constraint to ensure only one semester can be current
+            cur.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS unique_current_semester
+                ON semesters (is_current)
+                WHERE is_current IS TRUE;
+            """)
+            logger.info("unique_current_semester index checked/created.")
 
-    try:
-        cursor = conn.cursor()
+            # Assessments table (e.g., Midterm, Final, Quiz)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS assessments (
+                    assessment_id SERIAL PRIMARY KEY,
+                    course_id INT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+                    assessment_name VARCHAR(100) NOT NULL,
+                    max_score INT NOT NULL,
+                    weight DECIMAL(5,2) NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(course_id, assessment_name)
+                );
+            """)
+            logger.info("assessments table checked/created.")
 
-        # Courses table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS courses (
-                course_code VARCHAR(20) PRIMARY KEY,
-                course_title VARCHAR(200) NOT NULL,
-                credit_hours INTEGER DEFAULT 3,
-                department VARCHAR(100),
-                instructor VARCHAR(100),
-                description TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
+            # Grades table (linking students, courses, semesters, and scores)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS grades (
+                    grade_id SERIAL PRIMARY KEY,
+                    student_id INT NOT NULL REFERENCES student_profiles(student_id) ON DELETE CASCADE,
+                    course_id INT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+                    semester_id INT NOT NULL REFERENCES semesters(semester_id) ON DELETE CASCADE,
+                    score DECIMAL(5,2) NOT NULL,
+                    grade VARCHAR(2), -- e.g., A, B+, C
+                    grade_point DECIMAL(3,2),
+                    academic_year VARCHAR(20),
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(student_id, course_id, semester_id) -- A student can only have one grade per course per semester
+                );
+            """)
+            logger.info("grades table checked/created.")
 
-        # Semesters table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS semesters (
-                semester_id VARCHAR(20) PRIMARY KEY,
-                semester_name VARCHAR(50) NOT NULL,
-                academic_year VARCHAR(20) NOT NULL,
-                start_date DATE,
-                end_date DATE,
-                is_current BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-
-        # Enhanced grades table (keep existing for compatibility, add indexes)
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_grades_student_course 
-            ON grades(index_number, course_code);
-        """)
-        
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_grades_semester 
-            ON grades(semester, academic_year);
-        """)
-
-        # Detailed assessments table for enhanced grade management
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS assessments (
-                id SERIAL PRIMARY KEY,
-                index_number VARCHAR(20) REFERENCES student_profiles(index_number) ON DELETE CASCADE,
-                course_code VARCHAR(20) REFERENCES courses(course_code) ON DELETE CASCADE,
-                semester_id VARCHAR(20) REFERENCES semesters(semester_id) ON DELETE CASCADE,
-                assessment_type VARCHAR(50) DEFAULT 'final',
-                score FLOAT NOT NULL,
-                max_score FLOAT DEFAULT 100,
-                weight FLOAT DEFAULT 1.0,
-                grade_letter VARCHAR(2),
-                grade_points FLOAT,
-                assessment_date DATE DEFAULT CURRENT_DATE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-
-        # Student enrollments table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS enrollments (
-                id SERIAL PRIMARY KEY,
-                index_number VARCHAR(20) REFERENCES student_profiles(index_number) ON DELETE CASCADE,
-                course_code VARCHAR(20) REFERENCES courses(course_code) ON DELETE CASCADE,
-                semester_id VARCHAR(20) REFERENCES semesters(semester_id) ON DELETE CASCADE,
-                enrollment_date DATE DEFAULT CURRENT_DATE,
-                status VARCHAR(20) DEFAULT 'active',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(index_number, course_code, semester_id)
-            );
-        """)
-
-        conn.commit()
-        logger.info("Enhanced tables created or confirmed successfully")
-        return True
-    except psycopg2.Error as e:
-        logger.error(f"Database error creating enhanced tables: {e}")
-        conn.rollback()
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error creating enhanced tables: {e}")
-        conn.rollback()
-        return False
-    finally:
-        conn.close()
-
-def drop_legacy_tables():
-    """drop the old student_results table - run this once to clean up legacy table"""
-    logger.info("dropping legacy student_results table...")
-    conn = connect_to_db()
-    if conn is None:
-        logger.error("cannot drop tables - no database connection")
-        return False
-
-    try:
-        cursor = conn.cursor()
-        
-        # drop the legacy table
-        cursor.execute("DROP TABLE IF EXISTS student_results CASCADE;")
-        
-        conn.commit()
-        logger.info("legacy student_results table dropped successfully")
-        return True
-    except psycopg2.Error as e:
-        logger.error(f"database error dropping legacy table: {e}")
-        conn.rollback()
-        return False
-    except Exception as e:
-        logger.error(f"unexpected error dropping legacy table: {e}")
-        conn.rollback()
-        return False
-    finally:
-        conn.close()
-
-def insert_complete_student_record(conn, student_data):
-    """insert a complete student record (profile + grade) for backwards compatibility with api"""
-    try:
-        # prepare profile data
-        profile_data = {
-            "index_number": student_data["index_number"],
-            "name": student_data["name"],
-            "program": student_data.get("program", "Unknown"),
-            "year_of_study": student_data.get("year_of_study", 1),
-            "contact_info": student_data.get("contact_info", "Not provided")
-        }
-        
-        # prepare grade data with defaults
-        grade_data = {
-            "index_number": student_data["index_number"],
-            "course_code": student_data.get("course_code", "GENERAL"),
-            "course_title": student_data.get("course_title", "General Assessment"),
-            "score": student_data["score"],
-            "credit_hours": student_data.get("credit_hours", 3),
-            "letter_grade": student_data["grade"],
-            "semester": student_data.get("semester", "Fall 2024"),
-            "academic_year": student_data.get("academic_year", "2024-2025")
-        }
-        
-        # insert profile first
-        if not insert_student_profile(conn, profile_data):
-            return False
-            
-        # then insert grade
-        if not insert_grade(conn, grade_data):
-            return False
-            
-        logger.info(f"complete student record inserted for {student_data['index_number']}")
-        return True
-        
-    except Exception as e:
-        logger.error(f"error inserting complete student record: {e}")
-        return False
-
-# insert student profile into modern table
-def insert_student_profile(conn, profile):
-    """insert or update student profile in the student_profiles table"""
-    try:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO student_profiles (index_number, name, program, year_of_study, contact_info)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (index_number) DO UPDATE
-            SET name = EXCLUDED.name,
-                program = EXCLUDED.program,
-                year_of_study = EXCLUDED.year_of_study,
-                contact_info = EXCLUDED.contact_info;
-        """, (
-            profile["index_number"],
-            profile["name"],
-            profile["program"],
-            profile["year_of_study"],
-            profile["contact_info"]
-        ))
-        conn.commit()
-        logger.info(f"student profile inserted/updated for {profile['index_number']}")
-        return True
-    except psycopg2.Error as e:
-        logger.error(f"database error inserting student profile: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"unexpected error inserting student profile: {e}")
-        return False
-
-# insert a course-grade entry
-def insert_grade(conn, grade):
-    """insert a grade record for a specific course"""
-    try:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO grades (
-                index_number, course_code, course_title, score,
-                credit_hours, letter_grade, semester, academic_year
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-        """, (
-            grade["index_number"],
-            grade["course_code"],
-            grade["course_title"],
-            grade["score"],
-            grade["credit_hours"],
-            grade["letter_grade"],
-            grade["semester"],
-            grade["academic_year"]
-        ))
-        conn.commit()
-        logger.info(f"grade inserted for {grade['index_number']}, course {grade['course_code']}")
-        return True
-    except psycopg2.Error as e:
-        logger.error(f"database error inserting grade: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"unexpected error inserting grade: {e}")
-        return False
-
-# Fetch full student profile by index number
-def fetch_student_by_index_number(conn, index_number):
-    try:
-        cursor = conn.cursor()
-        
-        # Fetch profile
-        cursor.execute("""
-            SELECT name, program, year_of_study, contact_info
-            FROM student_profiles
-            WHERE index_number = %s;
-        """, (index_number,))
-        profile = cursor.fetchone()
-
-        # Fetch grades
-        cursor.execute("""
-            SELECT course_code, course_title, score, credit_hours, letter_grade, semester, academic_year
-            FROM grades
-            WHERE index_number = %s;
-        """, (index_number,))
-        grades = cursor.fetchall()
-
-        return {
-            "profile": {
-                "index_number": index_number,
-                "name": profile[0] if profile else None,
-                "program": profile[1] if profile else None,
-                "year_of_study": profile[2] if profile else None,
-                "contact_info": profile[3] if profile else None
-            },
-            "grades": [
-                {
-                    "course_code": g[0],
-                    "course_title": g[1],
-                    "score": g[2],
-                    "credit_hours": g[3],
-                    "letter_grade": g[4],
-                    "semester": g[5],
-                    "academic_year": g[6]
-                } for g in grades
-            ]
-        }
-    except Exception as e:
-        logger.error(f"Error fetching student by index: {e}")
-        return None
-
-
-# ========== Fetch all student records ==========
-def fetch_all_records():
-    conn = connect_to_db()
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
-                    SELECT 
-                        sp.index_number,
-                        sp.name,
-                        sp.program,
-                        sp.year_of_study,
-                        sp.contact_info,
-                        g.course_code,
-                        g.course_title,
-                        g.score,
-                        g.letter_grade,
-                        g.credit_hours,
-                        g.semester,
-                        g.academic_year
-                    FROM student_profiles sp
-                    LEFT JOIN grades g ON sp.index_number = g.index_number
-                    ORDER BY sp.index_number, g.semester, g.course_code
-                """)
-                records = cur.fetchall()
-                return records
-        except Exception as e:
-            logger.error(f"Error fetching records: {e}")
-            return []
-        finally:
-            conn.close()
-    return []
-
-# ========== Update a student's score ==========
-def update_student_score(index_number, course_code, new_score, new_grade):
-    conn = connect_to_db()
-    if conn:
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    UPDATE grades
-                    SET score = %s, letter_grade = %s
-                    WHERE index_number = %s AND course_code = %s
-                """, (new_score, new_grade, index_number, course_code))
-                conn.commit()
-                return cur.rowcount > 0
-        except Exception as e:
-            logger.error(f"Error updating score: {e}")
-            return False
-        finally:
-            conn.close()
-    return False
-
-# ========== Fetch results for a single student ==========
-def fetch_student_results(index_number):
-    """
-    Legacy function - use fetch_student_by_index_number instead
-    """
-    conn = connect_to_db()
-    if conn:
-        try:
-            student_data = fetch_student_by_index_number(conn, index_number)
-            return student_data["grades"] if student_data else []
-        except Exception as e:
-            logger.error(f"Error fetching student results: {e}")
-            return []
-        finally:
-            conn.close()
-    return []
-
-# ========== Fetch results by semester ==========
-def fetch_results_by_semester(semester):
-    conn = connect_to_db()
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
-                    SELECT 
-                        sp.name,
-                        g.index_number,
-                        g.course_code,
-                        g.course_title,
-                        g.score,
-                        g.letter_grade,
-                        g.semester,
-                        g.academic_year
-                    FROM grades g
-                    JOIN student_profiles sp ON g.index_number = sp.index_number
-                    WHERE g.semester = %s
-                    ORDER BY sp.name, g.course_code
-                """, (semester,))
-                return cur.fetchall()
-        finally:
-            conn.close()
-    return []
-
-# ===== COURSE MANAGEMENT FUNCTIONS =====
-
-def insert_course(conn, course_data):
-    """Insert a new course"""
-    try:
-        cursor = conn.cursor()
-        query = """
-            INSERT INTO courses (course_code, course_title, credit_hours, department, instructor, description)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (course_code) DO UPDATE SET
-                course_title = EXCLUDED.course_title,
-                credit_hours = EXCLUDED.credit_hours,
-                department = EXCLUDED.department,
-                instructor = EXCLUDED.instructor,
-                description = EXCLUDED.description,
-                updated_at = CURRENT_TIMESTAMP
-        """
-        cursor.execute(query, (
-            course_data["course_code"],
-            course_data["course_title"],
-            course_data.get("credit_hours", 3),
-            course_data.get("department"),
-            course_data.get("instructor"),
-            course_data.get("description")
-        ))
-        logger.info(f"Course {course_data['course_code']} inserted/updated successfully")
-        return True
-    except psycopg2.Error as e:
-        logger.error(f"Database error inserting course: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error inserting course: {e}")
-        return False
-
-def fetch_all_courses():
-    """Fetch all courses"""
-    conn = connect_to_db()
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM courses ORDER BY course_code")
-                return cur.fetchall()
-        except Exception as e:
-            logger.error(f"Error fetching courses: {e}")
-            return []
-        finally:
-            conn.close()
-    return []
-
-def fetch_course_by_code(course_code):
-    """Fetch a specific course by code"""
-    conn = connect_to_db()
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM courses WHERE course_code = %s", (course_code,))
-                return cur.fetchone()
-        except Exception as e:
-            logger.error(f"Error fetching course {course_code}: {e}")
-            return None
-        finally:
-            conn.close()
-    return None
-
-def update_course(course_code, updates):
-    """Update a course"""
-    conn = connect_to_db()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            set_clauses = []
-            values = []
-            
-            for field, value in updates.items():
-                if value is not None:
-                    set_clauses.append(f"{field} = %s")
-                    values.append(value)
-            
-            if set_clauses:
-                set_clauses.append("updated_at = CURRENT_TIMESTAMP")
-                values.append(course_code)
-                
-                query = f"UPDATE courses SET {', '.join(set_clauses)} WHERE course_code = %s"
-                cursor.execute(query, values)
-                
-                if cursor.rowcount > 0:
-                    conn.commit()
-                    logger.info(f"Course {course_code} updated successfully")
-                    return True
-                else:
-                    logger.warning(f"No course found with code {course_code}")
-                    return False
+            conn.commit()
+            logger.info("All tables checked/created successfully.")
             return True
-        except Exception as e:
-            logger.error(f"Error updating course {course_code}: {e}")
-            conn.rollback()
-            return False
-        finally:
-            conn.close()
-    return False
+    except Exception as e:
+        logger.error(f"Error creating tables: {e}")
+        conn.rollback()
+        return False
 
-def delete_course(course_code):
-    """Delete a course"""
-    conn = connect_to_db()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM courses WHERE course_code = %s", (course_code,))
-            
-            if cursor.rowcount > 0:
-                conn.commit()
-                logger.info(f"Course {course_code} deleted successfully")
-                return True
-            else:
-                logger.warning(f"No course found with code {course_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Error deleting course {course_code}: {e}")
-            conn.rollback()
-            return False
-        finally:
-            conn.close()
-    return False
-
-# ===== SEMESTER MANAGEMENT FUNCTIONS =====
-
-def insert_semester(conn, semester_data):
-    """Insert a new semester"""
+# --- STUDENT PROFILE CRUD OPERATIONS ---
+def insert_student_profile(conn, index_number, full_name, dob, gender, contact_email=None, contact_phone=None, program=None, year_of_study=None):
+    """Insert a new student profile into the student_profiles table."""
+    if conn is None: return False
     try:
-        cursor = conn.cursor()
-        
-        # If this is set as current, unset all others first
-        if semester_data.get("is_current", False):
-            cursor.execute("UPDATE semesters SET is_current = FALSE")
-        
-        query = """
-            INSERT INTO semesters (semester_id, semester_name, academic_year, start_date, end_date, is_current)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (semester_id) DO UPDATE SET
-                semester_name = EXCLUDED.semester_name,
-                academic_year = EXCLUDED.academic_year,
-                start_date = EXCLUDED.start_date,
-                end_date = EXCLUDED.end_date,
-                is_current = EXCLUDED.is_current,
-                updated_at = CURRENT_TIMESTAMP
-        """
-        cursor.execute(query, (
-            semester_data["semester_id"],
-            semester_data["semester_name"],
-            semester_data["academic_year"],
-            semester_data.get("start_date"),
-            semester_data.get("end_date"),
-            semester_data.get("is_current", False)
-        ))
-        logger.info(f"Semester {semester_data['semester_id']} inserted/updated successfully")
-        return True
-    except psycopg2.Error as e:
-        logger.error(f"Database error inserting semester: {e}")
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO student_profiles (index_number, full_name, dob, gender, contact_email, contact_phone, program, year_of_study)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING student_id;
+            """, (index_number, full_name, dob, gender, contact_email, contact_phone, program, year_of_study))
+            student_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info(f"Student profile '{full_name}' ({index_number}) inserted with ID: {student_id}")
+            return student_id
+    except psycopg2.errors.UniqueViolation:
+        logger.warning(f"Student with index number {index_number} already exists.")
+        conn.rollback()
         return False
     except Exception as e:
-        logger.error(f"Unexpected error inserting semester: {e}")
+        logger.error(f"Error inserting student profile {index_number}: {e}")
+        conn.rollback()
         return False
 
-def fetch_all_semesters():
-    """Fetch all semesters"""
-    conn = connect_to_db()
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM semesters ORDER BY academic_year DESC, semester_id")
-                return cur.fetchall()
-        except Exception as e:
-            logger.error(f"Error fetching semesters: {e}")
-            return []
-        finally:
-            conn.close()
-    return []
+def fetch_student_by_index_number(conn, index_number):
+    """Fetch a student's profile and their grades by index number."""
+    if conn is None: return None
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Fetch student profile
+            cursor.execute("""
+                SELECT * FROM student_profiles WHERE index_number = %s;
+            """, (index_number,))
+            student_profile = cursor.fetchone()
 
-def fetch_current_semester():
-    """Fetch the current active semester"""
-    conn = connect_to_db()
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM semesters WHERE is_current = TRUE LIMIT 1")
-                return cur.fetchone()
-        except Exception as e:
-            logger.error(f"Error fetching current semester: {e}")
-            return None
-        finally:
-            conn.close()
-    return None
+            if student_profile:
+                # Fetch student's grades along with course and semester info
+                cursor.execute("""
+                    SELECT
+                        g.score, g.grade, g.grade_point, g.academic_year,
+                        c.course_code, c.course_title, c.credit_hours,
+                        s.semester_name
+                    FROM grades g
+                    JOIN courses c ON g.course_id = c.course_id
+                    JOIN semesters s ON g.semester_id = s.semester_id
+                    WHERE g.student_id = %s;
+                """, (student_profile['student_id'],))
+                grades = cursor.fetchall()
+                student_profile['grades'] = grades # Add grades list to profile
+            
+            return student_profile
+    except Exception as e:
+        logger.error(f"Error fetching student by index number {index_number}: {e}")
+        return None
 
-def set_current_semester(semester_id):
-    """Set a semester as the current active semester"""
-    conn = connect_to_db()
-    if conn:
-        try:
-            cursor = conn.cursor()
+def fetch_all_records(conn):
+    """Fetch all student profiles along with their grades."""
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Fetch all student profiles
+            cursor.execute("SELECT * FROM student_profiles;")
+            students = cursor.fetchall()
+
+            all_records = []
+            for student in students:
+                # For each student, fetch their grades
+                cursor.execute("""
+                    SELECT
+                        g.score, g.grade, g.grade_point, g.academic_year,
+                        c.course_code, c.course_title, c.credit_hours,
+                        s.semester_name
+                    FROM grades g
+                    JOIN courses c ON g.course_id = c.course_id
+                    JOIN semesters s ON g.semester_id = s.semester_id
+                    WHERE g.student_id = %s;
+                """, (student['student_id'],))
+                grades = cursor.fetchall()
+                
+                # Combine profile and each grade into a single record for a flattened view
+                if grades:
+                    for grade_record in grades:
+                        record = {**student, **grade_record}
+                        all_records.append(record)
+                else:
+                    # If a student has no grades, still include their profile
+                    all_records.append(student) 
+            return all_records
+    except Exception as e:
+        logger.error(f"Error fetching all records: {e}")
+        return []
+
+def update_student_profile(conn, student_id, updates):
+    """Update a student's profile."""
+    if conn is None: return False
+    if not updates:
+        return True # No updates provided, still considered successful
+    
+    query_parts = []
+    values = []
+    for key, value in updates.items():
+        if key in ['full_name', 'dob', 'gender', 'contact_email', 'contact_phone', 'program', 'year_of_study']:
+            query_parts.append(f"{key} = %s")
+            values.append(value)
+        else:
+            logger.warning(f"Attempted to update invalid field: {key}")
+
+    if not query_parts:
+        return True # No valid updates provided
+    
+    values.append(student_id)
+    query = f"UPDATE student_profiles SET {', '.join(query_parts)}, updated_at = CURRENT_TIMESTAMP WHERE student_id = %s;"
+    
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, tuple(values))
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"Student profile {student_id} updated successfully.")
+                return True
+            else:
+                logger.warning(f"No student found with ID {student_id} for update.")
+                return False
+    except Exception as e:
+        logger.error(f"Error updating student profile {student_id}: {e}")
+        conn.rollback()
+        return False
+
+def delete_student_profile(conn, student_id):
+    """Delete a student profile and cascading records by student_id."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM student_profiles WHERE student_id = %s;", (student_id,))
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"Student profile {student_id} and associated records deleted successfully.")
+                return True
+            else:
+                logger.warning(f"No student found with ID {student_id} for deletion.")
+                return False
+    except Exception as e:
+        logger.error(f"Error deleting student profile {student_id}: {e}")
+        conn.rollback()
+        return False
+
+# --- COURSE CRUD OPERATIONS ---
+def insert_course(conn, course_code, course_title, credit_hours):
+    """Insert a new course."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO courses (course_code, course_title, credit_hours)
+                VALUES (%s, %s, %s) RETURNING course_id;
+            """, (course_code, course_title, credit_hours))
+            course_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info(f"Course '{course_code}' inserted with ID: {course_id}")
+            return course_id
+    except psycopg2.errors.UniqueViolation:
+        logger.warning(f"Course with code {course_code} already exists.")
+        conn.rollback()
+        return False
+    except Exception as e:
+        logger.error(f"Error inserting course {course_code}: {e}")
+        conn.rollback()
+        return False
+
+def fetch_all_courses(conn):
+    """Fetch all courses."""
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM courses ORDER BY course_code;")
+            return cursor.fetchall()
+    except Exception as e:
+        logger.error(f"Error fetching all courses: {e}")
+        return []
+
+def fetch_course_by_code(conn, course_code):
+    """Fetch a single course by its code."""
+    if conn is None: return None
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM courses WHERE course_code = %s;", (course_code,))
+            return cursor.fetchone()
+    except Exception as e:
+        logger.error(f"Error fetching course by code {course_code}: {e}")
+        return None
+
+def update_course(conn, course_id, updates):
+    """Update an existing course."""
+    if conn is None: return False
+    if not updates:
+        return True
+    
+    query_parts = []
+    values = []
+    for key, value in updates.items():
+        if key in ['course_title', 'credit_hours']:
+            query_parts.append(f"{key} = %s")
+            values.append(value)
+        else:
+            logger.warning(f"Attempted to update invalid course field: {key}")
             
-            # First, unset all current semesters
-            cursor.execute("UPDATE semesters SET is_current = FALSE")
+    if not query_parts:
+        return True # No valid updates provided
+
+    values.append(course_id)
+    query = f"UPDATE courses SET {', '.join(query_parts)} WHERE course_id = %s;"
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, tuple(values))
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"Course {course_id} updated successfully.")
+                return True
+            else:
+                logger.warning(f"No course found with ID {course_id} for update.")
+                return False
+    except Exception as e:
+        logger.error(f"Error updating course {course_id}: {e}")
+        conn.rollback()
+        return False
+
+def delete_course(conn, course_id):
+    """Delete a course by its ID."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM courses WHERE course_id = %s;", (course_id,))
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"Course {course_id} deleted successfully.")
+                return True
+            else:
+                logger.warning(f"No course found with ID {course_id} for deletion.")
+                return False
+    except Exception as e:
+        logger.error(f"Error deleting course {course_id}: {e}")
+        conn.rollback()
+        return False
+
+# --- SEMESTER CRUD OPERATIONS ---
+def insert_semester(conn, semester_name, start_date, end_date, academic_year=None):
+    """Insert a new semester."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO semesters (semester_name, academic_year, start_date, end_date)
+                VALUES (%s, %s, %s, %s) RETURNING semester_id;
+            """, (semester_name, academic_year, start_date, end_date))
+            semester_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info(f"Semester '{semester_name}' inserted with ID: {semester_id}")
+            return semester_id
+    except psycopg2.errors.UniqueViolation:
+        logger.warning(f"Semester with name {semester_name} already exists.")
+        conn.rollback()
+        return False
+    except Exception as e:
+        logger.error(f"Error inserting semester {semester_name}: {e}")
+        conn.rollback()
+        return False
+
+def fetch_all_semesters(conn):
+    """Fetch all semesters."""
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM semesters ORDER BY start_date DESC;")
+            return cursor.fetchall()
+    except Exception as e:
+        logger.error(f"Error fetching all semesters: {e}")
+        return []
+
+def fetch_semester_by_name(conn, semester_name):
+    """Fetch a single semester by its name."""
+    if conn is None: return None
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM semesters WHERE semester_name = %s;", (semester_name,))
+            return cursor.fetchone()
+    except Exception as e:
+        logger.error(f"Error fetching semester by name {semester_name}: {e}")
+        return None
+
+def fetch_current_semester(conn):
+    """Fetch the currently active semester."""
+    if conn is None: return None
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM semesters WHERE is_current = TRUE;")
+            return cursor.fetchone()
+    except Exception as e:
+        logger.error(f"Error fetching current semester: {e}")
+        return None
+
+def set_current_semester(conn, semester_id):
+    """Set a specific semester as the current active one, and unmark others."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            # Start a transaction
+            conn.autocommit = False # Disable autocommit for explicit transaction control
+
+            # 1. Unset all current semesters
+            cursor.execute("UPDATE semesters SET is_current = FALSE WHERE is_current = TRUE;")
+            logger.info("All previous current semesters unset.")
+
+            # 2. Set the specified semester as current
+            cursor.execute("UPDATE semesters SET is_current = TRUE WHERE semester_id = %s RETURNING semester_id;", (semester_id,))
+            updated_id = cursor.fetchone()
             
-            # Then set the specified one as current
-            cursor.execute(
-                "UPDATE semesters SET is_current = TRUE, updated_at = CURRENT_TIMESTAMP WHERE semester_id = %s",
-                (semester_id,)
-            )
+            if updated_id:
+                conn.commit()
+                logger.info(f"Semester {semester_id} successfully set as current.")
+                return True
+            else:
+                conn.rollback() # Rollback if no semester was updated (e.g., ID not found)
+                logger.warning(f"Failed to set semester {semester_id} as current; ID not found.")
+                return False
+    except Exception as e:
+        logger.error(f"Error setting current semester {semester_id}: {e}")
+        conn.rollback() # Rollback on any error
+        return False
+    finally:
+        conn.autocommit = True # Re-enable autocommit
+        
+def update_semester(conn, semester_id, updates):
+    """Update an existing semester."""
+    if conn is None: return False
+    if not updates:
+        return True # No updates provided, still considered successful
+    
+    query_parts = []
+    values = []
+    for key, value in updates.items():
+        if key in ['semester_name', 'start_date', 'end_date', 'is_current']:
+            query_parts.append(f"{key} = %s")
+            values.append(value)
+        else:
+            logger.warning(f"Attempted to update invalid semester field: {key}")
+
+    if not query_parts:
+        return True # No valid updates provided
+            
+    values.append(semester_id)
+    query = f"UPDATE semesters SET {', '.join(query_parts)} WHERE semester_id = %s;"
+    
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, tuple(values))
+                
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"Semester {semester_id} updated successfully")
+                return True
+            else:
+                logger.warning(f"No semester found with ID {semester_id} for update.")
+                return False
+    except Exception as e:
+        logger.error(f"Error updating semester {semester_id}: {e}")
+        conn.rollback()
+        return False
+
+def delete_semester(conn, semester_id):
+    """Delete a semester from the system."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM semesters WHERE semester_id = %s", (semester_id,))
             
             if cursor.rowcount > 0:
                 conn.commit()
-                logger.info(f"Semester {semester_id} set as current")
+                logger.info(f"Semester {semester_id} deleted successfully.")
                 return True
             else:
-                logger.warning(f"No semester found with ID {semester_id}")
-                conn.rollback()
+                logger.warning(f"No semester found with ID {semester_id} for deletion.")
                 return False
-        except Exception as e:
-            logger.error(f"Error setting current semester: {e}")
-            conn.rollback()
-            return False
-        finally:
-            conn.close()
-    return False
+    except Exception as e:
+        logger.error(f"Error deleting semester {semester_id}: {e}")
+        conn.rollback()
+        return False
+
+# --- GRADE CRUD OPERATIONS ---
+def insert_grade(conn, student_id, course_id, semester_id, score, grade, grade_point, academic_year):
+    """Insert a student's grade for a specific course and semester."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO grades (student_id, course_id, semester_id, score, grade, grade_point, academic_year)
+                VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING grade_id;
+            """, (student_id, course_id, semester_id, score, grade, grade_point, academic_year))
+            grade_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info(f"Grade inserted for student {student_id}, course {course_id}, semester {semester_id} with ID: {grade_id}")
+            return grade_id
+    except psycopg2.errors.UniqueViolation:
+        logger.warning(f"Grade already exists for student {student_id} in course {course_id} for semester {semester_id}.")
+        conn.rollback()
+        return False
+    except Exception as e:
+        logger.error(f"Error inserting grade for student {student_id}: {e}")
+        conn.rollback()
+        return False
+
+def fetch_grades_by_index_number(conn, index_number):
+    """Fetch all grades for a given student index number."""
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT
+                    g.score, g.grade, g.grade_point, g.academic_year,
+                    c.course_code, c.course_title, c.credit_hours,
+                    s.semester_name, s.start_date, s.end_date
+                FROM grades g
+                JOIN student_profiles sp ON g.student_id = sp.student_id
+                JOIN courses c ON g.course_id = c.course_id
+                JOIN semesters s ON g.semester_id = s.semester_id
+                WHERE sp.index_number = %s;
+            """, (index_number,))
+            return cursor.fetchall()
+    except Exception as e:
+        logger.error(f"Error fetching grades for student {index_number}: {e}")
+        return []
+
+def update_student_score(conn, index_number, course_code, semester_name, new_score, new_grade, new_grade_point):
+    """Update a student's score for a specific course and semester."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE grades
+                SET score = %s, grade = %s, grade_point = %s, updated_at = CURRENT_TIMESTAMP
+                FROM student_profiles sp, courses c, semesters s
+                WHERE grades.student_id = sp.student_id
+                AND grades.course_id = c.course_id
+                AND grades.semester_id = s.semester_id
+                AND sp.index_number = %s
+                AND c.course_code = %s
+                AND s.semester_name = %s;
+            """, (new_score, new_grade, new_grade_point, index_number, course_code, semester_name))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"Score for student {index_number} in {course_code} ({semester_name}) updated to {new_score}.")
+                return True
+            else:
+                logger.warning(f"Could not find matching grade to update for student {index_number}, course {course_code}, semester {semester_name}.")
+                return False
+    except Exception as e:
+        logger.error(f"Error updating score for student {index_number}, course {course_code}, semester {semester_name}: {e}")
+        conn.rollback()
+        return False
+
+def insert_complete_student_record(conn, student_profile_data, grade_data):
+    """
+    Inserts a student profile and their grade(s) in a single transactional operation.
+    Rolls back if any part fails.
+    """
+    if conn is None: return False
+    try:
+        # Disable autocommit to manage transaction manually
+        conn.autocommit = False 
+        
+        # 1. Insert/Get Student Profile
+        student_id = fetch_student_by_index_number(conn, student_profile_data['index_number'])
+        if student_id and student_id.get('student_id'): # Check if student_id is not None and has the key
+            student_id = student_id['student_id']
+            logger.info(f"Student {student_profile_data['index_number']} already exists with ID: {student_id}. Skipping profile insertion.")
+            # Optionally update existing profile if needed, but for now, just use its ID
+        else:
+            student_id = insert_student_profile(conn,
+                                                student_profile_data['index_number'],
+                                                student_profile_data['name'],
+                                                student_profile_data.get('dob'),
+                                                student_profile_data.get('gender'),
+                                                student_profile_data.get('contact_info'),
+                                                None, # Assuming phone not directly in this data for now
+                                                student_profile_data.get('program'),
+                                                student_profile_data.get('year_of_study'))
+            if not student_id:
+                raise Exception("Failed to insert or retrieve student profile.")
+
+        # 2. Get Course ID
+        course = fetch_course_by_code(conn, grade_data['course_code'])
+        if not course:
+            course_id = insert_course(conn, grade_data['course_code'], grade_data['course_title'], grade_data['credit_hours'])
+            if not course_id:
+                raise Exception(f"Failed to insert course {grade_data['course_code']}.")
+        else:
+            course_id = course['course_id']
+            logger.info(f"Course {grade_data['course_code']} already exists with ID: {course_id}. Skipping course insertion.")
+
+        # 3. Get Semester ID
+        semester = fetch_semester_by_name(conn, grade_data['semester'])
+        if not semester:
+            # Fallback: if semester doesn't exist, try to infer dates or create with placeholders
+            # For a real system, you'd likely want to ensure semesters are pre-defined
+            logger.warning(f"Semester '{grade_data['semester']}' not found. Attempting to create with placeholder dates.")
+            current_year = datetime.now().year
+            # Example placeholder dates (adjust as needed for typical semester lengths)
+            start_date = datetime.strptime(f'09-01-{current_year}', '%m-%d-%Y').date() # Sept 1st
+            end_date = datetime.strptime(f'12-31-{current_year}', '%m-%d-%Y').date() # Dec 31st
+            if "spring" in grade_data['semester'].lower():
+                start_date = datetime.strptime(f'01-01-{current_year}', '%m-%d-%Y').date()
+                end_date = datetime.strptime(f'05-31-{current_year}', '%m-%d-%Y').date()
+
+            semester_id = insert_semester(conn, grade_data['semester'], start_date, end_date)
+            if not semester_id:
+                raise Exception(f"Failed to insert semester {grade_data['semester']}.")
+        else:
+            semester_id = semester['semester_id']
+            logger.info(f"Semester {grade_data['semester']} already exists with ID: {semester_id}. Skipping semester insertion.")
+
+        # 4. Insert Grade
+        # Calculate grade and grade_point if not already provided in grade_data
+        from grade_util import calculate_grade, get_grade_point # Import locally to avoid circular dependency on first import
+        letter_grade = calculate_grade(grade_data['score'])
+        grade_point = get_grade_point(grade_data['score']) # Using default 4.0 scale
+
+        grade_id = insert_grade(conn, 
+                                student_id, 
+                                course_id, 
+                                semester_id, 
+                                grade_data['score'], 
+                                letter_grade, 
+                                grade_point,
+                                grade_data.get('academic_year'))
+        if not grade_id:
+            raise Exception(f"Failed to insert grade for {student_profile_data['index_number']} in {grade_data['course_code']}.")
+
+        conn.commit() # Commit all changes if everything was successful
+        logger.info(f"Successfully imported complete record for {student_profile_data['index_number']}.")
+        return True
+
+    except Exception as e:
+        conn.rollback() # Rollback all changes if any error occurs
+        logger.error(f"Transactional import failed for {student_profile_data.get('index_number', 'N/A')}: {e}")
+        return False
+    finally:
+        conn.autocommit = True # Re-enable autocommit

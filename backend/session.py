@@ -35,31 +35,18 @@ class SessionManager:
             return {
                 'username': self.current_session['username'],
                 'role': self.current_session['role'],
-                'user_data': self.current_session.get('user_data', {})
+                'user_data': self.current_session['user_data'] # Return the full user_data dictionary
             }
         return None
     
-    def is_logged_in(self):
-        """check if user is currently logged in"""
-        return self.current_session is not None
-    
-    def is_admin(self):
-        """check if current user is admin"""
-        return self.current_session and self.current_session['role'] == 'admin'
-    
-    def is_student(self):
-        """check if current user is student"""
-        return self.current_session and self.current_session['role'] == 'student'
-    
     def get_session_duration(self):
-        """get session duration in minutes"""
+        """calculate current session duration in minutes"""
         if self.current_session:
-            duration = datetime.now() - self.current_session['login_time']
-            return duration.total_seconds() / 60
-        return 0
-    
+            return (datetime.now() - self.current_session['login_time']).total_seconds() / 60
+        return 0.0
+        
     def update_user_data(self, key, value):
-        """update session user data"""
+        """update specific user data within the current session"""
         if self.current_session:
             self.current_session['user_data'][key] = value
             logger.debug(f"session data updated: {key} = {value}")
@@ -102,7 +89,10 @@ def get_user():
 
 def clear_user():
     """legacy function - clears current user and session"""
-    current_user["username"] = None
-    current_user["role"] = None
+    global current_user
     session_manager.clear_session()
-    logger.info("legacy session cleared")
+    current_user = {
+        "username": None,
+        "role": None
+    }
+    logger.info("legacy user cleared")
