@@ -526,15 +526,24 @@ def process_records_for_display(records):
     """
     logger.debug(f"Processing records: {records}")
     processed_records = {}
+    
+    # First, create a mapping of student_id to index_number
+    student_id_to_index = {}
     for student in records.get('students', []):
+        student_id_to_index[student['student_id']] = student['index_number']
         processed_records[student['index_number']] = {
             'profile': student,
             'grades': []
         }
+    
+    # Then, match grades to students using student_id
     for grade in records.get('grades', []):
-        student_idx = grade['index_number']
-        if student_idx in processed_records:
-            processed_records[student_idx]['grades'].append(grade)
+        student_id = grade['student_id']
+        if student_id in student_id_to_index:
+            student_idx = student_id_to_index[student_id]
+            if student_idx in processed_records:
+                processed_records[student_idx]['grades'].append(grade)
+    
     return processed_records
 
 def handle_bulk_import(file_path, semester_for_import):

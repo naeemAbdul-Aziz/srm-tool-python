@@ -185,30 +185,35 @@ def fetch_all_records(conn):
     Fetch all student profiles, courses, semesters, and grades from the database.
     """
     try:
-        cursor = conn.cursor()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Fetch all student profiles
+            cursor.execute("SELECT * FROM student_profiles")
+            students = cursor.fetchall()
 
-        # Fetch all student profiles
-        cursor.execute("SELECT * FROM student_profiles")
-        students = cursor.fetchall()
+            # Fetch all courses
+            cursor.execute("SELECT * FROM courses")
+            courses = cursor.fetchall()
 
-        # Fetch all courses
-        cursor.execute("SELECT * FROM courses")
-        courses = cursor.fetchall()
+            # Fetch all semesters
+            cursor.execute("SELECT * FROM semesters")
+            semesters = cursor.fetchall()
 
-        # Fetch all semesters
-        cursor.execute("SELECT * FROM semesters")
-        semesters = cursor.fetchall()
+            # Fetch all grades with course and semester information
+            cursor.execute("""
+                SELECT g.*, c.course_code, c.course_title, s.semester_name
+                FROM grades g
+                JOIN courses c ON g.course_id = c.course_id
+                JOIN semesters s ON g.semester_id = s.semester_id
+                ORDER BY g.student_id, c.course_code
+            """)
+            grades = cursor.fetchall()
 
-        # Fetch all grades
-        cursor.execute("SELECT * FROM grades")
-        grades = cursor.fetchall()
-
-        return {
-            "students": students,
-            "courses": courses,
-            "semesters": semesters,
-            "grades": grades
-        }
+            return {
+                "students": students,
+                "courses": courses,
+                "semesters": semesters,
+                "grades": grades
+            }
     except Exception as e:
         logger.error(f"Error fetching all records: {e}")
         return None
