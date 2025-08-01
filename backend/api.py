@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
+from psycopg2.extras import RealDictCursor
 from db import (
     connect_to_db, fetch_all_records, insert_student_profile, fetch_student_by_index_number,
     insert_course, fetch_all_courses, fetch_course_by_code, insert_semester, fetch_all_semesters,
@@ -340,7 +341,7 @@ def handle_db_operation(operation, *args, **kwargs):
 def fetch_student_grades(conn, index_number, semester=None, academic_year=None):
     """Fetch student grades with optional filtering"""
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         query = """
             SELECT g.*, c.course_title, c.credit_hours 
             FROM grades g
@@ -363,8 +364,7 @@ def fetch_student_grades(conn, index_number, semester=None, academic_year=None):
         grades = cursor.fetchall()
         
         # Convert to list of dictionaries
-        columns = [desc[0] for desc in cursor.description]
-        return [dict(zip(columns, row)) for row in grades]
+        return [dict(grade) for grade in grades]
         
     except Exception as e:
         logger.error(f"Error fetching student grades: {str(e)}")
@@ -669,7 +669,7 @@ async def create_student(
                 datetime.strptime(student.dob, '%Y-%m-%d').date() if student.dob else None,
                 student.gender,
                 student.contact_email,
-                student.phone,
+                student.phone,  # API field 'phone' maps to DB 'contact_phone'
                 student.program,
                 student.year_of_study
             )
@@ -837,7 +837,7 @@ async def search_students(
             
             base_query = """
                 SELECT student_id, index_number, full_name, dob, gender, 
-                       contact_email, phone, program, year_of_study
+                       contact_email, contact_phone, program, year_of_study
                 FROM student_profiles 
                 WHERE 1=1
             """
@@ -886,7 +886,7 @@ async def search_students(
                 "dob": row[3].strftime('%Y-%m-%d') if row[3] else None,
                 "gender": row[4],
                 "contact_email": row[5],
-                "phone": row[6],
+                "phone": row[6],  # contact_phone from database
                 "program": row[7],
                 "year_of_study": row[8]
             })
@@ -1907,7 +1907,7 @@ async def generate_student_transcript(
             # Get student details
             cursor.execute("""
                 SELECT student_id, index_number, full_name, dob, gender, 
-                       contact_email, phone, program, year_of_study
+                       contact_email, contact_phone, program, year_of_study
                 FROM student_profiles 
                 WHERE index_number = %s
             """, (index_number,))

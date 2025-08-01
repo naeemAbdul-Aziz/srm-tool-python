@@ -84,13 +84,19 @@ def authenticate_user(username, password):
             }
 
             if role == 'student':
-                # For students, fetch their full profile and grades
-                student_profile = fetch_student_by_index_number(conn, username) # Assuming student username IS index_number
+                # For students, ensure index_number is set
+                user_data['index_number'] = username  # Student username IS their index number
+                
+                # Fetch their full profile and grades
+                student_profile = fetch_student_by_index_number(conn, username)
                 if student_profile:
                     user_data.update(student_profile)
                     logger.info(f"Student data loaded for {username}.")
                 else:
                     logger.warning(f"No student profile found for index number: {username}. User authenticated as student, but no record.")
+            elif role == 'admin':
+                # For admin users, ensure admin-specific data is available
+                user_data['admin_level'] = 'full'
             
             # create session with user data
             session_id = session_manager.create_session(username, role, user_data)
