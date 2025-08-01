@@ -3,6 +3,9 @@ from datetime import datetime
 import os
 import logging
 from session import session_manager
+from db import connect_to_db, fetch_student_by_index_number, fetch_all_records # For fetching data for reports
+from grade_util import calculate_grade, calculate_gpa # For GPA calculation in reports
+from fpdf import FPDF # For PDF generation
 
 logger = logging.getLogger(__name__)
 
@@ -29,411 +32,254 @@ def get_report_header_info():
             'session_duration': "N/A"
         }
 
+logger.info("Processing records for display...")
+
+# Modularized data processing logic
+def process_student_profile(record):
+    """Process individual student profile."""
+    return {
+        'index_number': record.get('index_number', 'unknown'),
+        'name': record.get('full_name', 'N/A'),
+        'program': record.get('program', 'N/A'),
+        'year_of_study': record.get('year_of_study', 'N/A'),
+        'dob': record.get('dob', 'N/A'),
+        'gender': record.get('gender', 'N/A'),
+        'contact_email': record.get('contact_email', 'N/A')
+    }
+
+def process_student_grades(record):
+    """Process individual student grades."""
+    return {
+        'course_code': record.get('course_code', 'N/A'),
+        'score': record.get('score', 'N/A')
+    }
+
 def process_records_for_display(records):
-    """process and organize records for better display"""
+    """Process and organize records for better display."""
     if not records:
+        logger.warning("No records provided for processing.")
         return []
-    
+
     student_records = {}
     for record in records:
-        index_number = record.get('index_number', 'unknown')
-        if index_number not in student_records:
-            student_records[index_number] = {
-                'profile': {
-                    'index_number': index_number,
-                    'name': record.get('name', 'unknown'),
-                    'program': record.get('program', 'N/A'),
-                    'year_of_study': record.get('year_of_study', 'N/A'),
-                    'contact_info': record.get('contact_info', 'N/A')
-                },
-                'grades': []
-            }
-        
-        if record.get('course_code') and record.get('score') is not None:
-            student_records[index_number]['grades'].append({
-                'course_code': record.get('course_code', ''),
-                'course_title': record.get('course_title', ''),
-                'score': record.get('score', 0),
-                'letter_grade': record.get('letter_grade', 'F'),
-                'credit_hours': record.get('credit_hours', 0),
-                'semester': record.get('semester', ''),
-                'academic_year': record.get('academic_year', '')
-            })
-    
+        try:
+            index_number = record.get('index_number', 'unknown')
+            if index_number not in student_records:
+                student_records[index_number] = {
+                    'profile': process_student_profile(record),
+                    'grades': []
+                }
+
+            if 'course_code' in record and record.get('score') is not None:
+                student_records[index_number]['grades'].append(process_student_grades(record))
+        except Exception as e:
+            logger.error(f"Error processing record for index_number {record.get('index_number', 'unknown')}: {e}")
+
+    logger.info(f"Processed {len(student_records)} student records.")
     return student_records
 
-def calculate_statistics(student_records):
-    """calculate comprehensive statistics from student records"""
-    if not student_records:
-        return {}
-    
-    all_scores = []
-    all_grades = []
-    program_stats = Counter()
-    grade_distribution = Counter()
-    
-    for student_data in student_records.values():
-        program = student_data['profile'].get('program', 'Unknown')
-        program_stats[program] += 1
-        
-        for grade in student_data['grades']:
-            score = grade.get('score', 0)
-            letter_grade = grade.get('letter_grade', 'F')
-            all_scores.append(score)
-            all_grades.append(letter_grade)
-            grade_distribution[letter_grade] += 1
-    
-    stats = {
-        'total_students': len(student_records),
-        'total_courses': len(all_scores),
-        'average_score': round(sum(all_scores) / len(all_scores), 2) if all_scores else 0,
-        'highest_score': max(all_scores) if all_scores else 0,
-        'lowest_score': min(all_scores) if all_scores else 0,
-        'grade_distribution': dict(grade_distribution),
-        'program_distribution': dict(program_stats)
-    }
-    
-    return stats
-
-def export_summary_report_txt(records, filename=None):
-    """export comprehensive text report with session awareness and improved formatting"""
+def export_summary_report_txt(records: list, filename="summary_report.txt"):
+    """
+    Exports a detailed summary report of all student records to a text file in tabular format.
+    """
     try:
         header_info = get_report_header_info()
-        student_records = process_records_for_display(records)
-        stats = calculate_statistics(student_records)
-        
-        if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            user_prefix = header_info['username']
-            filename = f"student_report_{user_prefix}_{timestamp}.txt"
-        
-        if not filename.endswith(".txt"):
-            filename += ".txt"
-        
-        logger.info(f"generating text report: {filename}")
-        
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write("=" * 80 + "\n")
-            f.write("STUDENT RESULT MANAGEMENT SYSTEM - COMPREHENSIVE REPORT\n")
-            f.write("=" * 80 + "\n\n")
-            
-            f.write("REPORT INFORMATION\n")
-            f.write("-" * 40 + "\n")
-            f.write(f"Generated by: {header_info['generated_by']}\n")
-            f.write(f"Generation time: {header_info['generation_time']}\n")
-            f.write(f"Session duration: {header_info['session_duration']}\n")
-            f.write(f"Report type: {'Student Personal Report' if header_info['role'] == 'student' else 'Administrative Summary'}\n\n")
-            
-            f.write("SUMMARY STATISTICS\n")
-            f.write("-" * 40 + "\n")
-            f.write(f"Total students: {stats.get('total_students', 0)}\n")
-            f.write(f"Total course entries: {stats.get('total_courses', 0)}\n")
-            f.write(f"Average score: {stats.get('average_score', 0):.2f}%\n")
-            f.write(f"Highest score: {stats.get('highest_score', 0):.1f}%\n")
-            f.write(f"Lowest score: {stats.get('lowest_score', 0):.1f}%\n\n")
-            
-            f.write("GRADE DISTRIBUTION\n")
-            f.write("-" * 40 + "\n")
-            grade_dist = stats.get('grade_distribution', {})
-            for grade in ['A', 'B', 'C', 'D', 'F']:
-                count = grade_dist.get(grade, 0)
-                percentage = (count / stats.get('total_courses', 1)) * 100 if stats.get('total_courses', 0) > 0 else 0
-                f.write(f"{grade} grade: {count:>3} courses ({percentage:>5.1f}%)\n")
-            f.write("\n")
-            
-            if header_info['role'] == 'admin' and stats.get('program_distribution'):
-                f.write("PROGRAM DISTRIBUTION\n")
-                f.write("-" * 40 + "\n")
-                for program, count in stats['program_distribution'].items():
-                    f.write(f"{program}: {count} students\n")
-                f.write("\n")
-            
-            f.write("DETAILED STUDENT RECORDS\n")
-            f.write("=" * 80 + "\n")
-            
-            if isinstance(student_records, dict):
-                sorted_students = sorted(student_records.items(), 
-                                       key=lambda x: x[1]['profile']['name'].lower())
-            else:
-                sorted_students = [(i, {'profile': {'name': 'Unknown', 'index_number': str(i)}, 'grades': []}) 
-                                  for i, _ in enumerate(student_records)]
-            
-            for index_number, student_data in sorted_students:
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(f"{'='*80}\n")
+            f.write(f"{'STUDENT RESULTS SUMMARY REPORT':^80}\n")
+            f.write(f"{'='*80}\n\n")
+            f.write(f"Generated By: {header_info['generated_by']}\n")
+            f.write(f"Generation Time: {header_info['generation_time']}\n")
+            f.write(f"Session Duration: {header_info['session_duration']}\n")
+            f.write(f"{'='*80}\n\n")
+
+            if not records:
+                f.write("No student records available.\n")
+                logger.info(f"Generated empty summary report: {filename}")
+                return True
+
+            # Summary statistics
+            total_students = len(records)
+            average_score = sum(
+                grade['score'] for student in records for grade in student['grades'] if isinstance(student['grades'], list)
+            ) / total_students
+            highest_score = max(
+                grade['score'] for student in records for grade in student['grades'] if isinstance(student['grades'], list)
+            )
+            lowest_score = min(
+                grade['score'] for student in records for grade in student['grades'] if isinstance(student['grades'], list)
+            )
+
+            f.write(f"Total Students: {total_students}\n")
+            f.write(f"Average Score: {average_score:.2f}\n")
+            f.write(f"Highest Score: {highest_score}\n")
+            f.write(f"Lowest Score: {lowest_score}\n")
+            f.write(f"{'='*80}\n\n")
+
+            # Grade distribution
+            grade_distribution = {"A": 0, "B": 0, "C": 0, "D": 0, "F": 0}
+            for student in records:
+                for grade in student['grades']:
+                    grade_value = grade['grade'] if isinstance(student['grades'], list) else "F"
+                    grade_distribution[grade_value] += 1
+
+            f.write("Grade Distribution:\n")
+            for grade, count in grade_distribution.items():
+                f.write(f"{grade}: {count}\n")
+            f.write(f"{'='*80}\n\n")
+
+            # Tabular header
+            f.write(f"{'Name':<25}{'Index':<15}{'Course':<15}{'Score':<10}{'Grade':<10}\n")
+            f.write(f"{'-'*80}\n")
+
+            for student_data in sorted(records, key=lambda x: (x['grades'][0]['grade'] if isinstance(x['grades'], list) else "F", x['profile']['full_name'])):
                 profile = student_data['profile']
-                grades = student_data['grades']
-                
-                f.write(f"\nSTUDENT: {profile['name']} (Index: {index_number})\n")
-                f.write("-" * 60 + "\n")
-                
-                if header_info['role'] == 'admin':
-                    f.write(f"Program: {profile.get('program', 'N/A')}\n")
-                    f.write(f"Year of Study: {profile.get('year_of_study', 'N/A')}\n")
-                    f.write(f"Contact: {profile.get('contact_info', 'N/A')}\n")
-                    f.write("-" * 60 + "\n")
-                
-                if grades:
-                    f.write("COURSE GRADES:\n")
-                    for grade in sorted(grades, key=lambda g: g.get('semester', '')):
-                        f.write(f"  • {grade['course_code']:10} | {grade['course_title']:30} | "
-                               f"Score: {grade['score']:>6.1f}% ({grade['letter_grade']}) | "
-                               f"Credits: {grade['credit_hours']} | {grade['semester']}\n")
-                    
-                    total_points = sum(grade['score'] * grade.get('credit_hours', 1) for grade in grades)
-                    total_credits = sum(grade.get('credit_hours', 1) for grade in grades)
-                    gpa = total_points / total_credits if total_credits > 0 else 0
-                    f.write(f"\n  Student GPA: {gpa:.2f}% | Total Credits: {total_credits}\n")
-                else:
-                    f.write("  No course grades recorded.\n")
-            
-            f.write("\n" + "=" * 80 + "\n")
-            f.write("Report generated by Student Result Management System\n")
-            f.write("For support, contact your system administrator\n")
-            f.write("=" * 80 + "\n")
-        
-        logger.info(f"text report successfully exported to {filename}")
-        return True
-        
+                for grade in student_data['grades']:
+                    if isinstance(student_data['grades'], list):
+                        f.write(f"{profile['full_name']:<25}{profile['index_number']:<15}{grade['course_code']:<15}{grade['score']:<10}{grade['grade']:<10}\n")
+
+            logger.info(f"Summary report exported to {filename}")
+            return True
     except Exception as e:
-        logger.error(f"failed to export text summary report: {e}")
+        logger.error(f"Error exporting summary report to TXT: {e}")
         return False
 
-def export_summary_report_pdf(records, filename=None):
-    """export comprehensive pdf report with minimal, professional design"""
+class PDFReport(FPDF):
+    def __init__(self, header_info, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.header_info = header_info
+        self.set_auto_page_break(auto=True, margin=15) # Set auto page break
+
+    def header(self):
+        self.set_font('Arial', 'B', 15)
+        self.cell(0, 10, 'Student Academic Report', 0, 1, 'C')
+        self.set_font('Arial', '', 10)
+        self.cell(0, 5, f"Generated By: {self.header_info['generated_by']}", 0, 1, 'C')
+        self.cell(0, 5, f"Generation Time: {self.header_info['generation_time']}", 0, 1, 'C')
+        self.cell(0, 5, f"Session Duration: {self.header_info['session_duration']}", 0, 1, 'C')
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Page {self.page_no()}/{{nb}}', 0, 0, 'C')
+
+    def chapter_title(self, title):
+        self.set_font('Arial', 'B', 12)
+        self.cell(0, 10, title, 0, 1, 'L')
+        self.ln(2)
+
+    def chapter_body(self, body):
+        self.set_font('Arial', '', 10)
+        self.multi_cell(0, 6, body)
+        self.ln()
+
+def export_summary_report_pdf(records: list, filename="summary_report.pdf"):
+    """
+    Exports a detailed and professional summary report of all student records to a PDF file in tabular format.
+    """
     try:
         header_info = get_report_header_info()
-        student_records = process_records_for_display(records)
-        stats = calculate_statistics(student_records)
-        
-        if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            user_prefix = header_info['username']
-            filename = f"student_report_{user_prefix}_{timestamp}.pdf"
-        
-        if not filename.endswith(".pdf"):
-            filename += ".pdf"
-        
-        logger.info(f"generating professional pdf report: {filename}")
-        
-        from fpdf import FPDF
-        
-        # minimal color palette
-        COLORS = {
-            'black': (0, 0, 0),
-            'dark_gray': (80, 80, 80),
-            'light_gray': (230, 230, 230),
-            'white': (255, 255, 255)
-        }
-        
-        class MinimalReportPDF(FPDF):
-            def header(self):
-                self.set_font('Times', 'B', 14)
-                self.set_text_color(*COLORS['black'])
-                self.cell(0, 10, 'Student Result Management System', ln=1, align='C')
-                self.set_font('Times', '', 10)
-                self.set_text_color(*COLORS['dark_gray'])
-                report_type = 'Personal Academic Report' if header_info['role'] == 'student' else 'Administrative Report'
-                self.cell(0, 6, report_type, ln=1, align='C')
-                self.ln(5)
-                self.line(10, self.get_y(), 200, self.get_y())
-                self.ln(5)
-            
-            def footer(self):
-                self.set_y(-15)
-                self.set_font('Times', 'I', 8)
-                self.set_text_color(*COLORS['dark_gray'])
-                self.cell(0, 10, f'Generated on {header_info["generation_time"]} | Page {self.page_no()}', align='C')
-            
-            def section_header(self, title):
-                self.ln(8)
-                self.set_font('Times', 'B', 12)
-                self.set_text_color(*COLORS['black'])
-                self.cell(0, 8, title, ln=1)
-                self.set_line_width(0.5)
-                self.set_draw_color(*COLORS['dark_gray'])
-                self.line(10, self.get_y(), 200, self.get_y())
-                self.ln(5)
-            
-            def info_box(self, title, content):
-                self.set_font('Times', 'B', 10)
-                self.set_text_color(*COLORS['black'])
-                self.cell(0, 6, title, ln=1)
-                self.set_font('Times', '', 9)
-                self.set_text_color(*COLORS['dark_gray'])
-                self.multi_cell(0, 6, content)
-                self.ln(4)
-        
-        pdf = MinimalReportPDF()
+        pdf = PDFReport(header_info)
+        pdf.alias_nb_pages()
         pdf.add_page()
-        
-        pdf.section_header("Report Information")
-        info_content = f"Generated by: {header_info['generated_by']}\nSession Duration: {header_info['session_duration']}"
-        pdf.info_box("Details", info_content)
-        
-        pdf.section_header("Summary Statistics")
-        stat_items = [
-            ("Total Students", str(stats.get('total_students', 0))),
-            ("Total Courses", str(stats.get('total_courses', 0))),
-            ("Average Score", f"{stats.get('average_score', 0):.1f}%"),
-            ("Highest Score", f"{stats.get('highest_score', 0):.1f}%"),
-            ("Lowest Score", f"{stats.get('lowest_score', 0):.1f}%")
-        ]
-        
-        pdf.set_font('Times', '', 9)
-        pdf.set_text_color(*COLORS['dark_gray'])
-        for label, value in stat_items:
-            pdf.cell(50, 6, label, align='L')
-            pdf.cell(0, 6, value, ln=1, align='L')
-        pdf.ln(5)
-        
-        pdf.section_header("Grade Distribution")
-        grade_dist = stats.get('grade_distribution', {})
-        total_courses = stats.get('total_courses', 1)
-        
-        if total_courses > 0:
-            pdf.set_font('Times', '', 9)
-            pdf.set_text_color(*COLORS['dark_gray'])
-            for grade in ['A', 'B', 'C', 'D', 'F']:
-                count = grade_dist.get(grade, 0)
-                percentage = (count / total_courses) * 100 if total_courses > 0 else 0
-                pdf.cell(20, 6, grade, align='L')
-                pdf.cell(60, 6, f"{count} courses ({percentage:.1f}%)", align='L')
-                bar_width = min(percentage, 80)
-                pdf.set_fill_color(*COLORS['light_gray'])
-                pdf.rect(90, pdf.get_y() + 1, bar_width, 4, 'F')
-                pdf.ln(8)
-        
-        if header_info['role'] == 'admin' and stats.get('program_distribution'):
-            pdf.section_header("Program Distribution")
-            program_data = stats['program_distribution'].items()
-            total_students = sum(stats['program_distribution'].values())
-            
-            pdf.set_font('Times', '', 9)
-            pdf.set_text_color(*COLORS['dark_gray'])
-            for program, count in program_data:
-                percentage = (count / total_students) * 100 if total_students > 0 else 0
-                pdf.cell(80, 6, program[:35], align='L')
-                pdf.cell(0, 6, f"{count} students ({percentage:.1f}%)", ln=1, align='L')
-            pdf.ln(5)
-        
-        pdf.section_header("Detailed Academic Records")
-        
-        pdf.set_font('Times', 'B', 9)
-        pdf.set_fill_color(*COLORS['light_gray'])
-        pdf.set_text_color(*COLORS['black'])
-        
-        if header_info['role'] == 'admin':
-            headers = [
-                ('Student Name', 40),
-                ('Index', 25),
-                ('Course Code', 25),
-                ('Course Title', 45),
-                ('Score', 20),
-                ('Grade', 15),
-                ('Credits', 20)
-            ]
-        else:
-            headers = [
-                ('Course Code', 30),
-                ('Course Title', 60),
-                ('Score', 20),
-                ('Grade', 20),
-                ('Credits', 20),
-                ('Semester', 30)
-            ]
-        
-        for header_text, width in headers:
-            pdf.cell(width, 8, header_text, border=1, align='C', fill=True)
-        pdf.ln()
-        
-        pdf.set_font('Times', '', 8)
-        row_count = 0
-        
-        if isinstance(student_records, dict):
-            sorted_students = sorted(student_records.items(), 
-                                   key=lambda x: x[1]['profile']['name'].lower())
-        else:
-            sorted_students = []
-        
-        for index_number, student_data in sorted_students:
-            profile = student_data['profile']
-            grades = student_data['grades']
-            
-            if not grades:
-                pdf.set_fill_color(*COLORS['light_gray'])
-                pdf.set_text_color(*COLORS['dark_gray'])
-                if header_info['role'] == 'admin':
-                    pdf.cell(40, 8, profile['name'][:25], border=1, align='L', fill=True)
-                    pdf.cell(25, 8, str(index_number), border=1, align='C', fill=True)
-                    pdf.cell(110, 8, 'No courses recorded', border=1, align='C', fill=True)
-                pdf.ln()
-                row_count += 1
-                continue
-            
-            for grade in sorted(grades, key=lambda g: g.get('semester', '')):
-                row_color = COLORS['white'] if row_count % 2 == 0 else COLORS['light_gray']
-                pdf.set_fill_color(*row_color)
-                pdf.set_text_color(*COLORS['dark_gray'])
-                
-                if header_info['role'] == 'admin':
-                    pdf.cell(40, 8, profile['name'][:25], border=1, align='L', fill=True)
-                    pdf.cell(25, 8, str(index_number), border=1, align='C', fill=True)
-                    pdf.cell(25, 8, grade.get('course_code', ''), border=1, align='L', fill=True)
-                    pdf.cell(45, 8, grade.get('course_title', '')[:25], border=1, align='L', fill=True)
-                    pdf.cell(20, 8, f"{grade.get('score', 0):.0f}", border=1, align='C', fill=True)
-                    pdf.cell(15, 8, grade.get('letter_grade', 'F'), border=1, align='C', fill=True)
-                    pdf.cell(20, 8, str(grade.get('credit_hours', 0)), border=1, align='C', fill=True)
-                else:
-                    pdf.cell(30, 8, grade.get('course_code', ''), border=1, align='L', fill=True)
-                    pdf.cell(60, 8, grade.get('course_title', '')[:30], border=1, align='L', fill=True)
-                    pdf.cell(20, 8, f"{grade.get('score', 0):.0f}", border=1, align='C', fill=True)
-                    pdf.cell(20, 8, grade.get('letter_grade', 'F'), border=1, align='C', fill=True)
-                    pdf.cell(20, 8, str(grade.get('credit_hours', 0)), border=1, align='C', fill=True)
-                    pdf.cell(30, 8, grade.get('semester', '')[:12], border=1, align='C', fill=True)
-                
-                pdf.ln()
-                row_count += 1
-                
-                if pdf.get_y() > 260:
-                    pdf.add_page()
-                    pdf.set_font('Times', 'B', 9)
-                    pdf.set_fill_color(*COLORS['light_gray'])
-                    pdf.set_text_color(*COLORS['black'])
-                    for header_text, width in headers:
-                        pdf.cell(width, 8, header_text, border=1, align='C', fill=True)
-                    pdf.ln()
-                    pdf.set_font('Times', '', 8)
-        
+        pdf.set_left_margin(20)
+        pdf.set_right_margin(20)
+
+        # Add a professional header
+        pdf.set_font('Arial', 'B', 16)
+        pdf.cell(0, 10, 'Student Results Summary Report', 0, 1, 'C')
+        pdf.set_font('Arial', 'I', 10)
+        pdf.cell(0, 10, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 0, 1, 'C')
         pdf.ln(10)
-        pdf.set_font('Times', 'I', 8)
-        pdf.set_text_color(*COLORS['dark_gray'])
-        pdf.multi_cell(0, 6, f"This report was generated by the Student Result Management System\nFor questions, contact your system administrator\nReport ID: {filename.split('.')[0]}")
-        
-        try:
+
+        if not records:
+            pdf.set_font('Arial', '', 12)
+            pdf.cell(0, 10, "No student records available.", 0, 1, 'C')
+            logger.info(f"Generated empty summary report: {filename}")
             pdf.output(filename)
-            logger.info(f"professional pdf report successfully exported to {filename}")
             return True
-        except Exception as save_error:
-            logger.error(f"failed to save pdf file: {save_error}")
-            return False
-        
-    except ImportError:
-        logger.error("fpdf2 library not installed. install with: pip install fpdf2")
-        return False
+
+        # Group records by course
+        courses = {}
+        for student in records:
+            for grade in student['grades']:
+                course_code = grade['course_code']
+                if course_code not in courses:
+                    courses[course_code] = []
+                courses[course_code].append({
+                    'name': student['profile']['full_name'],
+                    'index': student['profile']['index_number'],
+                    'score': grade['score'],
+                    'grade': grade['grade']
+                })
+
+        # Iterate through courses and add sections
+        for course_code, students in courses.items():
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(0, 10, f"Course: {course_code}", 0, 1, 'L')
+
+            # Course statistics
+            scores = [student['score'] for student in students]
+            average_score = sum(scores) / len(scores)
+            highest_score = max(scores)
+            lowest_score = min(scores)
+
+            pdf.set_font('Arial', '', 12)
+            pdf.cell(0, 10, f"Average Score: {average_score:.2f}", 0, 1, 'L')
+            pdf.cell(0, 10, f"Highest Score: {highest_score}", 0, 1, 'L')
+            pdf.cell(0, 10, f"Lowest Score: {lowest_score}", 0, 1, 'L')
+            pdf.ln(5)
+
+            # Tabular header
+            pdf.set_font('Arial', 'B', 12)
+            pdf.cell(50, 10, "Name", 1, 0, 'C')
+            pdf.cell(30, 10, "Index", 1, 0, 'C')
+            pdf.cell(20, 10, "Score", 1, 0, 'C')
+            pdf.cell(20, 10, "Grade", 1, 1, 'C')
+
+            # Add student data with color coding for grades
+            pdf.set_font('Arial', '', 10)
+            for student in students:
+                grade_color = {
+                    'A': (0, 128, 0),  # Green
+                    'B': (0, 0, 255),  # Blue
+                    'C': (255, 255, 0),  # Yellow
+                    'D': (255, 165, 0),  # Orange
+                    'F': (255, 0, 0)   # Red
+                }.get(student['grade'], (0, 0, 0))  # Default to black
+
+                pdf.set_text_color(*grade_color)
+                pdf.cell(50, 10, student['name'], 1, 0, 'C')
+                pdf.cell(30, 10, student['index'], 1, 0, 'C')
+                pdf.cell(20, 10, str(student['score']), 1, 0, 'C')
+                pdf.cell(20, 10, student['grade'], 1, 1, 'C')
+
+            pdf.set_text_color(0, 0, 0)  # Reset to black
+            pdf.ln(10)
+
+        logger.info(f"Summary report exported to {filename}")
+        pdf.output(filename)
+        return True
     except Exception as e:
-        logger.error(f"failed to export professional pdf report: {e}")
+        logger.error(f"Error exporting summary report to PDF: {e}")
         return False
 
-def export_student_personal_report(student_index, format_type='txt'):
-    """export personalized report for a specific student"""
-    from db import fetch_student_by_index_number, connect_to_db
-    
+def export_personal_academic_report(student_index, format_type='pdf'):
+    """
+    Generates a personal academic report for a specific student.
+    Can export to PDF or TXT.
+    """
+    logger.info(f"generating personal academic report for {student_index} in {format_type} format")
     try:
         conn = connect_to_db()
         if conn:
             student_data = fetch_student_by_index_number(conn, student_index)
             conn.close()
-            
-            if student_data and student_data['grades']:
+
+            if student_data and student_data.get('profile') and student_data.get('grades'):
+                # process_records_for_display expects a list of flattened records
+                # so we need to transform student_data back into that format for consistency
                 records = []
                 for grade in student_data['grades']:
                     record = {**student_data['profile'], **grade}
@@ -469,3 +315,12 @@ def export_admin_comprehensive_report(records, format_type='txt'):
     except Exception as e:
         logger.error(f"error generating admin comprehensive report: {e}")
         return False
+
+def fetch_all_records_with_admin_check(conn):
+    """Fetch all records with admin validation."""
+    current_user = session_manager.get_current_user()
+    if not current_user or current_user['role'] != 'admin':
+        logger.warning("Unauthorized access attempt to fetch all records.")
+        return None
+
+    return fetch_all_records(conn)
