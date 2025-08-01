@@ -12,14 +12,8 @@ logger = logging.getLogger(__name__)
 def connect_to_db():
     """establish connection to the postgresql database"""
     try:
-        logger.debug("attempting database connection...")
-        # --- DIAGNOSTIC PRINTS FOR CONNECTION ---
-        logger.info(f"\n[DB_CONNECT] Attempting to connect to:")
-        logger.info(f"[DB_CONNECT]   DB_NAME: {DB_NAME}")
-        logger.info(f"[DB_CONNECT]   DB_USER: {DB_USER}")
-        logger.info(f"[DB_CONNECT]   DB_HOST: {DB_HOST}")
-        logger.info(f"[DB_CONNECT]   DB_PORT: {DB_PORT}")
-        # --- END DIAGNOSTIC PRINTS ---
+        logger.debug("Attempting database connection...")
+        logger.debug(f"[DB_CONNECT] DB_NAME: {DB_NAME}, DB_USER: {DB_USER}, DB_HOST: {DB_HOST}, DB_PORT: {DB_PORT}")
 
         conn = psycopg2.connect(
             dbname=DB_NAME,
@@ -28,128 +22,108 @@ def connect_to_db():
             host=DB_HOST,
             port=DB_PORT
         )
-        logger.info("database connection established successfully")
-        logger.info("[DB_CONNECT] Database connection established successfully!") 
+        logger.info("Database connection established successfully.")
         return conn
+    # Improved error handling
     except psycopg2.OperationalError as e:
-        logger.error(f"database connection failed - operational error: {e}")
-        logger.error(f"[DB_CONNECT ERROR] Database connection failed: {e}") 
+        logger.error(f"OperationalError during database connection: {e}")
         return None
     except Exception as e:
-        logger.error(f"an unexpected error occurred during database connection: {e}")
-        logger.error(f"[DB_CONNECT ERROR] An unexpected error occurred: {e}") 
+        logger.error(f"Unexpected error during database connection: {e}")
         return None
 
-def create_tables_if_not_exist(conn):
-    """Create necessary tables if they don't exist."""
+def create_table(conn, table_name):
+    """Create a specific table if it doesn't exist."""
     if conn is None:
         logger.error("No database connection to create tables.")
         return False
     try:
         with conn.cursor() as cur:
-            # Users table (for authentication)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id SERIAL PRIMARY KEY,
-                    username VARCHAR(50) UNIQUE NOT NULL,
-                    password VARCHAR(255) NOT NULL,
-                    role VARCHAR(50) NOT NULL,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
-            logger.info("users table checked/created.")
-
-            # Student Profiles table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS student_profiles (
-                    student_id SERIAL PRIMARY KEY,
-                    index_number VARCHAR(20) UNIQUE NOT NULL,
-                    full_name VARCHAR(255) NOT NULL,
-                    dob DATE,
-                    gender VARCHAR(10),
-                    contact_email VARCHAR(255),
-                    contact_phone VARCHAR(20),
-                    program VARCHAR(100),
-                    year_of_study INT,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
-            logger.info("student_profiles table checked/created.")
-
-            # Courses table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS courses (
-                    course_id SERIAL PRIMARY KEY,
-                    course_code VARCHAR(20) UNIQUE NOT NULL,
-                    course_title VARCHAR(255) NOT NULL,
-                    credit_hours INT NOT NULL,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
-            logger.info("courses table checked/created.")
-
-            # Semesters table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS semesters (
-                    semester_id SERIAL PRIMARY KEY,
-                    semester_name VARCHAR(100) UNIQUE NOT NULL,
-                    academic_year VARCHAR(20),
-                    start_date DATE NOT NULL,
-                    end_date DATE NOT NULL,
-                    is_current BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
-            logger.info("semesters table checked/created.")
-
-            # Set a unique constraint to ensure only one semester can be current
-            cur.execute("""
-                CREATE UNIQUE INDEX IF NOT EXISTS unique_current_semester
-                ON semesters (is_current)
-                WHERE is_current IS TRUE;
-            """)
-            logger.info("unique_current_semester index checked/created.")
-
-            # Assessments table (e.g., Midterm, Final, Quiz)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS assessments (
-                    assessment_id SERIAL PRIMARY KEY,
-                    course_id INT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
-                    assessment_name VARCHAR(100) NOT NULL,
-                    max_score INT NOT NULL,
-                    weight DECIMAL(5,2) NOT NULL,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(course_id, assessment_name)
-                );
-            """)
-            logger.info("assessments table checked/created.")
-
-            # Grades table (linking students, courses, semesters, and scores)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS grades (
-                    grade_id SERIAL PRIMARY KEY,
-                    student_id INT NOT NULL REFERENCES student_profiles(student_id) ON DELETE CASCADE,
-                    course_id INT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
-                    semester_id INT NOT NULL REFERENCES semesters(semester_id) ON DELETE CASCADE,
-                    score DECIMAL(5,2) NOT NULL,
-                    grade VARCHAR(2), -- e.g., A, B+, C
-                    grade_point DECIMAL(3,2),
-                    academic_year VARCHAR(20),
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(student_id, course_id, semester_id) -- A student can only have one grade per course per semester
-                );
-            """)
-            logger.info("grades table checked/created.")
-
-            conn.commit()
-            logger.info("All tables checked/created successfully.")
+            cur.execute(TABLES[table_name])
+            logger.info(f"{table_name} table checked/created.")
             return True
     except Exception as e:
-        logger.error(f"Error creating tables: {e}")
-        conn.rollback()
+        logger.error(f"Error creating {table_name} table: {e}")
         return False
+
+# Modularized table creation logic
+TABLES = {
+    "users": """
+        CREATE TABLE IF NOT EXISTS users (
+            user_id SERIAL PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(50) NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    """,
+    "student_profiles": """
+        CREATE TABLE IF NOT EXISTS student_profiles (
+            student_id SERIAL PRIMARY KEY,
+            index_number VARCHAR(20) UNIQUE NOT NULL,
+            full_name VARCHAR(255) NOT NULL,
+            dob DATE,
+            gender VARCHAR(10),
+            contact_email VARCHAR(255),
+            contact_phone VARCHAR(20),
+            program VARCHAR(100),
+            year_of_study INT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    """,
+    "courses": """
+        CREATE TABLE IF NOT EXISTS courses (
+            course_id SERIAL PRIMARY KEY,
+            course_code VARCHAR(20) UNIQUE NOT NULL,
+            course_title VARCHAR(255) NOT NULL,
+            credit_hours INT NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    """,
+    "semesters": """
+        CREATE TABLE IF NOT EXISTS semesters (
+            semester_id SERIAL PRIMARY KEY,
+            semester_name VARCHAR(100) UNIQUE NOT NULL,
+            academic_year VARCHAR(20),
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            is_current BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    """,
+    "assessments": """
+        CREATE TABLE IF NOT EXISTS assessments (
+            assessment_id SERIAL PRIMARY KEY,
+            course_id INT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+            assessment_name VARCHAR(100) NOT NULL,
+            max_score INT NOT NULL,
+            weight DECIMAL(5,2) NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(course_id, assessment_name)
+        );
+    """,
+    "grades": """
+        CREATE TABLE IF NOT EXISTS grades (
+            grade_id SERIAL PRIMARY KEY,
+            student_id INT NOT NULL REFERENCES student_profiles(student_id) ON DELETE CASCADE,
+            course_id INT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+            semester_id INT NOT NULL REFERENCES semesters(semester_id) ON DELETE CASCADE,
+            score DECIMAL(5,2) NOT NULL,
+            grade VARCHAR(2), -- e.g., A, B+, C
+            grade_point DECIMAL(3,2),
+            academic_year VARCHAR(20),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(student_id, course_id, semester_id) -- A student can only have one grade per course per semester
+        );
+    """
+}
+
+def create_tables_if_not_exist(conn):
+    """Create all necessary tables if they don't exist."""
+    for table_name in TABLES.keys():
+        create_table(conn, table_name)
 
 # --- STUDENT PROFILE CRUD OPERATIONS ---
 def insert_student_profile(conn, index_number, full_name, dob, gender, contact_email=None, contact_phone=None, program=None, year_of_study=None):
@@ -207,41 +181,37 @@ def fetch_student_by_index_number(conn, index_number):
         return None
 
 def fetch_all_records(conn):
-    """Fetch all student profiles along with their grades."""
-    if conn is None: return []
+    """
+    Fetch all student profiles, courses, semesters, and grades from the database.
+    """
     try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # Fetch all student profiles
-            cursor.execute("SELECT * FROM student_profiles;")
-            students = cursor.fetchall()
+        cursor = conn.cursor()
 
-            all_records = []
-            for student in students:
-                # For each student, fetch their grades
-                cursor.execute("""
-                    SELECT
-                        g.score, g.grade, g.grade_point, g.academic_year,
-                        c.course_code, c.course_title, c.credit_hours,
-                        s.semester_name
-                    FROM grades g
-                    JOIN courses c ON g.course_id = c.course_id
-                    JOIN semesters s ON g.semester_id = s.semester_id
-                    WHERE g.student_id = %s;
-                """, (student['student_id'],))
-                grades = cursor.fetchall()
-                
-                # Combine profile and each grade into a single record for a flattened view
-                if grades:
-                    for grade_record in grades:
-                        record = {**student, **grade_record}
-                        all_records.append(record)
-                else:
-                    # If a student has no grades, still include their profile
-                    all_records.append(student) 
-            return all_records
+        # Fetch all student profiles
+        cursor.execute("SELECT * FROM student_profiles")
+        students = cursor.fetchall()
+
+        # Fetch all courses
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+
+        # Fetch all semesters
+        cursor.execute("SELECT * FROM semesters")
+        semesters = cursor.fetchall()
+
+        # Fetch all grades
+        cursor.execute("SELECT * FROM grades")
+        grades = cursor.fetchall()
+
+        return {
+            "students": students,
+            "courses": courses,
+            "semesters": semesters,
+            "grades": grades
+        }
     except Exception as e:
         logger.error(f"Error fetching all records: {e}")
-        return []
+        return None
 
 def update_student_profile(conn, student_id, updates):
     """Update a student's profile."""
@@ -621,7 +591,7 @@ def insert_complete_student_record(conn, student_profile_data, grade_data):
     try:
         # Disable autocommit to manage transaction manually
         conn.autocommit = False 
-        
+
         # 1. Insert/Get Student Profile
         student_id = fetch_student_by_index_number(conn, student_profile_data['index_number'])
         if student_id and student_id.get('student_id'): # Check if student_id is not None and has the key
@@ -629,73 +599,39 @@ def insert_complete_student_record(conn, student_profile_data, grade_data):
             logger.info(f"Student {student_profile_data['index_number']} already exists with ID: {student_id}. Skipping profile insertion.")
             # Optionally update existing profile if needed, but for now, just use its ID
         else:
-            student_id = insert_student_profile(conn,
-                                                student_profile_data['index_number'],
-                                                student_profile_data['name'],
-                                                student_profile_data.get('dob'),
-                                                student_profile_data.get('gender'),
-                                                student_profile_data.get('contact_info'),
-                                                None, # Assuming phone not directly in this data for now
-                                                student_profile_data.get('program'),
-                                                student_profile_data.get('year_of_study'))
-            if not student_id:
-                raise Exception("Failed to insert or retrieve student profile.")
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO student_profiles (index_number, full_name, dob, gender, contact_email, contact_phone, program, year_of_study)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING student_id;
+                """, (
+                    student_profile_data['index_number'],
+                    student_profile_data['name'],
+                    student_profile_data.get('dob'),
+                    student_profile_data.get('gender'),
+                    student_profile_data.get('contact_email'),
+                    student_profile_data.get('contact_phone'),
+                    student_profile_data.get('program'),
+                    student_profile_data.get('year_of_study')
+                ))
+                student_id = cursor.fetchone()[0]
+                conn.commit()
+                logger.info(f"Student profile '{student_profile_data['name']}' ({student_profile_data['index_number']}) inserted with ID: {student_id}")
 
-        # 2. Get Course ID
-        course = fetch_course_by_code(conn, grade_data['course_code'])
-        if not course:
-            course_id = insert_course(conn, grade_data['course_code'], grade_data['course_title'], grade_data['credit_hours'])
-            if not course_id:
-                raise Exception(f"Failed to insert course {grade_data['course_code']}.")
-        else:
-            course_id = course['course_id']
-            logger.info(f"Course {grade_data['course_code']} already exists with ID: {course_id}. Skipping course insertion.")
+        # 2. Insert Grade(s)
+        if grade_data:
+            for grade in grade_data:
+                insert_grade(conn, student_id, grade['course_id'], grade['semester_id'], grade['score'], grade['letter_grade'], grade['grade_point'], grade['academic_year'])
 
-        # 3. Get Semester ID
-        semester = fetch_semester_by_name(conn, grade_data['semester'])
-        if not semester:
-            # Fallback: if semester doesn't exist, try to infer dates or create with placeholders
-            # For a real system, you'd likely want to ensure semesters are pre-defined
-            logger.warning(f"Semester '{grade_data['semester']}' not found. Attempting to create with placeholder dates.")
-            current_year = datetime.now().year
-            # Example placeholder dates (adjust as needed for typical semester lengths)
-            start_date = datetime.strptime(f'09-01-{current_year}', '%m-%d-%Y').date() # Sept 1st
-            end_date = datetime.strptime(f'12-31-{current_year}', '%m-%d-%Y').date() # Dec 31st
-            if "spring" in grade_data['semester'].lower():
-                start_date = datetime.strptime(f'01-01-{current_year}', '%m-%d-%Y').date()
-                end_date = datetime.strptime(f'05-31-{current_year}', '%m-%d-%Y').date()
-
-            semester_id = insert_semester(conn, grade_data['semester'], start_date, end_date)
-            if not semester_id:
-                raise Exception(f"Failed to insert semester {grade_data['semester']}.")
-        else:
-            semester_id = semester['semester_id']
-            logger.info(f"Semester {grade_data['semester']} already exists with ID: {semester_id}. Skipping semester insertion.")
-
-        # 4. Insert Grade
-        # Calculate grade and grade_point if not already provided in grade_data
-        from grade_util import calculate_grade, get_grade_point # Import locally to avoid circular dependency on first import
-        letter_grade = calculate_grade(grade_data['score'])
-        grade_point = get_grade_point(grade_data['score']) # Using default 4.0 scale
-
-        grade_id = insert_grade(conn, 
-                                student_id, 
-                                course_id, 
-                                semester_id, 
-                                grade_data['score'], 
-                                letter_grade, 
-                                grade_point,
-                                grade_data.get('academic_year'))
-        if not grade_id:
-            raise Exception(f"Failed to insert grade for {student_profile_data['index_number']} in {grade_data['course_code']}.")
-
-        conn.commit() # Commit all changes if everything was successful
-        logger.info(f"Successfully imported complete record for {student_profile_data['index_number']}.")
+        # Commit transaction
+        conn.commit()
+        logger.info(f"Transaction completed for student {student_profile_data['index_number']}.")
         return True
 
     except Exception as e:
-        conn.rollback() # Rollback all changes if any error occurs
-        logger.error(f"Transactional import failed for {student_profile_data.get('index_number', 'N/A')}: {e}")
+        logger.error(f"Transaction failed for student {student_profile_data['index_number']}: {e}")
+        conn.rollback()
         return False
+
     finally:
-        conn.autocommit = True # Re-enable autocommit
+        conn.autocommit = True

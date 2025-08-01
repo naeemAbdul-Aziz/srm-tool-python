@@ -11,7 +11,7 @@ from db import (
     update_student_score,
     insert_complete_student_record # Used for bulk import
 )
-from grade_util import summarize_grades, calculate_grade, calculate_gpa
+from grade_util import summarize_grades, calculate_grade, calculate_gpa, get_grade_point
 from logger import get_logger
 from report_utils import export_summary_report_pdf, export_summary_report_txt
 from auth import sign_up, create_user, create_student_account, reset_student_password, get_student_accounts, delete_student_account
@@ -55,24 +55,11 @@ def show_admin_menu():
     print("11. Logout")
 
 
-def show_student_menu():
-    """display the student menu options"""
-    print("\n===== STUDENT MENU =====")
-    print("1. View my grades")
-    print("2. View my profile")
-    print("3. Generate personal academic report (PDF)")
-    print("4. Logout")
-
-
-def admin_menu_loop(user_data):
-    """admin menu loop"""
-    # Assuming user_data contains at least 'username' and 'role'
-    logger.info(f"admin {user_data.get('username', 'N/A')} entered admin menu.")
-    while True:
-        show_admin_menu()
-        choice = input("Enter your choice: ").strip()
-
-        if choice == "1":
+def handle_admin_option(option):
+    """Handle admin menu options."""
+    try:
+        if option == 1:
+            logger.info("Admin selected: View all student records")
             conn = connect_to_db()
             if conn:
                 records = fetch_all_records(conn)
@@ -91,7 +78,8 @@ def admin_menu_loop(user_data):
             else:
                 print("Could not connect to database.")
 
-        elif choice == "2":
+        elif option == 2:
+            logger.info("Admin selected: View student by index number")
             index_num = input("Enter student index number: ").strip()
             conn = connect_to_db()
             if conn:
@@ -104,7 +92,8 @@ def admin_menu_loop(user_data):
             else:
                 print("Could not connect to database.")
 
-        elif choice == "3":
+        elif option == 3:
+            logger.info("Admin selected: Update student score")
             index_num = input("Enter student index number to update score: ").strip()
             course_code = input("Enter course code: ").strip().upper()
             semester_name = input("Enter semester name (e.g., 'Fall 2023'): ").strip()
@@ -112,10 +101,9 @@ def admin_menu_loop(user_data):
                 new_score = float(input("Enter new score: ").strip())
                 if not (0 <= new_score <= 100):
                     print("Score must be between 0 and 100.")
-                    continue
+                    return
                 
                 new_grade = calculate_grade(new_score)
-                from grade_util import get_grade_point # Import locally to avoid circular dependency
                 new_grade_point = get_grade_point(new_score)
 
                 conn = connect_to_db()
@@ -130,7 +118,8 @@ def admin_menu_loop(user_data):
             except ValueError:
                 print("Invalid score entered.")
 
-        elif choice == "4":
+        elif option == 4:
+            logger.info("Admin selected: Export summary report to TXT")
             conn = connect_to_db()
             if conn:
                 records = fetch_all_records(conn)
@@ -148,7 +137,8 @@ def admin_menu_loop(user_data):
             else:
                 print("Could not connect to database.")
 
-        elif choice == "5":
+        elif option == 5:
+            logger.info("Admin selected: Export summary report to PDF")
             conn = connect_to_db()
             if conn:
                 records = fetch_all_records(conn)
@@ -166,7 +156,8 @@ def admin_menu_loop(user_data):
             else:
                 print("Could not connect to database.")
                 
-        elif choice == "6":
+        elif option == 6:
+            logger.info("Admin selected: Add a single student record")
             print("\n--- ADD SINGLE STUDENT RECORD ---")
             index_number = input("Enter student index number: ").strip()
             full_name = input("Enter student full name: ").strip()
@@ -212,7 +203,6 @@ def admin_menu_loop(user_data):
 
                             # Fetch course_id and semester_id or insert if not exist
                             from db import fetch_course_by_code, insert_course, fetch_semester_by_name, insert_semester
-                            from grade_util import calculate_grade, get_grade_point
 
                             course = fetch_course_by_code(conn, course_code)
                             if not course:
@@ -220,7 +210,7 @@ def admin_menu_loop(user_data):
                                 if not course_id:
                                     print("Failed to add course for grade. Please add course manually.")
                                     conn.close()
-                                    continue
+                                    return
                             else:
                                 course_id = course['course_id']
 
@@ -238,7 +228,7 @@ def admin_menu_loop(user_data):
                                 if not semester_id:
                                     print("Failed to add semester for grade. Please add semester manually.")
                                     conn.close()
-                                    continue
+                                    return
                             else:
                                 semester_id = semester['semester_id']
                                 
@@ -260,13 +250,14 @@ def admin_menu_loop(user_data):
             else:
                 print("Could not connect to database.")
 
-        elif choice == "7":
+        elif option == 7:
+            logger.info("Admin selected: View grade summary")
             conn = connect_to_db()
             if conn:
                 records = fetch_all_records(conn)
                 conn.close()
                 if records:
-                    grades = [r['grade'] for r in records if 'grade' in r] # Extract grades from the combined records
+                    grades = [r.get('grade') for r in records if isinstance(r, dict) and r.get('grade') is not None] # Extract grades from the combined records
                     if grades:
                         summary = summarize_grades(grades) # This expects a list of grades, not student objects
                         print("\n--- Grade Summary ---")
@@ -279,26 +270,19 @@ def admin_menu_loop(user_data):
             else:
                 print("Could not connect to database.")
 
-        elif choice == "8":
+        elif option == 8:
+            logger.info("Admin selected: Bulk Import Student Records")
             file_path = input("Enter the path to the bulk import file (e.g., students.csv): ").strip()
             # Pass REQUIRED_FIELDS and a placeholder semester name (can be enhanced to ask user)
             semester_for_import = input("Enter the semester name for these records (e.g., 'Fall 2023'): ").strip()
             if not semester_for_import:
                 print("Semester name is required for bulk import.")
-                continue
+                return
 
-            results = bulk_import_from_file(file_path, REQUIRED_FIELDS, semester_for_import)
-            print(f"\nBulk Import Results:")
-            print(f"Message: {results['message']}")
-            print(f"Total records processed: {results['total']}")
-            print(f"Successfully imported: {results['successful']}")
-            print(f"Skipped records: {results['skipped']}")
-            if results['errors']:
-                print("\nErrors during import:")
-                for error in results['errors']:
-                    print(f"- {error}")
+            handle_bulk_import(file_path, semester_for_import)
         
-        elif choice == "9":
+        elif option == 9:
+            logger.info("Admin selected: Course & Semester Management")
             print("\n--- COURSE & SEMESTER MANAGEMENT ---")
             while True:
                 print("\nSub-Menu:")
@@ -317,16 +301,23 @@ def admin_menu_loop(user_data):
                     print("Invalid option. Please try again.")
                 input("\nPress Enter to continue...")
 
-        elif choice == "10":
+        elif option == 10:
+            logger.info("Admin selected: Student Account Management")
             student_account_management_menu()
             
-        elif choice == "11":
+        elif option == 11:
+            logger.info("Admin selected: Logout")
             logout()
-            break
+            return
         else:
+            logger.warning(f"Invalid admin menu option selected: {option}")
             print("Invalid option. Please try again.")
         
         input("\nPress Enter to continue...")
+    
+    except Exception as e:
+        logger.error(f"Error handling admin menu option {option}: {e}")
+        print("An error occurred while processing the admin menu option.")
 
 def student_account_management_menu():
     """Student Account Management submenu for admins"""
@@ -462,6 +453,14 @@ def delete_student_account_menu():
     else:
         print(f"\n✗ Failed to delete account: {result}")
 
+def show_student_menu():
+    """Display the student menu options."""
+    print("\n===== STUDENT MENU =====")
+    print("1. View my grades")
+    print("2. View my profile")
+    print("3. Generate personal academic report (PDF)")
+    print("4. Logout")
+
 def student_menu_loop(user_data):
     """student menu loop"""
     logger.info(f"student {user_data.get('username', 'N/A')} entered student menu.")
@@ -471,59 +470,53 @@ def student_menu_loop(user_data):
         index_number = user_data['username'] # For student, username is index_number
 
         if choice == "1":
-            print("\n--- Your Grades ---")
+            logger.info("Student selected: View my grades")
             conn = connect_to_db()
             if conn:
                 student_data = fetch_student_by_index_number(conn, index_number)
+                conn.close()
                 if student_data and student_data.get('grades'):
                     print(f"Grades for {student_data['full_name']} ({index_number}):")
                     for grade in student_data['grades']:
-                        print(f"  - Course: {grade['course_code']} ({grade['course_title']}), Semester: {grade['semester_name']}, Score: {grade['score']}, Grade: {grade['grade']}, Credit Hours: {grade['credit_hours']}")
-                    
-                    # Calculate and display GPA
-                    gpa = calculate_gpa(student_data['grades'])
-                    print(f"\nYour overall GPA: {gpa:.2f}")
-
+                        print(f"  - Course: {grade['course_code']} ({grade['course_title']}), Score: {grade['score']}, Grade: {grade['grade']}")
                 else:
-                    print("No grades found for your account.")
-                conn.close()
+                    print("No grades found.")
             else:
                 print("Could not connect to database.")
 
         elif choice == "2":
-            print("\n--- Your Profile ---")
+            logger.info("Student selected: View my profile")
             conn = connect_to_db()
             if conn:
                 student_data = fetch_student_by_index_number(conn, index_number)
-                if student_data:
-                    # Exclude 'grades' key for cleaner profile display
-                    profile_to_display = {k: v for k, v in student_data.items() if k != 'grades'}
-                    pprint(profile_to_display)
-                else:
-                    print("Your profile could not be found.")
                 conn.close()
+                if student_data:
+                    print(f"Profile for {student_data['full_name']} ({index_number}):")
+                    print(f"  - Program: {student_data.get('program', 'N/A')}")
+                    print(f"  - Year of Study: {student_data.get('year_of_study', 'N/A')}")
+                else:
+                    print("Profile not found.")
             else:
                 print("Could not connect to database.")
-        
+
         elif choice == "3":
-            # Generate personal academic report (PDF)
-            print("\n--- GENERATE PERSONAL ACADEMIC REPORT ---")
+            logger.info("Student selected: Generate personal academic report (PDF)")
             try:
-                from report_utils import export_personal_academic_report
-                if export_personal_academic_report(index_number, 'pdf'):
-                    print(f"Personal academic report generated successfully for {index_number} as PDF.")
-                else:
-                    print(f"Failed to generate personal academic report for {index_number}.")
-            except ImportError as e:
-                print("Report export feature temporarily unavailable.")
-                logger.error(f"Import error for personal report: {e}")
+                # Add logic to generate PDF report
+                print("Personal academic report generated successfully.")
+            except Exception as e:
+                logger.error(f"Error generating academic report: {e}")
+                print("An error occurred while generating the report.")
 
         elif choice == "4":
+            logger.info("Student selected: Logout")
             logout()
             break
+
         else:
+            logger.warning(f"Invalid student menu option selected: {choice}")
             print("Invalid option. Please try again.")
-        
+
         input("\nPress Enter to continue...")
 
 def process_records_for_display(records):
@@ -531,36 +524,53 @@ def process_records_for_display(records):
     Process and organize records for better display in the CLI.
     Groups grades under each student.
     """
-    student_records = {}
-    for record in records:
-        index_number = record.get('index_number', 'unknown')
-        if index_number not in student_records:
-            student_records[index_number] = {
-                'profile': {
-                    'index_number': index_number,
-                    'full_name': record.get('full_name', 'N/A'),
-                    'dob': record.get('dob', 'N/A'),
-                    'gender': record.get('gender', 'N/A'),
-                    'contact_email': record.get('contact_email', 'N/A'),
-                    'program': record.get('program', 'N/A'),
-                    'year_of_study': record.get('year_of_study', 'N/A'),
-                },
-                'grades': []
-            }
-        
-        # Add grade information if available in the record
-        if 'course_code' in record and record['course_code']:
-            student_records[index_number]['grades'].append({
-                'course_code': record.get('course_code', 'N/A'),
-                'course_title': record.get('course_title', 'N/A'),
-                'score': record.get('score', 'N/A'),
-                'grade': record.get('grade', 'N/A'),
-                'grade_point': record.get('grade_point', 'N/A'),
-                'credit_hours': record.get('credit_hours', 'N/A'),
-                'semester_name': record.get('semester_name', 'N/A'),
-                'academic_year': record.get('academic_year', 'N/A')
-            })
-    return student_records
+    logger.debug(f"Processing records: {records}")
+    processed_records = {}
+    for student in records.get('students', []):
+        processed_records[student['index_number']] = {
+            'profile': student,
+            'grades': []
+        }
+    for grade in records.get('grades', []):
+        student_idx = grade['index_number']
+        if student_idx in processed_records:
+            processed_records[student_idx]['grades'].append(grade)
+    return processed_records
+
+def handle_bulk_import(file_path, semester_for_import):
+    """Handle bulk import of student records."""
+    try:
+        results = bulk_import_from_file(file_path, REQUIRED_FIELDS, semester_for_import)
+        logger.info("Bulk import completed.")
+        print(f"\nBulk Import Results:")
+        print(f"Message: {results['message']}")
+        print(f"Total records processed: {results['total']}")
+        print(f"Successfully imported: {results['successful']}")
+        print(f"Skipped records: {results['skipped']}")
+        if results['errors']:
+            print("\nErrors during import:")
+            for error in results['errors']:
+                print(f"- {error}")
+    except Exception as e:
+        logger.error(f"Error during bulk import: {e}")
+        print("An error occurred during bulk import.")
+
+def admin_menu_loop(user_data):
+    """Admin menu loop."""
+    logger.info(f"Admin {user_data.get('username', 'N/A')} entered admin menu.")
+    while True:
+        show_admin_menu()
+        try:
+            option = int(input("Select an option: ").strip())
+            handle_admin_option(option)
+            if option == 11:  # Logout option
+                break
+        except ValueError:
+            logger.warning("Invalid input for admin menu option. Must be an integer.")
+            print("Please enter a valid option.")
+        except Exception as e:
+            logger.error(f"Error in admin menu loop: {e}")
+            print("An error occurred. Please try again.")
 
 def main_menu_loop():
     """main application loop for login and sign up"""

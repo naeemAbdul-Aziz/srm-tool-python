@@ -1,7 +1,0 @@
-index_number,name,dob,gender,program,year_of_study,contact_info,course_code,course_title,score,credit_hours,semester,academic_year
-
-1001,John Doe,2002-05-15,Male,Computer Science,3,john.doe@example.com,MATH101,Basic Mathematics,85,3,Fall 2023,2023/2024
-1002,Jane Smith,2003-08-22,Female,Information Technology,2,jane.smith@example.com,ENG102,English Composition,78,2,Spring 2024,2023/2024
-1003,Kofi Mensah,2004-11-10,Male,Engineering,1,kofi.mensah@example.com,HIST201,History of Ghana,92,3,Summer 2024,2023/2024
-1004,Akosua Asante,2001-03-30,Female,Business Administration,4,akosua.asante@example.com,SCI301,Integrated Science,88,4,Fall 2023,2023/2024
-1005,Kojo Owusu,2003-12-05,Male,Mathematics,2,kojo.owusu@example.com,ECON401,Economics Principles,65,3,Spring 2024,2023/2024

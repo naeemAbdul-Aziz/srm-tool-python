@@ -10,6 +10,19 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+# Update REQUIRED_FIELDS to match the new schema
+REQUIRED_FIELDS = [
+    'index_number', 'name', 'dob', 'gender', 'program', 'year_of_study', 'contact_info',
+    'course_code', 'score', 'credit_hours', 'semester', 'academic_year'
+]
+
+# Modularized validation logic
+def validate_index_number(index_number):
+    """Validate the format of index_number."""
+    if not index_number.startswith('ug') or len(index_number) != 7:
+        return False, f"Invalid index_number format: {index_number}"
+    return True, None
+
 # The bulk_import_from_file function signature now accepts semester_name
 def bulk_import_from_file(file_path: str, required_fields: list, semester_name: str) -> dict:
     """import student profiles and grades from a structured csv/txt file."""
@@ -46,65 +59,44 @@ def bulk_import_from_file(file_path: str, required_fields: list, semester_name: 
 
         logger.info(f"processing {len(valid_records)} records for bulk import")
         
-        for i, record in enumerate(valid_records, 1):
+        # Ensure index_number format and password generation
+        for record in valid_records:
+            is_valid, error_msg = validate_index_number(record['index_number'])
+            if not is_valid:
+                errors.append(error_msg)
+                logger.warning(error_msg)
+                skipped += 1
+                continue
+
             try:
-                # Prepare student_profile_data and grade_data from the record
-                # Assuming 'index_number', 'name', 'dob', 'gender', 'program', 'year_of_study', 'contact_info' for profile
-                # Assuming 'course_code', 'course_title', 'score', 'credit_hours', 'semester', 'academic_year' for grade
-                
-                # Basic validation for essential fields from the record
-                if not all(k in record and record[k] for k in ['index_number', 'name', 'course_code', 'score', 'credit_hours', 'semester', 'academic_year']):
-                    skipped += 1
-                    error_msg = f"Skipping record {i} due to missing essential fields: {record}"
-                    errors.append(error_msg)
-                    logger.warning(error_msg)
-                    continue
-
+                # Insert student profile and grades
                 student_profile_data = {
-                    'index_number': record['index_number'],
-                    'name': record['name'],
-                    'dob': record.get('dob'), # Optional
-                    'gender': record.get('gender'), # Optional
-                    'program': record.get('program'), # Optional
-                    'year_of_study': record.get('year_of_study'), # Optional
-                    'contact_info': record.get('contact_info') # Optional
+                    "index_number": record['index_number'],
+                    "full_name": record['name'],
+                    "dob": record['dob'],
+                    "gender": record['gender'],
+                    "contact_email": record['contact_info'],
+                    "contact_phone": None,
+                    "program": record['program'],
+                    "year_of_study": record['year_of_study']
                 }
 
-                # Ensure score and credit_hours are integers/floats
-                try:
-                    score = float(record['score'])
-                    credit_hours = int(record['credit_hours'])
-                except ValueError as ve:
-                    raise ValueError(f"Invalid numeric data for score or credit_hours: {ve}")
+                grade_data = [{
+                    "course_code": record['course_code'],
+                    "score": record['score'],
+                    "semester": semester_name,
+                    "academic_year": record['academic_year']
+                }]
 
-                grade_data = {
-                    'course_code': record['course_code'],
-                    'course_title': record['course_title'],
-                    'score': score,
-                    'credit_hours': credit_hours,
-                    'semester': record['semester'], # This will be the semester_name
-                    'academic_year': record.get('academic_year') # Optional
-                }
-                
-                # Call the transactional function to insert profile and grade
-                if insert_complete_student_record(conn, student_profile_data, grade_data):
-                    successful += 1
-                    logger.debug(f"successfully imported record {i}/{len(valid_records)}: {record['index_number']}")
-                else:
-                    skipped += 1
-                    logger.warning(f"skipped record {i}/{len(valid_records)} for {record['index_number']} - database insertion failed")
-                    
-            except ValueError as e:
-                skipped += 1
-                error_msg = f"data conversion error for record {i} ({record.get('index_number', 'N/A')}): {str(e)}"
-                errors.append(error_msg)
-                logger.error(error_msg)
+                insert_complete_student_record(conn, student_profile_data, grade_data)
+                logger.info(f"Successfully imported record for index_number: {record['index_number']}")
+                successful += 1
             except Exception as e:
-                skipped += 1
-                error_msg = f"unexpected error processing record {i} ({record.get('index_number', 'N/A')}): {str(e)}"
+                error_msg = f"Error importing record for index_number {record['index_number']}: {e}"
                 errors.append(error_msg)
                 logger.error(error_msg)
-                
+                skipped += 1
+
         logger.info(f"bulk import completed: {successful} successful, {skipped} skipped")
         
     except Exception as e:

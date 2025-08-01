@@ -1,6 +1,7 @@
 # auth.py - authentication and user management module with session integration
 
 import hashlib
+import bcrypt
 import getpass
 from db import connect_to_db, fetch_student_by_index_number # fetch_student_by_index_number now handles its own connection
 from logger import get_logger
@@ -9,7 +10,29 @@ from session import session_manager, set_user # Assuming session.py exists and w
 logger = get_logger(__name__)
 
 def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hash password using bcrypt for security."""
+    # Generate a salt and hash the password
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
+
+def verify_password(password, hashed_password):
+    """Verify password against stored hash."""
+    try:
+        # Check if it's a legacy SHA256 hash (no $ symbols typical of bcrypt)
+        if not hashed_password.startswith('$2b$'):
+            # Legacy SHA256 hash - check and potentially migrate
+            legacy_hash = hashlib.sha256(password.encode()).hexdigest()
+            if hashed_password == legacy_hash:
+                logger.warning("Legacy password hash detected. Consider updating user password.")
+                return True
+            return False
+        
+        # Verify with bcrypt
+        return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception as e:
+        logger.error(f"Error verifying password: {e}")
+        return False
 
 def create_user(username, password, role):
     conn = connect_to_db()
@@ -32,18 +55,26 @@ def create_user(username, password, role):
     finally:
         conn.close()
 
+def fetch_user_data(conn, username):
+    """Fetch user data from the database."""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT user_id, username, password, role FROM users WHERE username = %s;", (username,))
+            return cur.fetchone()
+    except Exception as e:
+        logger.error(f"Error fetching user data for '{username}': {e}")
+        return None
+
 def authenticate_user(username, password):
-    """authenticate user and gather additional user data"""
+    """Authenticate user and gather additional user data."""
     conn = connect_to_db()
     if conn is None:
         logger.error("Error: Could not connect to database for authentication.")
         return None
     try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT user_id, username, password, role FROM users WHERE username = %s;", (username,))
-            user = cur.fetchone() # Fetch one row, if any
+        user = fetch_user_data(conn, username)
 
-        if user and user[2] == hash_password(password): # user[2] is the hashed password
+        if user and verify_password(password, user[2]): # user[2] is the hashed password
             logger.info(f"User '{username}' authenticated successfully.")
             role = user[3] # user[3] is the role
 
@@ -78,13 +109,14 @@ def authenticate_user(username, password):
             logger.info(f"Session created with id: {session_id}")
             return user_data # Return the user_data dictionary
         else:
-            logger.warning("Login failed. Invalid credentials.")
-            return None # Return None if login fails
+            logger.warning(f"Authentication failed for user '{username}'.")
+            return None
     except Exception as e:
         logger.error(f"Error during authentication for user '{username}': {e}")
         return None
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 def logout():
     """handle user logout and session cleanup"""
