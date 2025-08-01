@@ -30,10 +30,10 @@ def main():
         logger.error(f"error running menu: {e}", exc_info=True)
 
 if __name__ == "__main__":
-    main() 
-    # import uvicorn
-    # try:
-    #     logger.info("starting fastapi server with uvicorn...")
-    #     uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)
-    # except Exception as e:
-    #     logger.error(f"error starting uvicorn server: {e}", exc_info=True)
+    # main() 
+     import uvicorn
+     try:
+         logger.info("starting fastapi server with uvicorn...")
+         uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)
+     except Exception as e:
+         logger.error(f"error starting uvicorn server: {e}", exc_info=True)

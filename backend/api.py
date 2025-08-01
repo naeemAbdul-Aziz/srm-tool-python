@@ -451,24 +451,25 @@ def fetch_grades_with_filters(conn, student_index=None, course_code=None, semest
         cursor = conn.cursor()
         
         query = """
-            SELECT g.*, s.full_name, c.course_title
+            SELECT g.*, s.full_name, s.index_number, c.course_title, c.course_code, sem.semester_name, sem.academic_year
             FROM grades g
-            JOIN students s ON g.student_index = s.index_number
-            JOIN courses c ON g.course_code = c.course_code
+            JOIN student_profiles s ON g.student_id = s.student_id
+            JOIN courses c ON g.course_id = c.course_id
+            JOIN semesters sem ON g.semester_id = sem.semester_id
             WHERE 1=1
         """
         params = []
         
         if student_index:
-            query += " AND g.student_index = %s"
+            query += " AND s.index_number = %s"
             params.append(student_index)
             
         if course_code:
-            query += " AND g.course_code = %s"
+            query += " AND c.course_code = %s"
             params.append(course_code)
             
         if semester:
-            query += " AND g.semester_name = %s"
+            query += " AND sem.semester_name = %s"
             params.append(semester)
         
         # Get total count
@@ -477,7 +478,7 @@ def fetch_grades_with_filters(conn, student_index=None, course_code=None, semest
         total_count = cursor.fetchone()[0]
         
         # Add pagination
-        query += " ORDER BY g.academic_year DESC, g.semester_name LIMIT %s OFFSET %s"
+        query += " ORDER BY sem.academic_year DESC, sem.semester_name LIMIT %s OFFSET %s"
         params.extend([limit, skip])
         
         cursor.execute(query, params)
@@ -544,6 +545,32 @@ async def health_check():
         return APIResponse(
             success=False,
             message="Health check failed",
+            error=str(e)
+        )
+
+@app.get("/me", response_model=APIResponse)
+async def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    """Get current authenticated user information"""
+    try:
+        logger.info(f"User info requested by: {current_user.get('username')}")
+        
+        user_info = {
+            "username": current_user.get('username'),
+            "role": current_user.get('role'),
+            "authenticated": True
+        }
+        
+        return APIResponse(
+            success=True,
+            message="User information retrieved successfully",
+            data=user_info
+        )
+        
+    except Exception as e:
+        logger.error(f"Error retrieving user info: {str(e)}")
+        return APIResponse(
+            success=False,
+            message="Failed to retrieve user information",
             error=str(e)
         )
 
