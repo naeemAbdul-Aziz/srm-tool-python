@@ -53,10 +53,6 @@ security = HTTPBasic()
 # PYDANTIC MODELS (REQUEST/RESPONSE SCHEMAS)
 # ========================================
 
-# ========================================
-# PYDANTIC MODELS (REQUEST/RESPONSE SCHEMAS)
-# ========================================
-
 class StudentCreate(BaseModel):
     """Schema for creating a new student profile"""
     index_number: str = Field(..., min_length=1, max_length=20, description="Unique student index number")
@@ -118,11 +114,6 @@ class SemesterCreate(BaseModel):
     def validate_academic_year(cls, v):
         if '/' not in v or len(v.split('/')) != 2:
             raise ValueError('Academic year must be in format: YYYY/YYYY (e.g., 2023/2024)')
-        return v
-        try:
-            datetime.strptime(v, '%Y-%m-%d')
-        except ValueError:
-            raise ValueError('Date must be in YYYY-MM-DD format')
         return v
 
 class GradeCreate(BaseModel):
@@ -343,10 +334,11 @@ def fetch_student_grades(conn, index_number, semester=None, academic_year=None):
     try:
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         query = """
-            SELECT g.*, c.course_title, c.credit_hours 
+            SELECT g.*, c.course_title, c.credit_hours, s.index_number, s.full_name
             FROM grades g
-            JOIN courses c ON g.course_code = c.course_code
-            WHERE g.student_index = %s
+            JOIN courses c ON g.course_id = c.course_id
+            JOIN student_profiles s ON g.student_id = s.student_id
+            WHERE s.index_number = %s
         """
         params = [index_number]
         
@@ -2101,7 +2093,7 @@ def generate_comprehensive_report(conn, semester=None, academic_year=None, forma
         stats = {}
         
         # Total students
-        cursor.execute("SELECT COUNT(*) FROM students")
+        cursor.execute("SELECT COUNT(*) FROM student_profiles") # Corrected table name
         stats['total_students'] = cursor.fetchone()[0]
         
         # Total courses

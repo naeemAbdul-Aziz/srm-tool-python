@@ -66,7 +66,7 @@ def fetch_user_data(conn, username):
         return None
 
 def authenticate_user(username, password):
-    """Authenticate user and gather additional user data."""
+    """Authenticate user and gather additional user data with optimized session handling."""
     conn = connect_to_db()
     if conn is None:
         logger.error("Error: Could not connect to database for authentication.")
@@ -98,21 +98,27 @@ def authenticate_user(username, password):
                 # For admin users, ensure admin-specific data is available
                 user_data['admin_level'] = 'full'
             
-            # create session with user data
-            session_id = session_manager.create_session(username, role, user_data)
-            set_user(username, role)  # legacy support
-            
-            # display personalized welcome message
-            full_name = user_data.get('full_name', username)
-            logger.info(f"Login successful! Welcome, {full_name} ({role}).")
-            
-            if role == 'student' and user_data.get('grades'):
-                grade_count = len(user_data['grades'])
-                logger.info(f"You have {grade_count} course grades on record.")
-            elif role == 'admin':
-                logger.info("You have full administrative access.")
+            # Only create session if one doesn't already exist for this user
+            current_session = session_manager.get_current_user()
+            if not current_session or current_session.get('username') != username:
+                # create session with user data
+                session_id = session_manager.create_session(username, role, user_data)
+                set_user(username, role)  # legacy support
                 
-            logger.info(f"Session created with id: {session_id}")
+                # display personalized welcome message
+                full_name = user_data.get('full_name', username)
+                logger.info(f"Login successful! Welcome, {full_name} ({role}).")
+                
+                if role == 'student' and user_data.get('grades'):
+                    grade_count = len(user_data['grades'])
+                    logger.info(f"You have {grade_count} course grades on record.")
+                elif role == 'admin':
+                    logger.info("You have full administrative access.")
+                    
+                logger.info(f"Session created with id: {session_id}")
+            else:
+                logger.debug(f"Session already exists for user {username}, reusing...")
+                
             return user_data # Return the user_data dictionary
         else:
             logger.warning(f"Authentication failed for user '{username}'.")
