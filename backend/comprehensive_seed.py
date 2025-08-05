@@ -493,14 +493,19 @@ def seed_diverse_students(conn, num_students=100):
                 success_count += 1
                 logger.debug(f"Added student: {student['full_name']} ({student['index_number']})")
                 
-                # Create user account
+                # Create user account (since student profile already exists, create user account directly)
                 try:
-                    success, account_data = create_student_account(student["index_number"], student["full_name"])
-                    if success and account_data and isinstance(account_data, dict):
-                        password = account_data.get('password', 'unknown')
-                        logger.debug(f"Created account for {student['index_number']}: {password}")
+                    index_number = student["index_number"]
+                    # Generate default password: last 4 digits + "2024"
+                    password = index_number[-4:] + "2024"
+                    
+                    # Create user account directly using create_user
+                    if create_user(index_number, password, 'student'):
+                        logger.debug(f"Created user account for {index_number}: {password}")
+                    else:
+                        logger.warning(f"Failed to create user account for {index_number}")
                 except Exception as e:
-                    logger.warning(f"Failed to create account for {student['index_number']}: {e}")
+                    logger.warning(f"Failed to create user account for {student['index_number']}: {e}")
                     
         except Exception as e:
             logger.warning(f"Failed to insert student {student['index_number']}: {e}")

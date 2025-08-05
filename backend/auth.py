@@ -215,7 +215,7 @@ def sign_up(role='student'):
             return False
 
 def create_student_account(index_number, full_name, password=None):
-    """Create a student account with user credentials for admin use"""
+    """Create a complete student account with user credentials and profile"""
     conn = connect_to_db()
     if conn is None:
         logger.error("Error: Could not connect to database for student account creation.")
@@ -234,28 +234,44 @@ def create_student_account(index_number, full_name, password=None):
                 logger.warning(f"User account already exists for index number: {index_number}")
                 return False, "User account already exists"
         
-        # Create user account
-        if create_user(index_number, password, 'student'):
-            # Create student profile if it doesn't exist
+        # Check if student profile already exists
+        with conn.cursor() as cur:
+            cur.execute("SELECT student_id FROM student_profiles WHERE index_number = %s;", (index_number,))
+            existing_profile = cur.fetchone()
+        
+        student_id = None
+        
+        if existing_profile:
+            # Profile exists, just create user account
+            student_id = existing_profile[0]
+            logger.info(f"Student profile already exists for {index_number}, creating user account only")
+        else:
+            # Create student profile first
             from db import insert_student_profile
             student_id = insert_student_profile(conn, index_number, full_name, None, None, None, None, None, None)
             
-            if student_id:
-                logger.info(f"Student account created for {index_number} ({full_name})")
-                return True, {
-                    'index_number': index_number,
-                    'full_name': full_name,
-                    'password': password,
-                    'student_id': student_id
-                }
-            else:
-                # Rollback user creation if profile creation failed
-                with conn.cursor() as cur:
-                    cur.execute("DELETE FROM users WHERE username = %s;", (index_number,))
-                    conn.commit()
-                logger.error(f"Failed to create student profile, user account rolled back for {index_number}")
+            if not student_id:
+                logger.error(f"Failed to create student profile for {index_number}")
                 return False, "Failed to create student profile"
+            
+            logger.info(f"Created student profile for {index_number} (ID: {student_id})")
+        
+        # Create user account
+        if create_user(index_number, password, 'student'):
+            logger.info(f"Student account created for {index_number} ({full_name})")
+            return True, {
+                'index_number': index_number,
+                'full_name': full_name,
+                'password': password,
+                'student_id': student_id
+            }
         else:
+            # If profile was just created, clean it up
+            if not existing_profile and student_id:
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM student_profiles WHERE student_id = %s;", (student_id,))
+                    conn.commit()
+                logger.error(f"Failed to create user account, student profile rolled back for {index_number}")
             return False, "Failed to create user account"
             
     except Exception as e:

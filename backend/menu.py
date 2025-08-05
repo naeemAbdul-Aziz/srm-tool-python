@@ -232,10 +232,10 @@ def handle_admin_option(option):
                             else:
                                 semester_id = semester['semester_id']
                                 
-                            letter_grade = calculate_grade(score)
+                            grade = calculate_grade(score)
                             grade_point = get_grade_point(score)
 
-                            if insert_grade(conn, student_id, course_id, semester_id, score, letter_grade, grade_point, academic_year):
+                            if insert_grade(conn, student_id, course_id, semester_id, score, grade, grade_point, academic_year):
                                 print("Grade added successfully for the student.")
                             else:
                                 print("Failed to add grade.")

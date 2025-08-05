@@ -626,7 +626,7 @@ def insert_complete_student_record(conn, student_profile_data, grade_data):
         # 2. Insert Grade(s)
         if grade_data:
             for grade in grade_data:
-                insert_grade(conn, student_id, grade['course_id'], grade['semester_id'], grade['score'], grade['letter_grade'], grade['grade_point'], grade['academic_year'])
+                insert_grade(conn, student_id, grade['course_id'], grade['semester_id'], grade['score'], grade['grade'], grade['grade_point'], grade['academic_year'])
 
         # Commit transaction
         conn.commit()
