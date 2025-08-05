@@ -1,61 +1,95 @@
 
-# 🎓 University of Ghana Student Result Management System (UG-SRMS) v2.0
+# Student Result Management System - Backend
 
-**A comprehensive, production-ready academic management platform designed specifically for the University of Ghana**
+A comprehensive R## Quick Start Guide
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/naeemAbdul-Aziz/srm-tool-python)
-[![Status](https://img.shields.io/badge/status-production--ready-green.svg)](https://github.com/naeemAbdul-Aziz/srm-tool-python)
-[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
-[![Institution](https://img.shields.io/badge/University-Ghana-red.svg)](https://ug.edu.gh)
+This guide will get you up and running with the Student Result Management System in under 10 minutes.
 
-## 🌟 System Overview
+### Prerequisites Check
+Before starting, ensure you have:
+- Python 3.9 or higher (`python --version`)
+- PostgreSQL 12 or higher (`psql --version`)## Proje**********Need Help?** Check the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
 
-The University of Ghana Student Result Management System (UG-SRMS) is a comprehensive academic management platform that handles the complete academic lifecycle from student enrollment through graduation. Built with authentic University of Ghana data structures, course codes, and academic standards.
+## Installation & Setup
 
-### 🏗️ Dual-Interface Architecture
+### Prerequisites
+
+- Python 3.9+ Setupeck the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+
+## Installation & Setupeck the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+
+## Installation & Setupeck the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+
+## Installation & Setupeck the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+
+## Installation & Setup
 
 ```
-                    🎓 UNIVERSITY OF GHANA SRMS v2.0
-                           
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           🌐 WEB/API INTERFACE                            │
-│  FastAPI Server • Swagger Docs • RESTful APIs • Production Ready       │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │
-┌─────────────────────────────┼───────────────────────────────────────────┐
-│                    📱 COMMAND LINE INTERFACE                           │
-│         Admin Menu • Student Portal • Interactive CLI              │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-  ┌─────▼─────┐         ┌─────▼─────┐         ┌─────▼─────┐
-  │🏛️ DATABASE │         │🔐 AUTH     │         │📊 REPORTS │
-  │PostgreSQL │         │Security   │         │PDF/TXT   │
-  │UG Schema  │         │Sessions   │         │Analytics │
-  └───────────┘         └───────────┘         └───────────┘
+backend/
+├── APPLICATION ENTRY POINTS
+│   ├── main.py                    # CLI application launcher
+│   ├── api.py                     # FastAPI server (22+ endpoints)
+│   └── menu.py                    # Interactive CLI menu system
+│
+├── CORE SYSTEM MODULES  
+│   ├── db.py                      # Database operations & UG schema
+│   ├── auth.py                    # Authentication & authorization cloning the repository)
+- A text editor or IDEd CLI application for managing student records, grades, and academic reports. Built with FastAPI, PostgreSQL, and Python.
+
+## Overview
+
+The Student Result Management System (SRMS) backend provides a robust platform for educational institutions to manage student data, academic records, and generate comprehensive reports. The system supports both REST API and command-line interfaces for maximum flexibility.
+
+### Key Features
+
+- **Dual Interface**: REST API (FastAPI) and CLI application support
+- **Comprehensive Student Management**: Profile creation, updates, and academic tracking
+- **Grade Management**: Course enrollment, grade recording, and GPA calculations
+- **Authentication & Authorization**: Role-based access control (Admin/Student)
+- **Bulk Import/Export**: CSV file support for mass data operations
+- **Report Generation**: PDF and TXT academic reports
+- **University of Ghana Integration**: Pre-configured with authentic UG academic structure
+- **Production Ready**: Comprehensive error handling, logging, and validation
+
+## Architecture
+
+### Core Components
+
+```
+backend/
+├── api.py                    # FastAPI REST API endpoints
+├── main.py                   # CLI application entry point
+├── menu.py                   # Interactive CLI menu system
+├── db.py                     # Database operations and models
+├── auth.py                   # Authentication and user management
+├── config.py                 # Configuration and environment variables
+├── grade_util.py             # Grade calculations and utilities
+├── course_management.py      # Academic course and semester management
+├── bulk_importer.py          # CSV bulk import functionality
+├── report_utils.py           # PDF/TXT report generation
+├── session.py                # Session management
+├── logger.py                 # Centralized logging system
+├── file_handler.py           # File operations and validation
+└── comprehensive_seed.py     # Database seeding with realistic data
 ```
 
-## 📚 Complete Feature Set
+### Database Schema
 
-### 👨‍💼 Administrative Features
-- **Student Management**: Create, update, search, bulk operations
-- **Course Management**: 130+ authentic UG courses (UGCS, UGBA, UGMD, etc.)
-- **Semester Management**: Academic year tracking, UG calendar
-- **Grade Management**: Comprehensive grading system (A-F scale)
-- **User Management**: Admin accounts, student accounts, role-based access
-- **Bulk Operations**: CSV imports, batch processing
-- **Analytics**: Enrollment statistics, grade distributions
-- **Reports**: Student transcripts, summary reports, PDF generation
+- **users**: Authentication credentials and user roles
+- **student_profiles**: Student personal and academic information  
+- **courses**: Academic course catalog with codes and credits
+- **semesters**: Academic periods and scheduling
+- **grades**: Student performance records and calculations
+- **assessments**: Individual assignment and exam tracking
 
-### 🎓 Student Features  
+### Student Features  
 - **Profile Management**: View/update personal information
 - **Grade Viewing**: Semester grades, cumulative records
 - **GPA Calculations**: Semester and cumulative GPA
 - **Transcript Access**: Complete academic history
 - **Course Information**: Enrolled courses, credit hours
 
-### 🏫 University of Ghana Integration
+### University of Ghana Integration
 - **7 Schools/Colleges**: All major UG academic units
 - **50+ Programs**: Authentic degree programs
 - **130+ Courses**: Real UG course codes and titles
@@ -64,7 +98,276 @@ The University of Ghana Student Result Management System (UG-SRMS) is a comprehe
 - **Student Records**: UG index format (ug#####)
 - **Contact Systems**: UG email formats (@st.ug.edu.gh)
 
-## 📁 Project Architecture
+## � Quick Start Guide
+
+This guide will get you up and running with the Student Result Management System in under 10 minutes.
+
+### Prerequisites Check
+Before starting, ensure you have:
+- Python 3.9 or higher (`python --version`)
+- PostgreSQL 12 or higher (`psql --version`)
+- Git (for cloning the repository)
+- A text editor or IDE
+
+### Step 1: Project Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/naeemAbdul-Aziz/srm-tool-python.git
+cd srm-tool-python/backend
+
+# Create virtual environment (recommended)
+python -m venv venv
+
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install all dependencies
+pip install -r requirements.txt
+```
+
+### Step 2: Database Setup
+
+```bash
+# Create PostgreSQL database
+createdb srms-db
+
+# If you need to create a PostgreSQL user:
+# psql -c "CREATE USER srms_user WITH PASSWORD 'your_password';"
+# psql -c "GRANT ALL PRIVILEGES ON DATABASE srms-db TO srms_user;"
+```
+
+### Step 3: Environment Configuration
+
+Create a `.env` file in the backend directory:
+
+```bash
+# Create .env file
+cat > .env << EOF
+# Database Configuration
+DB_NAME=srms-db
+DB_USER=postgres
+DB_PASSWORD=your_database_password
+DB_HOST=localhost
+DB_PORT=5432
+
+# Application Configuration
+APP_DEBUG=True
+LOG_LEVEL=INFO
+SECRET_KEY=your-super-secret-key-change-in-production
+SESSION_TIMEOUT=3600
+EOF
+```
+
+**Important**: Replace `your_database_password` with your actual PostgreSQL password!
+
+### Step 4: Initialize the System
+
+Choose one of these initialization methods:
+
+#### Option A: CLI Initialization (Recommended for beginners)
+```bash
+# Start the CLI application
+python main.py
+
+# Follow the interactive setup:
+# 1. The system will create database tables automatically
+# 2. Choose "Sign Up" to create your first admin account
+# 3. Select "Admin" role
+# 4. Create username/password (remember these!)
+```
+
+#### Option B: API Initialization (For developers)
+```bash
+# Start the API server in background
+python -c "
+import subprocess
+import time
+proc = subprocess.Popen(['python', 'api.py'])
+time.sleep(3)  # Wait for server to start
+print('API server started on http://localhost:8000')
+"
+
+# Initialize via API
+curl -X POST "http://localhost:8000/initialize"
+```
+
+### Step 5: Load Sample Data (Optional but Recommended)
+
+```bash
+# Generate comprehensive University of Ghana sample data
+python comprehensive_seed.py
+
+# This creates:
+# - 100 realistic student profiles with Ghanaian names
+# - 130+ authentic UG courses across all schools
+# - 8 semesters (2021/2022 through 2024/2025)
+# - Realistic grade distributions
+# - Complete user accounts for all students
+```
+
+### Step 6: Test Your Installation
+
+#### Test CLI Interface:
+```bash
+python main.py
+
+# Login with your admin credentials
+# Try: Admin Menu → View all student records
+```
+
+#### Test API Interface:
+```bash
+# Start API server
+python api.py
+
+# In another terminal, test the API:
+curl http://localhost:8000/health
+
+# Access interactive documentation:
+# Open browser: http://localhost:8000/docs
+```
+
+### Step 7: Verify Everything Works
+
+Run these verification commands:
+
+```bash
+# Test database connection
+python -c "from db import connect_to_db; print('Database OK' if connect_to_db() else 'Database Error')"
+
+# Test API endpoints
+curl -s http://localhost:8000/ | grep -q "Student Result Management" && echo "API OK" || echo "API Error"
+
+# Check if sample data loaded
+python -c "
+from db import connect_to_db
+conn = connect_to_db()
+if conn:
+    cur = conn.cursor()
+    cur.execute('SELECT COUNT(*) FROM student_profiles')
+    count = cur.fetchone()[0]
+    print(f'{count} students loaded' if count > 0 else 'No sample data')
+    conn.close()
+"
+```
+
+## What You Can Do Now
+
+### As Administrator:
+1. **Manage Students**: Add, update, search, and bulk import students
+2. **Manage Courses**: Create courses and academic semesters  
+3. **Manage Grades**: Enter grades and generate transcripts
+4. **View Analytics**: Student performance and grade distributions
+5. **Generate Reports**: PDF and TXT academic reports
+
+### As Student (using sample data):
+1. **Login Credentials**: Index number + password (e.g., `ug10001` / `00012024`)
+2. **View Profile**: Personal academic information
+3. **Check Grades**: Semester grades and cumulative GPA
+4. **Academic History**: Complete grade records
+
+### API Integration:
+- **Documentation**: Visit `http://localhost:8000/docs`
+- **Health Check**: `GET http://localhost:8000/health`
+- **Student Data**: `GET http://localhost:8000/admin/students` (with auth)
+
+## Default Accounts (After Sample Data)
+
+### Admin Accounts:
+```
+Username: admin
+Password: admin123
+Role: Administrator
+```
+
+### Sample Student Accounts:
+```
+Index: ug10001 | Password: 00012024 | Name: Kwame Asante
+Index: ug10002 | Password: 00022024 | Name: Ama Mensah  
+Index: ug10003 | Password: 00032024 | Name: Kofi Osei
+...and 97 more students
+```
+
+Password pattern: `[last 4 digits of index]2024`
+
+## Common Startup Issues & Solutions
+
+### Issue: "Module not found" errors
+```bash
+# Solution: Ensure virtual environment is activated
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+```
+
+### Issue: Database connection failed
+```bash
+# Solution: Check PostgreSQL service and credentials
+sudo systemctl start postgresql  # Linux
+brew services start postgresql   # macOS
+# Windows: Start PostgreSQL service via Services
+
+# Test connection manually:
+psql -d srms-db -U postgres
+```
+
+### Issue: Permission denied on database
+```bash
+# Solution: Grant proper permissions
+psql -c "GRANT ALL PRIVILEGES ON DATABASE \"srms-db\" TO postgres;"
+```
+
+### Issue: API server won't start
+```bash
+# Solution: Check if port 8000 is available
+netstat -an | grep 8000
+
+# Kill existing process if needed:
+pkill -f "python api.py"
+
+# Try different port:
+uvicorn api:app --port 8001
+```
+
+### Issue: No sample data appears
+```bash
+# Solution: Run seeding script manually
+python comprehensive_seed.py
+
+# Check if data was created:
+python -c "
+from db import connect_to_db
+conn = connect_to_db()
+cur = conn.cursor()
+cur.execute('SELECT COUNT(*) FROM student_profiles')
+print(f'Students: {cur.fetchone()[0]}')
+cur.execute('SELECT COUNT(*) FROM courses')  
+print(f'Courses: {cur.fetchone()[0]}')
+conn.close()
+"
+```
+
+## You're Ready!
+
+Congratulations! You now have a fully functional Student Result Management System. Here's what to explore next:
+
+1. **Try the CLI**: `python main.py` - Full administrative interface
+2. **Explore the API**: `http://localhost:8000/docs` - Interactive documentation
+3. **Check the logs**: `tail -f app.log` - Monitor system activity
+4. **Read the docs**: Continue reading this README for advanced features
+
+### Next Steps:
+- Read the full [API Documentation](#api-endpoints)
+- Explore [Configuration Options](#configuration)
+- Learn about [Production Deployment](#production-deployment)
+- Run the [Test Suite](#testing)
+
+**Need Help?** Check the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+
+## �📁 Project Architecture
 
 ```
 backend/
@@ -76,851 +379,437 @@ backend/
 ├── 🏛️ CORE SYSTEM MODULES  
 │   ├── db.py                      # Database operations & UG schema
 │   ├── auth.py                    # Authentication & authorization
-│   ├── session.py                 # Session management & timeouts
-│   ├── config.py                  # Environment configuration
-│   └── logger.py                  # Colored logging system
-│
-├── 📊 ACADEMIC MANAGEMENT
-│   ├── course_management.py       # Course & semester operations
-│   ├── grade_util.py              # GPA calculations & grade logic
-│   ├── bulk_importer.py          # CSV import & bulk operations
-│   └── file_handler.py           # File processing utilities
-│
-├── 📋 REPORTING & ANALYTICS
-│   ├── report_utils.py           # PDF/TXT report generation
-│   └── seed_data.py              # Sample data generation
-│
-├── 🎯 UG-SPECIFIC MODULES
-│   ├── comprehensive_seed.py      # Complete UG database seeding
-│   ├── populate_university_data.py # UG-specific data population
-│   └── quick_ug_setup.py         # Quick setup for UG format
-│
-├── 📄 DOCUMENTATION & TESTING
-│   ├── README.md                  # This comprehensive guide
-│   ├── API_IMPROVEMENTS_SUMMARY.md # Technical improvements log
-│   ├── test_api_improvements.py   # API validation tests
-│   └── DEPLOYMENT_GUIDE.md       # Production deployment guide
-│
-└── 📁 CONFIGURATION & DATA
-    ├── .env.example               # Environment template
-    ├── requirements.txt           # Python dependencies
-    └── ug_sample_grades.csv      # Sample UG grade data
-```
+## Installation & Setup
 
-## 🚀 Quick Start Guide
+### Prerequisites
+
+- Python 3.9+
+- PostgreSQL 12+
+- Virtual environment (recommended)
 
 ### 1. Environment Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/naeemAbdul-Aziz/srm-tool-python.git
-cd srm-tool-python/backend
+# Clone and navigate to backend directory
+cd backend
 
-# Create virtual environment
+# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env with your database credentials
 ```
 
 ### 2. Database Configuration
 
-```bash
-# Create PostgreSQL database
-createdb ug_srms_db
+Create a `.env` file in the backend directory:
 
-# Update .env file
+```env
+# Database Configuration
+DB_NAME=srms-db
+DB_USER=postgres
+DB_PASSWORD=your_secure_password
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=ug_srms_db
-DB_USER=your_username
-DB_PASSWORD=your_password
+
+# Application Configuration
+APP_DEBUG=False
+LOG_LEVEL=INFO
+SECRET_KEY=your_super_secret_key_here
+SESSION_TIMEOUT=3600
 ```
 
-### 3. System Initialization
+### 3. Database Setup
 
-#### Option A: CLI Interface
 ```bash
-# Start CLI application
+# Create PostgreSQL database
+createdb srms-db
+
+# Initialize database tables (automatic on first run)
 python main.py
-
-# Follow prompts to:
-# 1. Initialize database tables
-# 2. Create admin account
-# 3. Seed sample data
 ```
 
-#### Option B: API Interface
+### 4. Seed Sample Data (Optional)
+
 ```bash
-# Start FastAPI server
-python api.py
-
-# Access Swagger documentation
-http://localhost:8000/docs
-
-# Initialize via API
-POST /initialize (with admin credentials)
-POST /admin/seed-comprehensive
-```
-
-## 🔐 Authentication & Access Control
-
-### Default Admin Accounts
-```
-Username: admin      | Password: admin123     | Role: Admin
-Username: registrar  | Password: registrar123 | Role: Admin  
-Username: dean       | Password: dean123      | Role: Admin
-```
-
-### Sample Student Accounts (After Seeding)
-```
-Index: ug10001      | Password: 00012024     | Name: Kwame Asante
-Index: ug10002      | Password: 00022024     | Name: Ama Mensah
-Index: ug10003      | Password: 00032024     | Name: Kofi Osei
-Index: ug10004      | Password: 00042024     | Name: Efua Boateng
-Index: ug10005      | Password: 00052024     | Name: Yaw Owusu
-
-Format: ug##### (UG index) | ####2024 (last 4 digits + 2024)
-```
-
-### Password Generation Logic
-- **Admin**: Custom passwords set during creation
-- **Students**: Auto-generated using format `[last4digits]2024`
-  - Example: ug10001 → password: 00012024
-  - Example: ug12345 → password: 23452024
-
-## 🎯 Complete Application Flow
-
-### 👨‍💼 Admin Workflow
-
-#### 1. System Setup & Initialization
-```bash
-# CLI: Start application
-python main.py
-> Select: Admin Login
-> Username: admin | Password: admin123
-
-# API: Initialize system
-curl -X POST "http://localhost:8000/initialize" \
-     -u admin:admin123
-```
-
-#### 2. Database Seeding (Complete UG Data)
-```bash
-# CLI: Admin Menu → Database Operations → Comprehensive Seeding
-# Creates: 100 students, 130+ courses, 8 semesters, realistic grades
-
-# API: Comprehensive seeding
-curl -X POST "http://localhost:8000/admin/seed-comprehensive?num_students=100" \
-     -u admin:admin123
-```
-
-#### 3. Student Management
-```bash
-# CLI: Admin Menu → Student Management
-# - Create new student profiles
-# - Search and filter students  
-# - Bulk import from CSV
-# - Update student information
-
-# API: Student operations
-POST /admin/students           # Create student
-GET  /admin/students/search    # Advanced search
-POST /admin/students/bulk      # Bulk creation
-GET  /admin/students/{index}   # Get specific student
-PUT  /admin/students/{index}   # Update student
-```
-
-#### 4. Academic Management
-```bash
-# Course Management
-POST /admin/courses            # Create courses
-GET  /admin/courses           # List all courses
-
-# Semester Management  
-POST /admin/semesters         # Create semesters
-GET  /admin/semesters         # List semesters
-
-# Grade Management
-POST /admin/grades            # Enter grades
-GET  /admin/grades            # View all grades
-```
-
-#### 5. Advanced Analytics
-```bash
-# Enrollment Statistics
-GET /admin/statistics/enrollment
-
-# Grade Distribution Analysis
-GET /admin/statistics/grades-distribution
-
-# Student Transcripts
-GET /admin/reports/transcript/{index_number}
-```
-
-### 🎓 Student Workflow
-
-#### 1. Student Login & Profile
-```bash
-# CLI: Student Login
-python main.py
-> Select: Student Login  
-> Index: ug10001 | Password: 00012024
-
-# API: Student authentication
-curl -X GET "http://localhost:8000/student/profile" \
-     -u ug10001:00012024
-```
-
-#### 2. Grade Access & GPA
-```bash
-# CLI: Student Menu
-# - View current grades
-# - Check GPA (semester/cumulative)
-# - Download grade reports
-
-# API: Grade operations
-GET /student/grades           # All grades
-GET /student/grades?semester=1st+Semester+2024/2025
-GET /student/gpa             # GPA calculations
-```
-
-## 📊 University of Ghana Data Integration
-
-### Academic Structure
-```yaml
-Schools:
-  - College of Basic and Applied Sciences (25% students)
-  - College of Health Sciences (15% students)  
-  - College of Humanities (15% students)
-  - College of Education (10% students)
-  - Legon Business School (20% students)
-  - School of Law (5% students)
-  - School of Social Sciences (10% students)
-
-Course Codes:
-  - UGCS: Computer Science (UGCS101, UGCS201, etc.)
-  - UGBA: Business Administration  
-  - UGMD: Medicine
-  - UGMA: Mathematics
-  - UGPH: Physics
-  - UGCO: Core/General courses
-  - [+25 more course prefixes]
-
-Academic Calendar:
-  - 1st Semester 2021/2022 (Aug 16, 2021 - Dec 17, 2021)
-  - 2nd Semester 2021/2022 (Jan 17, 2022 - May 20, 2022)
-  - [... through 2024/2025]
-```
-
-### Authentic Ghanaian Data
-```yaml
-Names:
-  Male: [Kwame, Kofi, Kwaku, Yaw, Kwadwo, Nana, Kojo, ...]
-  Female: [Ama, Efua, Akua, Yaa, Adwoa, Abena, Esi, ...]
-  Surnames: [Asante, Mensah, Osei, Boateng, Owusu, ...]
-
-Contact Information:
-  Email: firstname.lastname@st.ug.edu.gh
-  Email: ug#####@st.ug.edu.gh  
-  Phone: +233XX XXXXXXX (Ghana mobile format)
-  
-Demographics:
-  - Realistic age distribution (18-25)
-  - Gender balance (Male/Female)
-  - Program distribution across schools
-```
-
-## 🛠️ API Documentation
-
-### 📡 Complete Endpoint Reference
-
-#### Public Endpoints (No Authentication)
-```http
-GET  /                         # Health check
-GET  /health                   # System health status
-GET  /ug/schools-programs      # UG schools and programs
-GET  /ug/academic-calendar     # UG academic calendar
-```
-
-#### Admin-Only Endpoints
-```http
-# System Management
-POST /initialize               # Initialize database
-POST /admin/seed-comprehensive # Seed UG data
-
-# Student Management  
-POST /admin/students           # Create student
-GET  /admin/students           # List students (paginated)
-GET  /admin/students/search    # Advanced student search
-POST /admin/students/bulk      # Bulk student creation
-GET  /admin/students/{index}   # Get specific student
-PUT  /admin/students/{index}   # Update student
-
-# Course Management
-POST /admin/courses            # Create course
-GET  /admin/courses           # List courses
-
-# Semester Management
-POST /admin/semesters         # Create semester
-GET  /admin/semesters         # List semesters
-
-# Grade Management
-POST /admin/grades            # Create/update grades
-GET  /admin/grades            # List grades (filtered)
-
-# User Management
-POST /admin/users             # Create user account
-POST /admin/student-accounts  # Create student account
-POST /admin/reset-password    # Reset student password
-
-# Bulk Operations
-POST /admin/bulk-import       # Import from CSV
-
-# Analytics & Reports
-GET  /admin/statistics/enrollment        # Enrollment stats
-GET  /admin/statistics/grades-distribution # Grade distribution
-GET  /admin/reports/transcript/{index}   # Student transcript
-GET  /admin/reports/summary              # Summary reports
-GET  /admin/dashboard/analytics          # Dashboard data
-```
-
-#### Student Endpoints
-```http
-GET  /student/profile         # Student profile
-GET  /student/grades          # Student grades (filtered)
-GET  /student/gpa            # GPA calculations
-```
-
-### 📋 API Usage Examples
-
-#### Creating a Student (Admin)
-```bash
-curl -X POST "http://localhost:8000/admin/students" \
-     -H "Content-Type: application/json" \
-     -u admin:admin123 \
-     -d '{
-       "index_number": "ug12345",
-       "full_name": "Kwame Asante", 
-       "dob": "2002-05-15",
-       "gender": "Male",
-       "contact_email": "kwame.asante@st.ug.edu.gh",
-       "phone": "+233244123456",
-       "program": "Computer Science",
-       "year_of_study": 2
-     }'
-```
-
-#### Getting Student Grades (Student)
-```bash
-curl -X GET "http://localhost:8000/student/grades?semester=1st%20Semester%202024/2025" \
-     -u ug12345:23452024
-```
-
-#### Advanced Student Search (Admin)
-```bash
-curl -X GET "http://localhost:8000/admin/students/search?program=Computer%20Science&year_of_study=2" \
-     -u admin:admin123
-```
-
-## 🔧 Development & Customization
-
-### Adding New Features
-
-#### 1. Database Changes
-```python
-# db.py - Add new table/column
-def create_new_table(conn):
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS new_feature (
-            id SERIAL PRIMARY KEY,
-            ...
-        )
-    """)
-    conn.commit()
-```
-
-#### 2. API Endpoints
-```python
-# api.py - Add new endpoint
-@app.post("/admin/new-feature")
-async def new_feature(current_user: dict = Depends(require_admin_role)):
-    # Implementation
-    pass
-```
-
-#### 3. CLI Menu Options
-```python
-# menu.py - Add menu option
-def admin_menu_loop():
-    # Add to menu options
-    pass
-```
-
-### Testing & Validation
-
-#### API Testing
-```bash
-# Run API validation tests
-python test_api_improvements.py
-
-# Start API server for testing
-python api.py
-
-# Access interactive documentation
-http://localhost:8000/docs
-```
-
-#### CLI Testing
-```bash
-# Test CLI interface
-python main.py
-
-# Test with sample data
+# Generate comprehensive University of Ghana sample data
 python comprehensive_seed.py
 ```
 
-## 📈 Performance & Production
+## Usage
 
-### Database Optimization
-- **Indexing**: Proper indexes on frequently queried fields
-- **Connection Pooling**: Efficient database connection management
-- **Query Optimization**: Optimized SQL queries for large datasets
+### REST API Server
 
-### Security Features
-- **Authentication**: Secure user authentication system
-- **Authorization**: Role-based access control (RBAC)
-- **Input Validation**: Comprehensive data validation
-- **SQL Injection Protection**: Parameterized queries
-- **Session Management**: Secure session handling
+Start the FastAPI development server:
 
-### Monitoring & Logging
-- **Colored Logging**: Console and file logging with levels
-- **Error Tracking**: Comprehensive error logging
-- **Performance Monitoring**: Query and response time tracking
-- **User Activity**: Audit trail for all operations
-
-## 🚀 Production Deployment
-
-### Environment Setup
 ```bash
-# Production environment variables
-DATABASE_URL=postgresql://user:pass@host:port/db
-SECRET_KEY=your-secret-key
-DEBUG=False
-LOG_LEVEL=INFO
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Docker Deployment
-```dockerfile
-# Dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["python", "api.py"]
+API Documentation available at:
+- Interactive docs: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+### CLI Application
+
+Run the interactive command-line interface:
+
+```bash
+python main.py
 ```
 
-### Nginx Configuration
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
+## API Endpoints
+
+### Authentication
+- `GET /me` - Get current user information
+- `POST /admin/users` - Create new user account
+
+### System Management
+- `GET /` - API status and information
+- `GET /health` - System health check
+- `POST /initialize` - Initialize database tables
+- `POST /admin/seed-comprehensive` - Generate sample data
+
+### Student Management
+- `POST /admin/students` - Create student profile
+- `GET /admin/students` - List all students (paginated)
+- `GET /admin/students/search` - Search students by criteria
+- `GET /admin/students/{index_number}` - Get specific student
+- `PUT /admin/students/{index_number}` - Update student profile
+- `POST /admin/students/bulk` - Bulk import students from CSV
+
+### Academic Management
+- `POST /admin/courses` - Create new course
+- `GET /admin/courses` - List all courses
+- `POST /admin/semesters` - Create new semester
+- `GET /admin/semesters` - List all semesters
+
+### Grade Management
+- `POST /admin/grades` - Record student grade
+- `GET /admin/grades` - List grades with filtering
+- `GET /student/grades` - Get student's own grades
+- `GET /student/gpa` - Calculate student GPA
+
+### Student Portal
+- `GET /student/profile` - Get student profile
+- `GET /student/grades` - View personal grades
+- `GET /student/gpa` - View calculated GPA
+
+### Reports & Analytics
+- `GET /admin/students/analytics` - Student performance analytics
+- `GET /admin/grades/analytics` - Grade distribution analytics
+- `POST /admin/reports/export` - Generate and export reports
+
+## Authentication
+
+The system uses HTTP Basic Authentication with role-based access control:
+
+### Admin Access
+- Username: admin credentials
+- Full system access including user management, bulk operations, and analytics
+
+### Student Access  
+- Username: student index number (e.g., `ug12345`)
+- Access limited to personal profile and grades
+
+### Default Credentials (Seeded Data)
+- Admin: `admin` / `admin123`
+- Students: `{index_number}` / `{last_4_digits}2024`
+
+## Data Models
+
+### Student Profile
+```json
+{
+  "index_number": "ug12345",
+  "full_name": "John Doe",
+  "dob": "2000-01-15",
+  "gender": "Male",
+  "contact_email": "john.doe@ug.edu.gh",
+  "phone": "+233123456789",
+  "program": "Computer Science",
+  "year_of_study": 2
 }
 ```
 
-## 🔍 Troubleshooting
+### Course
+```json
+{
+  "course_code": "CSCI201",
+  "course_title": "Data Structures and Algorithms",
+  "credit_hours": 3
+}
+```
+
+### Grade Record
+```json
+{
+  "student_id": 1,
+  "course_id": 1,
+  "semester_id": 1,
+  "score": 85.5,
+  "grade": "B+",
+  "grade_point": 3.5,
+  "academic_year": "2024/2025"
+}
+```
+
+## Bulk Import Format
+
+CSV files for bulk student import should follow this structure:
+
+```csv
+index_number,full_name,dob,gender,contact_email,program,year_of_study
+ug12345,John Doe,2000-01-15,Male,john@ug.edu.gh,Computer Science,2
+ug12346,Jane Smith,1999-12-03,Female,jane@ug.edu.gh,Mathematics,3
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `DB_NAME` | PostgreSQL database name | `srms-db` | No |
+| `DB_USER` | Database username | `postgres` | No |
+| `DB_PASSWORD` | Database password | - | **Yes** |
+| `DB_HOST` | Database host | `localhost` | No |
+| `DB_PORT` | Database port | `5432` | No |
+| `SECRET_KEY` | Application secret key | - | **Yes** |
+| `SESSION_TIMEOUT` | Session timeout (seconds) | `3600` | No |
+| `LOG_LEVEL` | Logging level | `INFO` | No |
+| `APP_DEBUG` | Debug mode | `False` | No |
+
+### Logging
+
+The system uses structured logging with different levels:
+- `DEBUG`: Detailed diagnostic information
+- `INFO`: General application flow
+- `WARNING`: Unexpected situations that don't stop execution
+- `ERROR`: Serious problems that may prevent functionality
+
+Logs are written to `app.log` and console output.
+
+## Grade Calculation
+
+### University of Ghana Grading Scale
+
+| Score Range | Letter Grade | Grade Point |
+|-------------|--------------|-------------|
+| 80-100 | A | 4.0 |
+| 75-79 | B+ | 3.5 |
+| 70-74 | B | 3.0 |
+| 65-69 | C+ | 2.5 |
+| 60-64 | C | 2.0 |
+| 55-59 | D+ | 1.5 |
+| 50-54 | D | 1.0 |
+| 45-49 | E | 0.5 |
+| 0-44 | F | 0.0 |
+
+### GPA Calculation
+```
+GPA = Σ(Grade Point × Credit Hours) / Σ(Credit Hours)
+```
+
+## Error Handling
+
+The API provides consistent error responses:
+
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "error_code": "VALIDATION_ERROR",
+  "details": {
+    "field": "Specific validation issue"
+  }
+}
+```
+
+Common HTTP status codes:
+- `200`: Success
+- `201`: Created
+- `400`: Bad Request (validation errors)
+- `401`: Unauthorized
+- `403`: Forbidden
+- `404`: Not Found
+- `500`: Internal Server Error
+
+## Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=. --cov-report=html
+
+# Run specific test file
+pytest test_api.py -v
+```
+
+### Test Categories
+- **Unit Tests**: Individual function testing
+- **Integration Tests**: Database and API endpoint testing
+- **Authentication Tests**: Login and permission validation
+- **Data Validation Tests**: Input validation and error handling
+
+## Performance Considerations
+
+### Database Optimization
+- Indexed columns: `index_number`, `course_code`, `semester_name`
+- Connection pooling for concurrent requests
+- Prepared statements for security and performance
+
+### API Performance
+- Pagination for large result sets (default: 50 items per page)
+- Query optimization with selective field loading
+- Response caching for static data (courses, semesters)
+
+### Scalability
+- Stateless design for horizontal scaling
+- Async operations for non-blocking I/O
+- Configurable session management
+
+## Security Features
+
+### Data Protection
+- Password hashing with bcrypt
+- SQL injection prevention with parameterized queries
+- Input validation with Pydantic models
+- CORS configuration for cross-origin requests
+
+### Access Control
+- Role-based authentication (Admin/Student)
+- Session timeout management
+- API rate limiting capabilities
+- Secure environment variable handling
+
+## Production Deployment
+
+### Recommended Setup
+```bash
+# Production server
+gunicorn api:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+# With process manager
+systemctl start srms-api
+systemctl enable srms-api
+```
+
+### Environment Checklist
+- [ ] Set strong `SECRET_KEY`
+- [ ] Configure secure database credentials
+- [ ] Enable HTTPS/SSL
+- [ ] Set up database backups
+- [ ] Configure log rotation
+- [ ] Monitor system resources
+- [ ] Set up error alerting
+
+## Troubleshooting
 
 ### Common Issues
 
-#### Database Connection
+**Database Connection Errors**
 ```bash
-# Check PostgreSQL status
+# Check PostgreSQL service
 sudo systemctl status postgresql
 
+# Verify database exists
+psql -l | grep srms-db
+
 # Test connection
-psql -h localhost -U username -d ug_srms_db
+python -c "from db import connect_to_db; print('OK' if connect_to_db() else 'Failed')"
 ```
 
-#### API Issues
+**Import Errors**
 ```bash
-# Check logs
-tail -f app.log
-
-# Validate API health
-curl http://localhost:8000/health
-```
-
-#### CLI Problems
-```bash
-# Check Python environment
-python --version
-pip list
-
-# Verify dependencies
+# Install missing dependencies
 pip install -r requirements.txt
+
+# Check Python path
+python -c "import sys; print(sys.path)"
 ```
 
-## 📚 Additional Resources
+**Permission Issues**
+```bash
+# Check file permissions
+ls -la *.py
 
-### Documentation
-- **API Documentation**: http://localhost:8000/docs (Swagger)
-- **Alternative Docs**: http://localhost:8000/redoc (ReDoc)
-- **Technical Summary**: API_IMPROVEMENTS_SUMMARY.md
-- **Deployment Guide**: DEPLOYMENT_GUIDE.md
+# Database user permissions
+psql -c "SELECT current_user, session_user;"
+```
 
-### Support & Maintenance
-- **Log Files**: `app.log` for detailed operation logs
-- **Error Tracking**: Comprehensive error logging with stack traces
-- **User Activity**: Audit trail for all system operations
+### Debug Mode
+Enable debug mode for detailed error information:
+```env
+APP_DEBUG=True
+LOG_LEVEL=DEBUG
+```
 
-### University of Ghana Resources
-- **Official Website**: https://ug.edu.gh
-- **Academic Calendar**: Integrated into system
-- **Course Catalog**: 130+ authentic UG courses included
+## API Integration Examples
 
-## 🎯 System Capabilities Summary
+### Python Client
+```python
+import requests
 
-### ✅ What This System Can Do
+# Authentication
+auth = ('admin', 'admin123')
 
-#### Academic Management
-- [x] Complete student lifecycle management
-- [x] Comprehensive course catalog (130+ UG courses)
-- [x] Academic calendar management (8 semesters)
-- [x] Grade entry and GPA calculations
-- [x] Transcript generation
-- [x] Bulk operations and imports
+# Create student
+student_data = {
+    "index_number": "ug12345",
+    "full_name": "John Doe",
+    "program": "Computer Science"
+}
+response = requests.post(
+    "http://localhost:8000/admin/students",
+    json=student_data,
+    auth=auth
+)
+print(response.json())
+```
 
-#### User Management
-- [x] Role-based access control (Admin/Student)
-- [x] Secure authentication system
-- [x] Automatic student account creation
-- [x] Password reset functionality
-- [x] Session management with timeouts
+### JavaScript/Node.js
+```javascript
+const axios = require('axios');
 
-#### Reporting & Analytics
-- [x] Student transcripts (PDF/TXT)
-- [x] Grade distribution analysis
-- [x] Enrollment statistics by program
-- [x] Summary reports for administrators
-- [x] Dashboard analytics
+const client = axios.create({
+  baseURL: 'http://localhost:8000',
+  auth: {
+    username: 'admin',
+    password: 'admin123'
+  }
+});
 
-#### Integration Features
-- [x] University of Ghana specific data
-- [x] Authentic Ghanaian names and contacts
-- [x] UG email formats (@st.ug.edu.gh)
-- [x] Ghana phone number formats
-- [x] UG course codes and structures
+// Get all students
+client.get('/admin/students')
+  .then(response => console.log(response.data))
+  .catch(error => console.error(error.response.data));
+```
 
-#### Technical Features
-- [x] Dual interface (CLI + API)
-- [x] Production-ready FastAPI server
-- [x] PostgreSQL database with optimization
-- [x] Comprehensive error handling
-- [x] Detailed logging and monitoring
-- [x] Data validation and security
+### cURL Examples
+```bash
+# Get API status
+curl http://localhost:8000/
 
-### 🚀 Ready for Production Use
+# Create student (requires authentication)
+curl -X POST http://localhost:8000/admin/students \
+  -u admin:admin123 \
+  -H "Content-Type: application/json" \
+  -d '{"index_number":"ug12345","full_name":"John Doe"}'
 
-This system is fully production-ready with:
-- **Security**: Authentication, authorization, input validation
-- **Performance**: Optimized queries, connection pooling
-- **Monitoring**: Comprehensive logging and error tracking
-- **Documentation**: Complete API docs and user guides
-- **Testing**: Validation scripts and health checks
-- **Deployment**: Docker support and deployment guides
+# Get student grades
+curl http://localhost:8000/student/grades \
+  -u ug12345:50242024
+```
 
 ---
 
-## 📞 Contact & Support
-
-For questions, issues, or contributions:
-- **Repository**: https://github.com/naeemAbdul-Aziz/srm-tool-python
-- **Issues**: Use GitHub Issues for bug reports
-- **Documentation**: Refer to `/docs` endpoint for API documentation
-- **Logs**: Check `app.log` for detailed operation logs
-
----
-
-**🎓 University of Ghana Student Result Management System v2.0**  
-*Empowering academic excellence through technology*
-├── file_handler.py           # File processing utilities
-├── logger.py                 # Comprehensive logging system
-├── config.py                 # Configuration management
-├── requirements.txt          # Python dependencies
-├── docs/                     # Complete documentation
-│   ├── OFFICIAL_SYSTEM_DOCUMENTATION.md
-│   ├── QUICK_START.md
-│   ├── ENHANCED_FEATURES.md
-│   └── USAGE_GUIDE.md
-└── README.md                 # This file
-```
-
-## ✨ Key Features (Version 2.0)
-
-### 🎯 **Core Functionality**
-- ✅ **Complete Student Management**: CRUD operations with validation
-- ✅ **Course Management**: Full course catalog with prerequisites
-- ✅ **Semester Management**: Academic calendar and scheduling
-- ✅ **Grade Management**: Individual and bulk grade operations
-- ✅ **User Authentication**: Role-based access (Admin/Student)
-- ✅ **Professional Reporting**: PDF/TXT transcript generation
-
-### 🏗️ **System Architecture**
-- ✅ **Dual Interface**: CLI for admin operations + API for integration
-- ✅ **Enhanced Database**: PostgreSQL with comprehensive schema
-- ✅ **Security**: Input validation, SQL injection prevention
-- ✅ **Scalability**: Production-ready for 100+ concurrent users
-- ✅ **Integration**: RESTful API with Swagger documentation
-
-### 📊 **Advanced Features**
-- ✅ **Bulk Operations**: Mass import/export capabilities
-- ✅ **Real-time Analytics**: Academic performance monitoring
-- ✅ **Audit Trail**: Complete operation logging
-- ✅ **Multi-Channel Access**: CLI, API, and future web integration
-- ✅ **Academic Standards**: GPA calculations and standing tracking
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.8+
-- PostgreSQL 12+
-- Git (for cloning repository)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/naeemAbdul-Aziz/srm-tool-python.git
-   cd srm-tool-python/backend
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure database settings**
-   Create a `.env` file or configure `config.py` with your PostgreSQL credentials:
-   ```env
-   DB_NAME=your_database_name
-   DB_USER=your_database_user
-   DB_PASSWORD=your_database_password
-   DB_HOST=localhost
-   DB_PORT=5432
-   ```
-
-4. **Initialize the system**
-   ```bash
-   # Start CLI interface
-   python main.py
-   
-   # Create admin account (Sign Up → Admin)
-   # Login and initialize enhanced system:
-   # Admin Menu → Option 9 → Option 3 (Initialize Enhanced System)
-   ```
-
-### Deployment Options
-
-#### Option 1: CLI-Only (Admin Operations)
-```bash
-python main.py
-# Complete administrative interface
-# Student grade viewing capabilities
-```
-
-#### Option 2: API Server (Web/Mobile Integration)
-```bash
-python api.py
-# RESTful API on http://localhost:8000
-# Documentation: http://localhost:8000/docs
-```
-
-#### Option 3: Hybrid Deployment (Recommended)
-```bash
-# Terminal 1: CLI for admin operations
-python main.py
-
-# Terminal 2: API for web/mobile integration
-python api.py
-```
-
-## 📋 Usage Guide
-
-### 👨‍💼 Administrator Workflow
-
-1. **System Setup**
-   - Create admin account
-   - Initialize enhanced system
-   - Set up academic calendar (semesters)
-   - Create course catalog
-
-2. **Student Management**
-   - Add students individually
-   - Bulk import from CSV/TXT files
-   - Manage student information
-   - Handle enrollments
-
-3. **Academic Operations**
-   - Input and update grades
-   - Generate transcripts
-   - Monitor academic performance
-   - Manage course schedules
-
-4. **Reporting & Analytics**
-   - Generate PDF/TXT reports
-   - View academic summaries
-   - Track performance trends
-   - Export data for analysis
-
-### 🎓 Student Experience
-
-1. **Access System**
-   ```bash
-   python main.py
-   # Login with index number and password
-   ```
-
-2. **View Academic Information**
-   - Personal profile details
-   - Current semester courses
-   - Historical grade records
-   - GPA calculations
-   - Academic standing
-
-### 🌐 API Integration
-
-The SRMS API provides comprehensive endpoints for external integration:
-
-```bash
-# Start API server
-python api.py
-
-# Access documentation
-# http://localhost:8000/docs
-```
-
-**Key Endpoints:**
-- `GET/POST/PUT/DELETE /students/` - Student management
-- `GET/POST/PUT/DELETE /courses/` - Course management
-- `GET/POST/PUT /semesters/` - Semester management
-- `POST /students/upload` - Bulk import
-- `GET /export/{format}` - Report generation
-
-## 🛡️ Security & Performance
-
-### Security Features
-- **Role-Based Access Control**: Separate admin and student permissions
-- **Secure Authentication**: Password hashing with secure algorithms
-- **Input Validation**: Comprehensive data sanitization
-- **SQL Injection Prevention**: Parameterized queries
-- **Audit Trail**: Complete operation logging
-
-### Performance Specifications
-- **Database**: PostgreSQL with ACID compliance
-- **Concurrent Users**: Supports 100+ simultaneous users
-- **Response Time**: <2 seconds for standard operations
-- **Scalability**: Horizontal scaling ready
-- **Data Capacity**: Handles 10,000+ student records
-
-## 📚 Documentation
-
-- **[Official Documentation](docs/OFFICIAL_SYSTEM_DOCUMENTATION.md)** - Complete system guide
-- **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running quickly
-- **[Enhanced Features](docs/ENHANCED_FEATURES.md)** - Detailed feature documentation
-- **[Usage Guide](docs/USAGE_GUIDE.md)** - Step-by-step instructions
-
-## 🔗 API Reference
-
-### Authentication
-```bash
-POST /signup  # Create user account
-POST /login   # Authenticate user
-```
-
-### Student Management
-```bash
-GET    /students/           # List all students
-POST   /students/           # Add new student
-GET    /students/{index}    # Get student details
-PUT    /students/{index}    # Update student
-DELETE /students/{index}    # Delete student
-```
-
-### Course Management
-```bash
-GET    /courses/            # List all courses
-POST   /courses/            # Create course
-GET    /courses/{code}      # Get course details
-PUT    /courses/{code}      # Update course
-DELETE /courses/{code}      # Delete course
-```
-
-### Semester Management
-```bash
-GET    /semesters/          # List semesters
-POST   /semesters/          # Create semester
-GET    /semesters/current   # Get current semester
-PUT    /semesters/{id}/set-current  # Set current semester
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🎯 System Requirements
-
-- **Operating System**: Windows, macOS, Linux
-- **Python**: Version 3.8 or higher
-- **Database**: PostgreSQL 12 or higher
-- **Memory**: Minimum 2GB RAM (4GB recommended)
-- **Storage**: 1GB available space
-
-## 📞 Support
-
-- **Documentation**: Check the `docs/` folder for comprehensive guides
-- **Issues**: Report bugs via GitHub Issues
-- **Questions**: Open a discussion for general questions
-- **Email**: Contact the development team for enterprise support
-
-## 🔮 Roadmap
-
-### Version 2.1 (Q4 2025)
-- [ ] Web-based admin dashboard
-- [ ] Mobile application
-- [ ] Advanced analytics dashboard
-- [ ] Parent/guardian portal
-
-### Version 2.2 (Q1 2026)
-- [ ] Learning Management System integration
-- [ ] Advanced reporting with charts
-- [ ] Multi-campus support
-- [ ] Cloud deployment options
-
----
-
-**🎓 Ready for production deployment in educational institutions of any size!**
-
-For detailed setup instructions, see [Quick Start Guide](docs/QUICK_START.md)  
-For complete documentation, see [Official Documentation](docs/OFFICIAL_SYSTEM_DOCUMENTATION.md)
+**Note**: This system is designed for educational institutions and includes features specific to the University of Ghana academic structure. The codebase can be adapted for other institutions by modifying the course codes, grading scales, and academic calendar configurations in the respective modules.
