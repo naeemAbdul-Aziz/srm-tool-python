@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import logging
 from psycopg2.extras import RealDictCursor
 from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+from grade_util import calculate_grade, get_grade_point
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -164,13 +165,14 @@ def fetch_student_by_index_number(conn, index_number):
                 # Fetch student's grades along with course and semester info
                 cursor.execute("""
                     SELECT
-                        g.score, g.grade, g.grade_point, g.academic_year,
+                        g.grade_id, g.score, g.grade, g.grade_point, g.academic_year,
                         c.course_code, c.course_title, c.credit_hours,
                         s.semester_name
                     FROM grades g
                     JOIN courses c ON g.course_id = c.course_id
                     JOIN semesters s ON g.semester_id = s.semester_id
-                    WHERE g.student_id = %s;
+                    WHERE g.student_id = %s
+                    ORDER BY s.academic_year, s.start_date, c.course_code;
                 """, (student_profile['student_id'],))
                 grades = cursor.fetchall()
                 student_profile['grades'] = grades # Add grades list to profile
@@ -187,24 +189,29 @@ def fetch_all_records(conn):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             # Fetch all student profiles
-            cursor.execute("SELECT * FROM student_profiles")
+            cursor.execute("SELECT * FROM student_profiles ORDER BY full_name")
             students = cursor.fetchall()
 
             # Fetch all courses
-            cursor.execute("SELECT * FROM courses")
+            cursor.execute("SELECT * FROM courses ORDER BY course_code")
             courses = cursor.fetchall()
 
             # Fetch all semesters
-            cursor.execute("SELECT * FROM semesters")
+            cursor.execute("SELECT * FROM semesters ORDER BY academic_year DESC, start_date DESC")
             semesters = cursor.fetchall()
 
-            # Fetch all grades with course and semester information
+            # Fetch all grades with student, course and semester information
             cursor.execute("""
-                SELECT g.*, c.course_code, c.course_title, s.semester_name
+                SELECT 
+                    g.grade_id, g.score, g.grade, g.grade_point, g.academic_year,
+                    sp.index_number, sp.full_name,
+                    c.course_code, c.course_title,
+                    s.semester_name
                 FROM grades g
+                JOIN student_profiles sp ON g.student_id = sp.student_id
                 JOIN courses c ON g.course_id = c.course_id
                 JOIN semesters s ON g.semester_id = s.semester_id
-                ORDER BY g.student_id, c.course_code
+                ORDER BY sp.index_number, s.academic_year DESC, s.semester_name, c.course_code
             """)
             grades = cursor.fetchall()
 
@@ -467,7 +474,7 @@ def update_semester(conn, semester_id, updates):
     query_parts = []
     values = []
     for key, value in updates.items():
-        if key in ['semester_name', 'start_date', 'end_date', 'is_current']:
+        if key in ['semester_name', 'academic_year', 'start_date', 'end_date', 'is_current']: # Added academic_year
             query_parts.append(f"{key} = %s")
             values.append(value)
         else:
@@ -544,46 +551,44 @@ def fetch_grades_by_index_number(conn, index_number):
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("""
                 SELECT
-                    g.score, g.grade, g.grade_point, g.academic_year,
+                    g.grade_id, g.score, g.grade, g.grade_point, g.academic_year,
                     c.course_code, c.course_title, c.credit_hours,
                     s.semester_name, s.start_date, s.end_date
                 FROM grades g
                 JOIN student_profiles sp ON g.student_id = sp.student_id
                 JOIN courses c ON g.course_id = c.course_id
                 JOIN semesters s ON g.semester_id = s.semester_id
-                WHERE sp.index_number = %s;
+                WHERE sp.index_number = %s
+                ORDER BY s.academic_year, s.start_date, c.course_code;
             """, (index_number,))
             return cursor.fetchall()
     except Exception as e:
         logger.error(f"Error fetching grades for student {index_number}: {e}")
         return []
 
-def update_student_score(conn, index_number, course_code, semester_name, new_score, new_grade, new_grade_point):
-    """Update a student's score for a specific course and semester."""
+def update_student_score(conn, student_id, course_id, semester_id, new_score, new_grade, new_grade_point, academic_year):
+    """Update a student's score for a specific course and semester using IDs."""
     if conn is None: return False
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
                 UPDATE grades
-                SET score = %s, grade = %s, grade_point = %s, updated_at = CURRENT_TIMESTAMP
-                FROM student_profiles sp, courses c, semesters s
-                WHERE grades.student_id = sp.student_id
-                AND grades.course_id = c.course_id
-                AND grades.semester_id = s.semester_id
-                AND sp.index_number = %s
-                AND c.course_code = %s
-                AND s.semester_name = %s;
-            """, (new_score, new_grade, new_grade_point, index_number, course_code, semester_name))
+                SET score = %s, grade = %s, grade_point = %s, academic_year = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE student_id = %s
+                AND course_id = %s
+                AND semester_id = %s
+                RETURNING grade_id;
+            """, (new_score, new_grade, new_grade_point, academic_year, student_id, course_id, semester_id))
             
             if cursor.rowcount > 0:
                 conn.commit()
-                logger.info(f"Score for student {index_number} in {course_code} ({semester_name}) updated to {new_score}.")
+                logger.info(f"Score for student_id {student_id} in course_id {course_id} (semester_id {semester_id}) updated to {new_score}.")
                 return True
             else:
-                logger.warning(f"Could not find matching grade to update for student {index_number}, course {course_code}, semester {semester_name}.")
+                logger.warning(f"Could not find matching grade to update for student_id {student_id}, course_id {course_id}, semester_id {semester_id}.")
                 return False
     except Exception as e:
-        logger.error(f"Error updating score for student {index_number}, course {course_code}, semester {semester_name}: {e}")
+        logger.error(f"Error updating score for student_id {student_id}, course_id {course_id}, semester_id {semester_id}: {e}")
         conn.rollback()
         return False
 
@@ -598,9 +603,9 @@ def insert_complete_student_record(conn, student_profile_data, grade_data):
         conn.autocommit = False 
 
         # 1. Insert/Get Student Profile
-        student_id = fetch_student_by_index_number(conn, student_profile_data['index_number'])
-        if student_id and student_id.get('student_id'): # Check if student_id is not None and has the key
-            student_id = student_id['student_id']
+        student_profile_from_db = fetch_student_by_index_number(conn, student_profile_data['index_number'])
+        if student_profile_from_db:
+            student_id = student_profile_from_db['student_id']
             logger.info(f"Student {student_profile_data['index_number']} already exists with ID: {student_id}. Skipping profile insertion.")
             # Optionally update existing profile if needed, but for now, just use its ID
         else:
@@ -611,7 +616,7 @@ def insert_complete_student_record(conn, student_profile_data, grade_data):
                     RETURNING student_id;
                 """, (
                     student_profile_data['index_number'],
-                    student_profile_data['name'],
+                    student_profile_data['name'], # Assuming 'name' in student_profile_data maps to 'full_name'
                     student_profile_data.get('dob'),
                     student_profile_data.get('gender'),
                     student_profile_data.get('contact_email'),
@@ -620,13 +625,29 @@ def insert_complete_student_record(conn, student_profile_data, grade_data):
                     student_profile_data.get('year_of_study')
                 ))
                 student_id = cursor.fetchone()[0]
-                conn.commit()
                 logger.info(f"Student profile '{student_profile_data['name']}' ({student_profile_data['index_number']}) inserted with ID: {student_id}")
 
         # 2. Insert Grade(s)
         if grade_data:
             for grade in grade_data:
-                insert_grade(conn, student_id, grade['course_id'], grade['semester_id'], grade['score'], grade['grade'], grade['grade_point'], grade['academic_year'])
+                # Resolve course_id and semester_id
+                course = fetch_course_by_code(conn, grade['course_code'])
+                if not course:
+                    raise ValueError(f"Course with code {grade['course_code']} not found for bulk import.")
+                course_id = course['course_id']
+
+                semester_obj = fetch_semester_by_name(conn, grade['semester_name'])
+                if not semester_obj:
+                    raise ValueError(f"Semester with name {grade['semester_name']} not found for bulk import.")
+                semester_id = semester_obj['semester_id']
+
+                # Calculate grade and grade point
+                calculated_grade = calculate_grade(grade['score'])
+                calculated_grade_point = get_grade_point(grade['score'])
+
+                # Use the helper function to insert/update grade
+                insert_grade(conn, student_id, course_id, semester_id, grade['score'], 
+                             calculated_grade, calculated_grade_point, grade['academic_year'])
 
         # Commit transaction
         conn.commit()
@@ -639,4 +660,54 @@ def insert_complete_student_record(conn, student_profile_data, grade_data):
         return False
 
     finally:
-        conn.autocommit = True
+        conn.autocommit = True # Re-enable autocommit
+
+# --- AUTHENTICATION OPERATIONS (from auth.py, simplified for db context) ---
+def get_user_by_username(conn, username):
+    """Fetch user by username."""
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM users WHERE username = %s;", (username,))
+            return cursor.fetchone()
+    except Exception as e:
+        logger.error(f"Error fetching user by username {username}: {e}")
+        return None
+
+def create_user(conn, username, password_hash, role):
+    """Create a new user in the database."""
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO users (username, password, role)
+                VALUES (%s, %s, %s) RETURNING user_id;
+            """, (username, password_hash, role))
+            user_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info(f"User '{username}' created with ID: {user_id}")
+            return user_id
+    except psycopg2.errors.UniqueViolation:
+        logger.warning(f"User with username {username} already exists.")
+        conn.rollback()
+        return False
+    except Exception as e:
+        logger.error(f"Error creating user {username}: {e}")
+        conn.rollback()
+        return False
+
+def update_user_password(conn, user_id, new_password_hash):
+    """Update a user's password."""
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE users SET password = %s WHERE user_id = %s;
+            """, (new_password_hash, user_id))
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"Password for user {user_id} updated successfully.")
+                return True
+            return False
+    except Exception as e:
+        logger.error(f"Error updating password for user {user_id}: {e}")
+        conn.rollback()
+        return False
+

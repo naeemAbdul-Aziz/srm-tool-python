@@ -5,16 +5,20 @@ from pprint import pprint
 from db import (
     connect_to_db,
     fetch_all_records,
-    insert_student_profile, # This will now expect 'name' in the profile dict
+    insert_student_profile,
     insert_grade,
     fetch_student_by_index_number,
-    update_student_score,
-    insert_complete_student_record # Used for bulk import
+    update_student_score, # This function is still used for direct score updates
+    insert_complete_student_record, # Used for bulk import
+    fetch_course_by_code, # Added for resolving course_id
+    fetch_semester_by_name, # Added for resolving semester_id
+    insert_course, # Added for creating courses if not exist during grade add
+    insert_semester # Added for creating semesters if not exist during grade add
 )
 from grade_util import summarize_grades, calculate_grade, calculate_gpa, get_grade_point
 from logger import get_logger
 from report_utils import export_summary_report_pdf, export_summary_report_txt
-from auth import sign_up, create_user, create_student_account, reset_student_password, get_student_accounts, delete_student_account
+from auth import sign_up, create_user, create_student_account, reset_student_password, get_student_accounts, delete_student_account, authenticate_user
 from bulk_importer import bulk_import_from_file
 from file_handler import REQUIRED_FIELDS # Assuming this provides a list of required fields for bulk import
 from course_management import (
@@ -34,8 +38,6 @@ def logout():
 
 def login(username, password):
     """Simple login function for compatibility"""
-    # This is a placeholder - implement actual login logic
-    from auth import authenticate_user
     return authenticate_user(username, password)
 
 
@@ -63,15 +65,18 @@ def handle_admin_option(option):
             conn = connect_to_db()
             if conn:
                 records = fetch_all_records(conn)
-                if records:
+                if records and records.get('students') and records.get('grades'):
                     print("\n--- All Student Records ---")
                     processed_records = process_records_for_display(records)
                     for student_idx, student_info in processed_records.items():
                         print(f"\nIndex Number: {student_idx}")
                         print(f"Name: {student_info['profile'].get('full_name', 'N/A')}")
                         print("Grades:")
-                        for grade in student_info['grades']:
-                            print(f"  - Course: {grade['course_code']} ({grade['course_title']}), Score: {grade['score']}, Grade: {grade['grade']}")
+                        if student_info['grades']:
+                            for grade in student_info['grades']:
+                                print(f"  - Course: {grade.get('course_code', 'N/A')} ({grade.get('course_title', 'N/A')}), Score: {grade.get('score', 'N/A')}, Grade: {grade.get('grade', 'N/A')}, Semester: {grade.get('semester_name', 'N/A')}")
+                        else:
+                            print("    No grades recorded for this student.")
                 else:
                     print("No student records found.")
                 conn.close()
@@ -85,7 +90,21 @@ def handle_admin_option(option):
             if conn:
                 student_data = fetch_student_by_index_number(conn, index_num)
                 if student_data:
-                    pprint(student_data) # Pretty print the dictionary
+                    print(f"\n--- Student Profile for {index_num} ---")
+                    print(f"Full Name: {student_data.get('full_name', 'N/A')}")
+                    print(f"DOB: {student_data.get('dob', 'N/A')}")
+                    print(f"Gender: {student_data.get('gender', 'N/A')}")
+                    print(f"Email: {student_data.get('contact_email', 'N/A')}")
+                    print(f"Phone: {student_data.get('contact_phone', 'N/A')}")
+                    print(f"Program: {student_data.get('program', 'N/A')}")
+                    print(f"Year of Study: {student_data.get('year_of_study', 'N/A')}")
+                    
+                    print("\n--- Grades ---")
+                    if student_data.get('grades'):
+                        for grade in student_data['grades']:
+                            print(f"  - Course: {grade.get('course_code', 'N/A')} ({grade.get('course_title', 'N/A')}), Semester: {grade.get('semester_name', 'N/A')}, Academic Year: {grade.get('academic_year', 'N/A')}, Score: {grade.get('score', 'N/A')}, Grade: {grade.get('grade', 'N/A')}, Grade Point: {grade.get('grade_point', 'N/A')}")
+                    else:
+                        print("No grades found for this student.")
                 else:
                     print("Student not found.")
                 conn.close()
@@ -96,7 +115,8 @@ def handle_admin_option(option):
             logger.info("Admin selected: Update student score")
             index_num = input("Enter student index number to update score: ").strip()
             course_code = input("Enter course code: ").strip().upper()
-            semester_name = input("Enter semester name (e.g., 'Fall 2023'): ").strip()
+            semester_name = input("Enter semester name (e.g., 'Alpha'): ").strip()
+            academic_year = input("Enter academic year (e.g., '2023/2024'): ").strip()
             try:
                 new_score = float(input("Enter new score: ").strip())
                 if not (0 <= new_score <= 100):
@@ -108,15 +128,37 @@ def handle_admin_option(option):
 
                 conn = connect_to_db()
                 if conn:
-                    if update_student_score(conn, index_num, course_code, semester_name, new_score, new_grade, new_grade_point):
+                    # Resolve IDs first
+                    student = fetch_student_by_index_number(conn, index_num)
+                    course = fetch_course_by_code(conn, course_code)
+                    semester = fetch_semester_by_name(conn, semester_name)
+
+                    if not student:
+                        print(f"Student with index number {index_num} not found.")
+                        conn.close()
+                        return
+                    if not course:
+                        print(f"Course with code {course_code} not found.")
+                        conn.close()
+                        return
+                    if not semester:
+                        print(f"Semester with name {semester_name} not found.")
+                        conn.close()
+                        return
+                    
+                    if update_student_score(conn, student['student_id'], course['course_id'], semester['semester_id'], new_score, new_grade, new_grade_point, academic_year):
                         print("Student score updated successfully.")
                     else:
-                        print("Failed to update score. Check index number, course code, and semester.")
+                        print("Failed to update score. Check index number, course code, and semester combination.")
                     conn.close()
                 else:
                     print("Could not connect to database.")
             except ValueError:
                 print("Invalid score entered.")
+            except Exception as e:
+                logger.error(f"Error updating student score: {e}")
+                print(f"An error occurred: {e}")
+
 
         elif option == 4:
             logger.info("Admin selected: Export summary report to TXT")
@@ -124,11 +166,12 @@ def handle_admin_option(option):
             if conn:
                 records = fetch_all_records(conn)
                 conn.close()
-                if records:
+                if records and records.get('students'):
+                    # The export functions expect a list of student records, potentially with nested grades
+                    # process_records_for_display already structures this well
                     processed_records = process_records_for_display(records)
-                    # Convert dictionary to list for report function
-                    records_list = list(processed_records.values())
-                    if export_summary_report_txt(records_list, "summary_report.txt"):
+                    records_list_for_report = list(processed_records.values()) # Convert dict to list of student data
+                    if export_summary_report_txt(records_list_for_report, "summary_report.txt"):
                         print("Summary report exported to summary_report.txt")
                     else:
                         print("Failed to export summary report.")
@@ -143,11 +186,10 @@ def handle_admin_option(option):
             if conn:
                 records = fetch_all_records(conn)
                 conn.close()
-                if records:
+                if records and records.get('students'):
                     processed_records = process_records_for_display(records)
-                    # Convert dictionary to list for report function
-                    records_list = list(processed_records.values())
-                    if export_summary_report_pdf(records_list, "summary_report.pdf"):
+                    records_list_for_report = list(processed_records.values()) # Convert dict to list of student data
+                    if export_summary_report_pdf(records_list_for_report, "summary_report.pdf"):
                         print("Summary report exported to summary_report.pdf")
                     else:
                         print("Failed to export summary report.")
@@ -159,11 +201,12 @@ def handle_admin_option(option):
         elif option == 6:
             logger.info("Admin selected: Add a single student record")
             print("\n--- ADD SINGLE STUDENT RECORD ---")
-            index_number = input("Enter student index number: ").strip()
+            index_number = input("Enter student index number (e.g., ug12345): ").strip()
             full_name = input("Enter student full name: ").strip()
             dob_str = input("Enter Date of Birth (YYYY-MM-DD, optional): ").strip()
             gender = input("Enter Gender (optional): ").strip()
             contact_email = input("Enter Contact Email (optional): ").strip()
+            contact_phone = input("Enter Contact Phone (optional): ").strip() # Added phone
             program = input("Enter Program (optional): ").strip()
             year_of_study_str = input("Enter Year of Study (optional): ").strip()
 
@@ -186,7 +229,7 @@ def handle_admin_option(option):
 
             conn = connect_to_db()
             if conn:
-                student_id = insert_student_profile(conn, index_number, full_name, dob, gender, contact_email, None, program, year_of_study)
+                student_id = insert_student_profile(conn, index_number, full_name, dob, gender, contact_email, contact_phone, program, year_of_study)
                 if student_id:
                     print(f"Student '{full_name}' ({index_number}) added with ID: {student_id}.")
                     
@@ -194,16 +237,21 @@ def handle_admin_option(option):
                     add_grade_now = input("Do you want to add a grade for this student now? (yes/no): ").strip().lower()
                     if add_grade_now == 'yes':
                         course_code = input("Enter course code: ").strip().upper()
-                        course_title = input("Enter course title: ").strip()
+                        course_title = input("Enter course title (will be created if new): ").strip()
+                        credit_hours_str = input("Enter credit hours (will be created if new course): ").strip()
+                        semester_name = input("Enter semester name (e.g., 'Alpha'): ").strip()
+                        academic_year = input("Enter academic year (e.g., '2023/2024'): ").strip()
+                        score_str = input("Enter score: ").strip()
+
                         try:
-                            score = float(input("Enter score: ").strip())
-                            credit_hours = int(input("Enter credit hours: ").strip())
-                            semester_name = input("Enter semester name (e.g., 'Fall 2023'): ").strip()
-                            academic_year = input("Enter academic year (e.g., '2023/2024'): ").strip()
+                            score = float(score_str)
+                            credit_hours = int(credit_hours_str)
+                            if not (0 <= score <= 100):
+                                print("Score must be between 0 and 100. Grade not added.")
+                                conn.close()
+                                return
 
-                            # Fetch course_id and semester_id or insert if not exist
-                            from db import fetch_course_by_code, insert_course, fetch_semester_by_name, insert_semester
-
+                            # Fetch course_id or insert if not exist
                             course = fetch_course_by_code(conn, course_code)
                             if not course:
                                 course_id = insert_course(conn, course_code, course_title, credit_hours)
@@ -214,6 +262,7 @@ def handle_admin_option(option):
                             else:
                                 course_id = course['course_id']
 
+                            # Fetch semester_id or insert if not exist
                             semester = fetch_semester_by_name(conn, semester_name)
                             if not semester:
                                 # Placeholder dates if semester doesn't exist
@@ -224,7 +273,7 @@ def handle_admin_option(option):
                                     start_date = datetime.strptime(f'01-01-{current_year}', '%m-%d-%Y').date()
                                     end_date = datetime.strptime(f'05-31-{current_year}', '%m-%d-%Y').date()
 
-                                semester_id = insert_semester(conn, semester_name, start_date, end_date)
+                                semester_id = insert_semester(conn, semester_name, start_date, end_date, academic_year)
                                 if not semester_id:
                                     print("Failed to add semester for grade. Please add semester manually.")
                                     conn.close()
@@ -256,10 +305,11 @@ def handle_admin_option(option):
             if conn:
                 records = fetch_all_records(conn)
                 conn.close()
-                if records:
-                    grades = [r.get('grade') for r in records if isinstance(r, dict) and r.get('grade') is not None] # Extract grades from the combined records
-                    if grades:
-                        summary = summarize_grades(grades) # This expects a list of grades, not student objects
+                if records and records.get('grades'):
+                    # Extract grades from the combined records
+                    grades_only = [g.get('grade') for g in records['grades'] if g.get('grade') is not None]
+                    if grades_only:
+                        summary = summarize_grades(grades_only) # This expects a list of grades, not student objects
                         print("\n--- Grade Summary ---")
                         for grade, count in summary.items():
                             print(f"{grade}: {count}")
@@ -273,7 +323,6 @@ def handle_admin_option(option):
         elif option == 8:
             logger.info("Admin selected: Bulk Import Student Records")
             file_path = input("Enter the path to the bulk import file (e.g., students.csv): ").strip()
-            # Pass REQUIRED_FIELDS and a placeholder semester name (can be enhanced to ask user)
             semester_for_import = input("Enter the semester name for these records (e.g., 'Fall 2023'): ").strip()
             if not semester_for_import:
                 print("Semester name is required for bulk import.")
@@ -478,7 +527,7 @@ def student_menu_loop(user_data):
                 if student_data and student_data.get('grades'):
                     print(f"Grades for {student_data['full_name']} ({index_number}):")
                     for grade in student_data['grades']:
-                        print(f"  - Course: {grade['course_code']} ({grade['course_title']}), Score: {grade['score']}, Grade: {grade['grade']}")
+                        print(f"  - Course: {grade.get('course_code', 'N/A')} ({grade.get('course_title', 'N/A')}), Score: {grade.get('score', 'N/A')}, Grade: {grade.get('grade', 'N/A')}, Semester: {grade.get('semester_name', 'N/A')}")
                 else:
                     print("No grades found.")
             else:
@@ -502,8 +551,20 @@ def student_menu_loop(user_data):
         elif choice == "3":
             logger.info("Student selected: Generate personal academic report (PDF)")
             try:
-                # Add logic to generate PDF report
-                print("Personal academic report generated successfully.")
+                conn = connect_to_db()
+                if conn:
+                    student_data = fetch_student_by_index_number(conn, index_number)
+                    conn.close()
+                    if student_data:
+                        # The export function expects a list of student records, so wrap it
+                        if export_summary_report_pdf([{'profile': student_data, 'grades': student_data.get('grades', [])}], f"{index_number}_transcript.pdf"):
+                            print(f"Personal academic report exported to {index_number}_transcript.pdf")
+                        else:
+                            print("Failed to generate personal academic report.")
+                    else:
+                        print("Student profile not found to generate report.")
+                else:
+                    print("Could not connect to database.")
             except Exception as e:
                 logger.error(f"Error generating academic report: {e}")
                 print("An error occurred while generating the report.")
@@ -527,42 +588,65 @@ def process_records_for_display(records):
     logger.debug(f"Processing records: {records}")
     processed_records = {}
     
-    # First, create a mapping of student_id to index_number
-    student_id_to_index = {}
+    # First, populate student profiles
     for student in records.get('students', []):
-        student_id_to_index[student['student_id']] = student['index_number']
         processed_records[student['index_number']] = {
             'profile': student,
             'grades': []
         }
     
-    # Then, match grades to students using student_id
+    # Then, add grades to their respective students
     for grade in records.get('grades', []):
-        student_id = grade['student_id']
-        if student_id in student_id_to_index:
-            student_idx = student_id_to_index[student_id]
-            if student_idx in processed_records:
-                processed_records[student_idx]['grades'].append(grade)
+        student_idx = grade.get('index_number') # Use 'index_number' from the joined grade record
+        if student_idx and student_idx in processed_records:
+            processed_records[student_idx]['grades'].append(grade)
     
     return processed_records
 
 def handle_bulk_import(file_path, semester_for_import):
     """Handle bulk import of student records."""
     try:
-        results = bulk_import_from_file(file_path, REQUIRED_FIELDS, semester_for_import)
+        conn = connect_to_db()
+        if not conn:
+            print("Could not connect to database for bulk import.")
+            return
+
+        # Read the file content
+        with open(file_path, 'r') as f:
+            csv_data = f.read()
+
+        # Simple CSV parsing (you might want a more robust CSV parser for production)
+        lines = csv_data.strip().split('\n')
+        if not lines:
+            print("CSV file is empty.")
+            conn.close()
+            return
+
+        headers = [h.strip() for h in lines[0].split(',')]
+        records_to_import = []
+        for line in lines[1:]:
+            if line.strip():
+                values = [v.strip() for v in line.split(',')]
+                record = dict(zip(headers, values))
+                records_to_import.append(record)
+
+        results = bulk_import_from_file(file_path, records_to_import, semester_for_import)
+        conn.close()
         logger.info("Bulk import completed.")
         print(f"\nBulk Import Results:")
-        print(f"Message: {results['message']}")
-        print(f"Total records processed: {results['total']}")
-        print(f"Successfully imported: {results['successful']}")
-        print(f"Skipped records: {results['skipped']}")
-        if results['errors']:
+        print(f"Message: {results.get('message', 'N/A')}")
+        print(f"Total records processed: {results.get('total_records', 0)}")
+        print(f"Successfully imported: {results.get('successful_imports', 0)}")
+        print(f"Failed imports: {results.get('failed_imports', 0)}")
+        if results.get('errors'):
             print("\nErrors during import:")
             for error in results['errors']:
                 print(f"- {error}")
+    except FileNotFoundError:
+        print(f"Error: File not found at {file_path}")
     except Exception as e:
         logger.error(f"Error during bulk import: {e}")
-        print("An error occurred during bulk import.")
+        print(f"An error occurred during bulk import: {e}")
 
 def admin_menu_loop(user_data):
     """Admin menu loop."""
@@ -636,10 +720,6 @@ def main_menu_loop():
             print("an unexpected error occurred. please try again.")
             logger.error(f"unexpected error in main menu: {e}")
 
-# This `main_menu` function seems to be a duplicate or a placeholder.
-# I will remove it or assume `main_menu_loop` is the intended entry point.
-# Based on the structure, `main_menu_loop` is the actual entry point.
-# I'll keep the `if __name__ == "__main__"` block clean.
-
 if __name__ == "__main__":
     main_menu_loop()
+

@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Result Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: #f9fafb; /* Light gray background */
+        }
+        *, *::before, *::after {
+            box-sizing: inherit;
+        }
+        /* Custom styles for modals to ensure they are on top */
+        .modal-overlay {
+            z-index: 999;
+        }
+        .modal-content {
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <div id="app" class="flex-grow">
+        <!-- Content will be dynamically loaded here -->
+    </div>
+
+    <!-- Reusable Modal Structure -->
+    <div id="modal-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 modal-overlay hidden">
+        <div id="modal-content" class="bg-white p-6 sm:p-8 rounded-lg shadow-lg max-w-lg w-full mx-auto modal-content">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 id="modal-title" class="text-xl font-bold text-gray-800"></h3>
+                <button id="modal-close-btn" class="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Modal content goes here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Reusable Confirmation Modal Structure -->
+    <div id="confirmation-modal-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 modal-overlay hidden">
+        <div id="confirmation-modal-content" class="bg-white p-6 sm:p-8 rounded-lg shadow-lg max-w-lg w-full mx-auto modal-content">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 id="confirmation-modal-title" class="text-xl font-bold text-gray-800"></h3>
+                <button id="confirmation-modal-close-btn" class="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none">&times;</button>
+            </div>
+            <div id="confirmation-modal-body" class="text-gray-700 mb-6">
+                <!-- Confirmation message goes here -->
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button id="confirmation-modal-cancel-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 font-semibold">
+                    Cancel
+                </button>
+                <button id="confirmation-modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-semibold">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000'; // Ensure this matches your FastAPI backend URL
+        const appDiv = document.getElementById('app');
+
+        // --- Auth State Management ---
+        let currentUser = null; // Stores user data after successful login
+
+        const setAuthUser = (user) => {
+            currentUser = user;
+            if (user) {
+                sessionStorage.setItem('srmsUser', JSON.stringify(user));
+            } else {
+                sessionStorage.removeItem('srmsUser');
+                sessionStorage.removeItem('srmsAuth'); // Clear credentials on logout
+            }
+            renderApp(); // Re-render the app based on new auth state
+        };
+
+        const getAuthHeader = () => {
+            const storedAuth = sessionStorage.getItem('srmsAuth');
+            if (storedAuth) {
+                const { username, password } = JSON.parse(storedAuth);
+                return 'Basic ' + btoa(`${username}:${password}`);
+            }
+            return '';
+        };
+
+        // --- API Utility ---
+        const api = {
+            fetchData: async (endpoint, method = 'GET', body = null) => {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': getAuthHeader(),
+                };
+
+                const options = {
+                    method,
+                    headers,
+                    body: body ? JSON.stringify(body) : null,
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || `API Error: ${response.status} ${response.statusText}`);
+                    }
+                    return data;
+                } catch (error) {
+                    console.error('API Call Failed:', endpoint, error);
+                    throw error;
+                }
+            },
+
+            login: async (username, password) => {
+                const tempAuthHeader = 'Basic ' + btoa(`${username}:${password}`);
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': tempAuthHeader,
+                };
+                const options = {
+                    method: 'GET',
+                    headers,
+                };
+                const response = await fetch(`${API_BASE_URL}/me`, options);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    sessionStorage.setItem('srmsAuth', JSON.stringify({ username, password }));
+                    return { success: true, user: data.data };
+                } else {
+                    throw new Error(data.message || 'Login failed: Invalid credentials');
+                }
+            },
+
+            // --- Admin Endpoints (mimicking React structure) ---
+            getAllStudents: async (skip = 0, limit = 100) => api.fetchData(`/admin/students?skip=${skip}&limit=${limit}`),
+            searchStudents: async (filters = {}, skip = 0, limit = 100) => {
+                const query = new URLSearchParams(filters).toString();
+                return api.fetchData(`/admin/students/search?${query}&skip=${skip}&limit=${limit}`);
+            },
+            createStudent: async (studentData) => api.fetchData('/admin/students', 'POST', studentData),
+            updateStudent: async (index_number, studentData) => api.fetchData(`/admin/students/${encodeURIComponent(index_number)}`, 'PUT', studentData),
+            deleteStudent: async (index_number) => api.fetchData(`/admin/students/${encodeURIComponent(index_number)}`, 'DELETE'),
+
+            getAllCourses: async (skip = 0, limit = 100) => api.fetchData(`/admin/courses?skip=${skip}&limit=${limit}`),
+            createCourse: async (courseData) => api.fetchData('/admin/courses', 'POST', courseData),
+            updateCourse: async (course_code, courseData) => api.fetchData(`/admin/courses/${encodeURIComponent(course_code)}`, 'PUT', courseData),
+            deleteCourse: async (course_code) => api.fetchData(`/admin/courses/${encodeURIComponent(course_code)}`, 'DELETE'),
+
+            getAllSemesters: async () => api.fetchData('/admin/semesters'),
+            createSemester: async (semesterData) => api.fetchData('/admin/semesters', 'POST', semesterData),
+            updateSemester: async (semester_name, semesterData) => api.fetchData(`/admin/semesters/${encodeURIComponent(semester_name)}`, 'PUT', semesterData),
+            deleteSemester: async (semester_name) => api.fetchData(`/admin/semesters/${encodeURIComponent(semester_name)}`, 'DELETE'),
+
+            getAllGrades: async (filters = {}, skip = 0, limit = 100) => {
+                const query = new URLSearchParams(filters).toString();
+                return api.fetchData(`/admin/grades?${query}&skip=${skip}&limit=${limit}`);
+            },
+            createGrade: async (gradeData) => api.fetchData('/admin/grades', 'POST', gradeData),
+
+            createUserAccount: async (userData) => api.fetchData('/admin/users', 'POST', userData),
+            createStudentAccount: async (accountData) => api.fetchData('/admin/student-accounts', 'POST', accountData),
+            resetStudentPassword: async (passwordResetData) => api.fetchData('/admin/reset-password', 'POST', passwordResetData),
+
+            bulkImportData: async (importData) => api.fetchData('/admin/bulk-import', 'POST', importData),
+
+            generateSummaryReport: async (filters = {}) => {
+                const query = new URLSearchParams(filters).toString();
+                return api.fetchData(`/admin/reports/summary?${query}`);
+            },
+            getAdminDashboardAnalytics: async () => api.fetchData('/admin/analytics/dashboard'),
+            getEnrollmentStatistics: async (academicYear = null) => {
+                const query = academicYear ? `academic_year=${encodeURIComponent(academicYear)}` : '';
+                return api.fetchData(`/admin/statistics/enrollment?${query}`);
+            },
+            getGradesDistribution: async (semesterName = null, courseCode = null) => {
+                let query = '';
+                if (semesterName) query += `semester_name=${encodeURIComponent(semesterName)}&`;
+                if (courseCode) query += `course_code=${encodeURIComponent(courseCode)}&`;
+                return api.fetchData(`/admin/statistics/grades-distribution?${query}`);
+            },
+            generateStudentTranscript: async (index_number) => api.fetchData(`/admin/reports/transcript/${encodeURIComponent(index_number)}`),
+
+            initializeSystem: async () => api.fetchData('/initialize', 'POST'),
+            seedDatabase: async (numStudents = 100, cleanupFirst = true) => api.fetchData(`/admin/seed-comprehensive?num_students=${numStudents}&cleanup_first=${cleanupFirst}`, 'POST'),
+
+            // --- Student Endpoints ---
+            getStudentProfile: async () => api.fetchData('/student/profile'),
+            getStudentGrades: async (semester = null, academicYear = null) => {
+                let query = '';
+                if (semester) query += `semester=${encodeURIComponent(semester)}&`;
+                if (academicYear) query += `academic_year=${encodeURIComponent(academicYear)}&`;
+                return api.fetchData(`/student/grades?${query}`);
+            },
+            getStudentGPA: async (semester = null, academicYear = null) => {
+                let query = '';
+                if (semester) query += `semester=${encodeURIComponent(semester)}&`;
+                if (academicYear) query += `academic_year=${encodeURIComponent(academicYear)}&`;
+                return api.fetchData(`/student/gpa?${query}`);
+            },
+        };
+
+        // --- Modal Functions ---
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        let onModalCloseCallback = null;
+
+        const openModal = (title, contentHtml, onClose = null) => {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = contentHtml;
+            modalOverlay.classList.remove('hidden');
+            onModalCloseCallback = onClose;
+        };
+
+        const closeModal = () => {
+            modalOverlay.classList.add('hidden');
+            modalTitle.textContent = '';
+            modalBody.innerHTML = '';
+            if (onModalCloseCallback) {
+                onModalCloseCallback();
+                onModalCloseCallback = null;
+            }
+        };
+
+        modalCloseBtn.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeModal();
+            }
+        });
+
+        // --- Confirmation Modal Functions ---
+        const confirmModalOverlay = document.getElementById('confirmation-modal-overlay');
+        const confirmModalTitle = document.getElementById('confirmation-modal-title');
+        const confirmModalBody = document.getElementById('confirmation-modal-body');
+        const confirmModalCloseBtn = document.getElementById('confirmation-modal-close-btn');
+        const confirmModalCancelBtn = document.getElementById('confirmation-modal-cancel-btn');
+        const confirmModalConfirmBtn = document.getElementById('confirmation-modal-confirm-btn');
+
+        let onConfirmCallback = null;
+        let onCancelCallback = null;
+
+        const openConfirmationModal = (title, message, onConfirm, onCancel = null) => {
+            confirmModalTitle.textContent = title;
+            confirmModalBody.textContent = message;
+            confirmModalOverlay.classList.remove('hidden');
+            onConfirmCallback = onConfirm;
+            onCancelCallback = onCancel;
+        };
+
+        const closeConfirmationModal = () => {
+            confirmModalOverlay.classList.add('hidden');
+            confirmModalTitle.textContent = '';
+            confirmModalBody.textContent = '';
+            onConfirmCallback = null;
+            onCancelCallback = null;
+        };
+
+        confirmModalCloseBtn.addEventListener('click', closeConfirmationModal);
+        confirmModalCancelBtn.addEventListener('click', () => {
+            if (onCancelCallback) onCancelCallback();
+            closeConfirmationModal();
+        });
+        confirmModalConfirmBtn.addEventListener('click', () => {
+            if (onConfirmCallback) onConfirmCallback();
+            closeConfirmationModal();
+        });
+        confirmModalOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmModalOverlay) {
+                closeConfirmationModal();
+            }
+        });
+
+        // --- Message Display Utility ---
+        const displayMessage = (elementId, message, type = 'success') => {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.textContent = message;
+                el.className = `mt-3 text-center text-sm ${type === 'success' ? 'text-green-600' : 'text-red-600'}`;
+                setTimeout(() => {
+                    el.textContent = '';
+                    el.className = '';
+                }, 5000); // Clear message after 5 seconds
+            }
+        };
+
+        // --- Login Page ---
+        const renderLoginPage = () => {
+            appDiv.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4 sm:p-6">
+                    <div class="bg-white p-8 md:p-10 rounded-lg shadow-md w-full max-w-md">
+                        <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">SRMS Login</h2>
+                        <form id="login-form" class="space-y-6">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-medium mb-2" for="username">
+                                    Username
+                                </label>
+                                <input
+                                    type="text"
+                                    id="username"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base"
+                                    placeholder="Enter your username"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-medium mb-2" for="password">
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    id="password"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base"
+                                    placeholder="Enter your password"
+                                    required
+                                />
+                            </div>
+                            <p id="login-error" class="text-red-600 text-sm text-center mt-4"></p>
+                            <button
+                                type="submit"
+                                id="login-button"
+                                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Login
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            const loginForm = document.getElementById('login-form');
+            const loginButton = document.getElementById('login-button');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginError = document.getElementById('login-error');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                loginButton.disabled = true;
+                loginError.textContent = '';
+
+                const username = usernameInput.value;
+                const password = passwordInput.value;
+
+                try {
+                    const result = await api.login(username, password);
+                    if (result.success) {
+                        setAuthUser(result.user);
+                    } else {
+                        loginError.textContent = result.error || 'Login failed.';
+                    }
+                } catch (err) {
+                    loginError.textContent = err.message || 'An unexpected error occurred during login.';
+                } finally {
+                    loginButton.disabled = false;
+                }
+            });
+        };
+
+        // --- Admin Dashboard ---
+        const renderAdminDashboard = async () => {
+            let activeTab = sessionStorage.getItem('adminActiveTab') || 'students';
+
+            const adminHeaderHtml = `
+                <header class="bg-gray-800 text-white p-4 shadow-md flex flex-col sm:flex-row justify-between items-center">
+                    <h1 class="text-2xl font-bold mb-4 sm:mb-0">Admin Dashboard</h1>
+                    <nav class="w-full sm:w-auto">
+                        <ul class="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-4 overflow-x-auto pb-2">
+                            <li><button data-tab="students" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Students</button></li>
+                            <li><button data-tab="courses" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Courses</button></li>
+                            <li><button data-tab="semesters" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Semesters</button></li>
+                            <li><button data-tab="grades" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Grades</button></li>
+                            <li><button data-tab="users" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Users</button></li>
+                            <li><button data-tab="bulk" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Bulk Ops</button></li>
+                            <li><button data-tab="reports" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Reports</button></li>
+                            <li><button data-tab="system" class="tab-button px-3 py-1 rounded-md text-sm font-medium">System</button></li>
+                            <li><button id="logout-button" class="px-3 py-1 bg-red-600 rounded-md text-sm font-medium hover:bg-red-700">Logout</button></li>
+                        </ul>
+                    </nav>
+                </header>
+                <main class="p-4 sm:p-6 lg:p-8">
+                    <div id="admin-content" class="bg-white p-6 rounded-lg shadow-sm">
+                        <!-- Tab content will be rendered here -->
+                    </div>
+                </main>
+            `;
+            appDiv.innerHTML = adminHeaderHtml;
+
+            const adminContentDiv = document.getElementById('admin-content');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const logoutButton = document.getElementById('logout-button');
+
+            const switchTab = (tabName) => {
+                activeTab = tabName;
+                sessionStorage.setItem('adminActiveTab', activeTab);
+                tabButtons.forEach(btn => {
+                    if (btn.dataset.tab === activeTab) {
+                        btn.classList.add('bg-blue-600');
+                        btn.classList.remove('hover:bg-gray-700');
+                    } else {
+                        btn.classList.remove('bg-blue-600');
+                        btn.classList.add('hover:bg-gray-700');
+                    }
+                });
+                renderAdminTabContent(activeTab);
+            };
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => switchTab(button.dataset.tab));
+            });
+
+            logoutButton.addEventListener('click', () => {
+                setAuthUser(null);
+                sessionStorage.removeItem('adminActiveTab'); // Clear last active tab on logout
+            });
+
+            // Initial render of the active tab content
+            switchTab(activeTab);
+
+            // --- Admin Tab Content Renderers ---
+            async function renderAdminTabContent(tab) {
+                adminContentDiv.innerHTML = `<p class="text-center text-gray-600 py-6">Loading ${tab} management...</p>`;
+                try {
+                    switch (tab) {
+                        case 'students':
+                            await renderAdminStudentManagement(adminContentDiv);
+                            break;
+                        case 'courses':
+                            await renderAdminCourseManagement(adminContentDiv);
+                            break;
+                        case 'semesters':
+                            await renderAdminSemesterManagement(adminContentDiv);
+                            break;
+                        case 'grades':
+                            await renderAdminGradeManagement(adminContentDiv);
+                            break;
+                        case 'users':
+                            await renderAdminUserManagement(adminContentDiv);
+                            break;
+                        case 'bulk':
+                            await renderAdminBulkOperations(adminContentDiv);
+                            break;
+                        case 'reports':
+                            await renderAdminReportManagement(adminContentDiv);
+                            break;
+                        case 'system':
+                            await renderAdminSystemManagement(adminContentDiv);
+                            break;
+                        default:
+                            adminContentDiv.innerHTML = `<p class="text-red-600 text-center py-6">Unknown tab selected.</p>`;
+                    }
+                } catch (error) {
+                    adminContentDiv.innerHTML = `<p class="text-red-600 text-center py-6">Error loading ${tab} management: ${error.message}</p>`;
+                }
+            }
+        };
+
+        // --- Admin Student Management ---
+        const renderAdminStudentManagement = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Student Management</h3>
+
+                    <!-- Add New Student Form -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Add New Student</h4>
+                        <form id="add-student-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="new-student-index" placeholder="Index Number (e.g., ug12345)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="text" id="new-student-name" placeholder="Full Name" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="date" id="new-student-dob" placeholder="Date of Birth" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="text" id="new-student-gender" placeholder="Gender" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="email" id="new-student-email" placeholder="Contact Email" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="tel" id="new-student-phone" placeholder="Phone" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="text" id="new-student-program" placeholder="Program" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="number" id="new-student-year" placeholder="Year of Study" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" min="1" max="10" />
+                            <button type="submit" id="add-student-button" class="col-span-full bg-green-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50">
+                                Add Student
+                            </button>
+                        </form>
+                        <p id="add-student-message" class="mt-3 text-center text-sm"></p>
+                        <p id="add-student-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+
+                    <!-- Student Search and Filter -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Search Students</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <input type="text" id="search-term" placeholder="Search by Name" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="text" id="search-program" placeholder="Filter by Program" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="number" id="search-year" placeholder="Filter by Year" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="text" id="search-gender" placeholder="Filter by Gender" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <button id="search-students-button" class="col-span-full md:col-span-1 bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
+                                Search
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Student List -->
+                    <h4 class="text-lg font-semibold mb-3 text-gray-700">All Students</h4>
+                    <p id="student-list-loading" class="text-center text-gray-600 py-6 hidden">Loading students...</p>
+                    <p id="student-list-error" class="text-red-600 text-center py-6 hidden"></p>
+                    <div id="student-list-container" class="overflow-x-auto rounded-md border border-gray-200">
+                        <!-- Student table will be rendered here -->
+                    </div>
+                </div>
+            `;
+
+            const addStudentForm = document.getElementById('add-student-form');
+            const addStudentButton = document.getElementById('add-student-button');
+            const addStudentMessage = document.getElementById('add-student-message');
+            const addStudentError = document.getElementById('add-student-error');
+
+            const searchStudentsButton = document.getElementById('search-students-button');
+            const searchTermInput = document.getElementById('search-term');
+            const searchProgramInput = document.getElementById('search-program');
+            const searchYearInput = document.getElementById('search-year');
+            const searchGenderInput = document.getElementById('search-gender');
+
+            const studentListContainer = document.getElementById('student-list-container');
+            const studentListLoading = document.getElementById('student-list-loading');
+            const studentListError = document.getElementById('student-list-error');
+
+            const fetchAndRenderStudents = async () => {
+                studentListLoading.classList.remove('hidden');
+                studentListError.classList.add('hidden');
+                studentListContainer.innerHTML = '';
+
+                const filters = {};
+                if (searchTermInput.value) filters.name = searchTermInput.value;
+                if (searchProgramInput.value) filters.program = searchProgramInput.value;
+                if (searchYearInput.value) filters.year_of_study = parseInt(searchYearInput.value);
+                if (searchGenderInput.value) filters.gender = searchGenderInput.value;
+
+                try {
+                    const data = await api.searchStudents(filters);
+                    if (data.success) {
+                        if (data.data.students.length === 0) {
+                            studentListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No students found.</p>`;
+                        } else {
+                            let tableHtml = `
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Index Number</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Full Name</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Program</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Year</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                            `;
+                            data.data.students.forEach(student => {
+                                tableHtml += `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${student.index_number}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${student.full_name}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${student.program || 'N/A'}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${student.year_of_study || 'N/A'}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                            <button data-index="${student.index_number}" class="edit-student-btn text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                                            <button data-index="${student.index_number}" class="delete-student-btn text-red-600 hover:text-red-800">Delete</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            tableHtml += `</tbody></table>`;
+                            studentListContainer.innerHTML = tableHtml;
+
+                            // Attach event listeners for edit and delete buttons
+                            document.querySelectorAll('.edit-student-btn').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const index = e.target.dataset.index;
+                                    const studentToEdit = data.data.students.find(s => s.index_number === index);
+                                    if (studentToEdit) openEditStudentModal(studentToEdit);
+                                });
+                            });
+                            document.querySelectorAll('.delete-student-btn').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const index = e.target.dataset.index;
+                                    openConfirmationModal(
+                                        "Confirm Deletion",
+                                        `Are you sure you want to delete student ${index}? This action cannot be undone.`,
+                                        async () => {
+                                            try {
+                                                await api.deleteStudent(index);
+                                                displayMessage('add-student-message', 'Student deleted successfully!', 'success');
+                                                fetchAndRenderStudents();
+                                            } catch (err) {
+                                                displayMessage('add-student-error', err.message, 'error');
+                                            }
+                                        }
+                                    );
+                                });
+                            });
+                        }
+                    } else {
+                        studentListError.textContent = data.message || 'Failed to fetch students.';
+                        studentListError.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    studentListError.textContent = err.message || 'Error fetching students.';
+                    studentListError.classList.remove('hidden');
+                } finally {
+                    studentListLoading.classList.add('hidden');
+                }
+            };
+
+            const openEditStudentModal = (student) => {
+                const dobFormatted = student.dob ? student.dob.split('T')[0] : '';
+                const modalContent = `
+                    <form id="edit-student-form" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Index Number</label>
+                            <input type="text" id="edit-student-index" value="${student.index_number}" disabled class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <input type="text" id="edit-student-name" value="${student.full_name}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                            <input type="date" id="edit-student-dob" value="${dobFormatted}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Gender</label>
+                            <input type="text" id="edit-student-gender" value="${student.gender || ''}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Contact Email</label>
+                            <input type="email" id="edit-student-email" value="${student.contact_email || ''}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Phone</label>
+                            <input type="tel" id="edit-student-phone" value="${student.contact_phone || ''}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Program</label>
+                            <input type="text" id="edit-student-program" value="${student.program || ''}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Year of Study</label>
+                            <input type="number" id="edit-student-year" value="${student.year_of_study || ''}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" min="1" max="10" />
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-4">
+                            <button type="button" id="cancel-edit-student-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 font-semibold">Cancel</button>
+                            <button type="submit" id="save-edit-student-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold">
+                                Save Changes
+                            </button>
+                        </div>
+                        <p id="edit-student-message" class="text-green-600 text-sm text-center mt-2"></p>
+                        <p id="edit-student-error" class="text-red-600 text-sm text-center mt-2"></p>
+                    </form>
+                `;
+                openModal("Edit Student", modalContent, () => {
+                    // Cleanup or re-fetch if needed after modal closes
+                });
+
+                document.getElementById('edit-student-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const saveBtn = document.getElementById('save-edit-student-btn');
+                    saveBtn.disabled = true;
+                    const editMessage = document.getElementById('edit-student-message');
+                    const editError = document.getElementById('edit-student-error');
+                    editMessage.textContent = '';
+                    editError.textContent = '';
+
+                    const updatedData = {
+                        full_name: document.getElementById('edit-student-name').value,
+                        dob: document.getElementById('edit-student-dob').value || null,
+                        gender: document.getElementById('edit-student-gender').value || null,
+                        contact_email: document.getElementById('edit-student-email').value || null,
+                        phone: document.getElementById('edit-student-phone').value || null,
+                        program: document.getElementById('edit-student-program').value || null,
+                        year_of_study: parseInt(document.getElementById('edit-student-year').value) || null,
+                    };
+
+                    try {
+                        const data = await api.updateStudent(student.index_number, updatedData);
+                        if (data.success) {
+                            displayMessage('edit-student-message', 'Student updated successfully!', 'success');
+                            closeModal();
+                            fetchAndRenderStudents();
+                        } else {
+                            displayMessage('edit-student-error', data.message || 'Failed to update student.', 'error');
+                        }
+                    } catch (err) {
+                        displayMessage('edit-student-error', err.message || 'Error updating student.', 'error');
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                });
+
+                document.getElementById('cancel-edit-student-btn').addEventListener('click', closeModal);
+            };
+
+
+            addStudentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                addStudentButton.disabled = true;
+                addStudentMessage.textContent = '';
+                addStudentError.textContent = '';
+
+                const newStudent = {
+                    index_number: document.getElementById('new-student-index').value,
+                    full_name: document.getElementById('new-student-name').value,
+                    dob: document.getElementById('new-student-dob').value || null,
+                    gender: document.getElementById('new-student-gender').value || null,
+                    contact_email: document.getElementById('new-student-email').value || null,
+                    phone: document.getElementById('new-student-phone').value || null,
+                    program: document.getElementById('new-student-program').value || null,
+                    year_of_study: parseInt(document.getElementById('new-student-year').value) || null,
+                };
+
+                try {
+                    const data = await api.createStudent(newStudent);
+                    if (data.success) {
+                        displayMessage('add-student-message', 'Student created successfully!', 'success');
+                        addStudentForm.reset(); // Clear form
+                        fetchAndRenderStudents();
+                    } else {
+                        displayMessage('add-student-error', data.message || 'Failed to create student.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('add-student-error', err.message || 'Error creating student.', 'error');
+                } finally {
+                    addStudentButton.disabled = false;
+                }
+            });
+
+            searchStudentsButton.addEventListener('click', fetchAndRenderStudents);
+
+            // Initial fetch
+            fetchAndRenderStudents();
+        };
+
+        // --- Admin Course Management ---
+        const renderAdminCourseManagement = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Course Management</h3>
+
+                    <!-- Add New Course Form -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Add New Course</h4>
+                        <form id="add-course-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="new-course-code" placeholder="Course Code (e.g., DCIT101)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="text" id="new-course-title" placeholder="Course Title" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="number" id="new-course-credits" placeholder="Credit Hours" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" min="1" max="10" required />
+                            <button type="submit" id="add-course-button" class="col-span-full bg-green-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50">
+                                Add Course
+                            </button>
+                        </form>
+                        <p id="add-course-message" class="mt-3 text-center text-sm"></p>
+                        <p id="add-course-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+
+                    <!-- Course List -->
+                    <h4 class="text-lg font-semibold mb-3 text-gray-700">All Courses</h4>
+                    <p id="course-list-loading" class="text-center text-gray-600 py-6 hidden">Loading courses...</p>
+                    <p id="course-list-error" class="text-red-600 text-center py-6 hidden"></p>
+                    <div id="course-list-container" class="overflow-x-auto rounded-md border border-gray-200">
+                        <!-- Course table will be rendered here -->
+                    </div>
+                </div>
+            `;
+
+            const addCourseForm = document.getElementById('add-course-form');
+            const addCourseButton = document.getElementById('add-course-button');
+            const addCourseMessage = document.getElementById('add-course-message');
+            const addCourseError = document.getElementById('add-course-error');
+            const courseListContainer = document.getElementById('course-list-container');
+            const courseListLoading = document.getElementById('course-list-loading');
+            const courseListError = document.getElementById('course-list-error');
+
+            const fetchAndRenderCourses = async () => {
+                courseListLoading.classList.remove('hidden');
+                courseListError.classList.add('hidden');
+                courseListContainer.innerHTML = '';
+                try {
+                    const data = await api.getAllCourses();
+                    if (data.success) {
+                        if (data.data.courses.length === 0) {
+                            courseListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No courses found.</p>`;
+                        } else {
+                            let tableHtml = `
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Code</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Title</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Credits</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                            `;
+                            data.data.courses.forEach(course => {
+                                tableHtml += `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${course.course_code}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${course.course_title}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${course.credit_hours}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                            <button data-code="${course.course_code}" class="edit-course-btn text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                                            <button data-code="${course.course_code}" class="delete-course-btn text-red-600 hover:text-red-800">Delete</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            tableHtml += `</tbody></table>`;
+                            courseListContainer.innerHTML = tableHtml;
+
+                            document.querySelectorAll('.edit-course-btn').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const code = e.target.dataset.code;
+                                    const courseToEdit = data.data.courses.find(c => c.course_code === code);
+                                    if (courseToEdit) openEditCourseModal(courseToEdit);
+                                });
+                            });
+                            document.querySelectorAll('.delete-course-btn').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const code = e.target.dataset.code;
+                                    openConfirmationModal(
+                                        "Confirm Deletion",
+                                        `Are you sure you want to delete course ${code}? This action cannot be undone.`,
+                                        async () => {
+                                            try {
+                                                await api.deleteCourse(code);
+                                                displayMessage('add-course-message', 'Course deleted successfully!', 'success');
+                                                fetchAndRenderCourses();
+                                            } catch (err) {
+                                                displayMessage('add-course-error', err.message, 'error');
+                                            }
+                                        }
+                                    );
+                                });
+                            });
+                        }
+                    } else {
+                        courseListError.textContent = data.message || 'Failed to fetch courses.';
+                        courseListError.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    courseListError.textContent = err.message || 'Error fetching courses.';
+                    courseListError.classList.remove('hidden');
+                } finally {
+                    courseListLoading.classList.add('hidden');
+                }
+            };
+
+            const openEditCourseModal = (course) => {
+                const modalContent = `
+                    <form id="edit-course-form" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Course Code</label>
+                            <input type="text" id="edit-course-code" value="${course.course_code}" disabled class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Course Title</label>
+                            <input type="text" id="edit-course-title" value="${course.course_title}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Credit Hours</label>
+                            <input type="number" id="edit-course-credits" value="${course.credit_hours}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" min="1" max="10" required />
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-4">
+                            <button type="button" id="cancel-edit-course-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 font-semibold">Cancel</button>
+                            <button type="submit" id="save-edit-course-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold">
+                                Save Changes
+                            </button>
+                        </div>
+                        <p id="edit-course-message" class="text-green-600 text-sm text-center mt-2"></p>
+                        <p id="edit-course-error" class="text-red-600 text-sm text-center mt-2"></p>
+                    </form>
+                `;
+                openModal("Edit Course", modalContent);
+
+                document.getElementById('edit-course-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const saveBtn = document.getElementById('save-edit-course-btn');
+                    saveBtn.disabled = true;
+                    const editMessage = document.getElementById('edit-course-message');
+                    const editError = document.getElementById('edit-course-error');
+                    editMessage.textContent = '';
+                    editError.textContent = '';
+
+                    const updatedData = {
+                        course_title: document.getElementById('edit-course-title').value,
+                        credit_hours: parseInt(document.getElementById('edit-course-credits').value),
+                    };
+
+                    try {
+                        const data = await api.updateCourse(course.course_code, updatedData);
+                        if (data.success) {
+                            displayMessage('edit-course-message', 'Course updated successfully!', 'success');
+                            closeModal();
+                            fetchAndRenderCourses();
+                        } else {
+                            displayMessage('edit-course-error', data.message || 'Failed to update course.', 'error');
+                        }
+                    } catch (err) {
+                        displayMessage('edit-course-error', err.message || 'Error updating course.', 'error');
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                });
+                document.getElementById('cancel-edit-course-btn').addEventListener('click', closeModal);
+            };
+
+            addCourseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                addCourseButton.disabled = true;
+                addCourseMessage.textContent = '';
+                addCourseError.textContent = '';
+
+                const newCourse = {
+                    course_code: document.getElementById('new-course-code').value,
+                    course_title: document.getElementById('new-course-title').value,
+                    credit_hours: parseInt(document.getElementById('new-course-credits').value),
+                };
+
+                try {
+                    const data = await api.createCourse(newCourse);
+                    if (data.success) {
+                        displayMessage('add-course-message', 'Course created successfully!', 'success');
+                        addCourseForm.reset();
+                        fetchAndRenderCourses();
+                    } else {
+                        displayMessage('add-course-error', data.message || 'Failed to create course.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('add-course-error', err.message || 'Error creating course.', 'error');
+                } finally {
+                    addCourseButton.disabled = false;
+                }
+            });
+
+            fetchAndRenderCourses();
+        };
+
+        // --- Admin Semester Management ---
+        const renderAdminSemesterManagement = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Semester Management</h3>
+
+                    <!-- Add New Semester Form -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Add New Semester</h4>
+                        <form id="add-semester-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="new-semester-name" placeholder="Semester Name (e.g., Alpha)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="text" id="new-semester-year" placeholder="Academic Year (e.g., 2023/2024)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="date" id="new-semester-start-date" placeholder="Start Date" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="date" id="new-semester-end-date" placeholder="End Date" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <button type="submit" id="add-semester-button" class="col-span-full bg-green-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50">
+                                Add Semester
+                            </button>
+                        </form>
+                        <p id="add-semester-message" class="mt-3 text-center text-sm"></p>
+                        <p id="add-semester-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+
+                    <!-- Semester List -->
+                    <h4 class="text-lg font-semibold mb-3 text-gray-700">All Semesters</h4>
+                    <p id="semester-list-loading" class="text-center text-gray-600 py-6 hidden">Loading semesters...</p>
+                    <p id="semester-list-error" class="text-red-600 text-center py-6 hidden"></p>
+                    <div id="semester-list-container" class="overflow-x-auto rounded-md border border-gray-200">
+                        <!-- Semester table will be rendered here -->
+                    </div>
+                </div>
+            `;
+
+            const addSemesterForm = document.getElementById('add-semester-form');
+            const addSemesterButton = document.getElementById('add-semester-button');
+            const addSemesterMessage = document.getElementById('add-semester-message');
+            const addSemesterError = document.getElementById('add-semester-error');
+            const semesterListContainer = document.getElementById('semester-list-container');
+            const semesterListLoading = document.getElementById('semester-list-loading');
+            const semesterListError = document.getElementById('semester-list-error');
+
+            const fetchAndRenderSemesters = async () => {
+                semesterListLoading.classList.remove('hidden');
+                semesterListError.classList.add('hidden');
+                semesterListContainer.innerHTML = '';
+                try {
+                    const data = await api.getAllSemesters();
+                    if (data.success) {
+                        if (data.data.semesters.length === 0) {
+                            semesterListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No semesters found.</p>`;
+                        } else {
+                            let tableHtml = `
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Name</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Academic Year</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Start Date</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">End Date</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                            `;
+                            data.data.semesters.forEach(semester => {
+                                tableHtml += `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${semester.semester_name}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${semester.academic_year}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${semester.start_date}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${semester.end_date}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                            <button data-name="${semester.semester_name}" class="edit-semester-btn text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                                            <button data-name="${semester.semester_name}" class="delete-semester-btn text-red-600 hover:text-red-800">Delete</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            tableHtml += `</tbody></table>`;
+                            semesterListContainer.innerHTML = tableHtml;
+
+                            document.querySelectorAll('.edit-semester-btn').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const name = e.target.dataset.name;
+                                    const semesterToEdit = data.data.semesters.find(s => s.semester_name === name);
+                                    if (semesterToEdit) openEditSemesterModal(semesterToEdit);
+                                });
+                            });
+                            document.querySelectorAll('.delete-semester-btn').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const name = e.target.dataset.name;
+                                    openConfirmationModal(
+                                        "Confirm Deletion",
+                                        `Are you sure you want to delete semester ${name}? This action cannot be undone.`,
+                                        async () => {
+                                            try {
+                                                await api.deleteSemester(name);
+                                                displayMessage('add-semester-message', 'Semester deleted successfully!', 'success');
+                                                fetchAndRenderSemesters();
+                                            } catch (err) {
+                                                displayMessage('add-semester-error', err.message, 'error');
+                                            }
+                                        }
+                                    );
+                                });
+                            });
+                        }
+                    } else {
+                        semesterListError.textContent = data.message || 'Failed to fetch semesters.';
+                        semesterListError.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    semesterListError.textContent = err.message || 'Error fetching semesters.';
+                    semesterListError.classList.remove('hidden');
+                } finally {
+                    semesterListLoading.classList.add('hidden');
+                }
+            };
+
+            const openEditSemesterModal = (semester) => {
+                const modalContent = `
+                    <form id="edit-semester-form" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Semester Name</label>
+                            <input type="text" id="edit-semester-name" value="${semester.semester_name}" disabled class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Academic Year</label>
+                            <input type="text" id="edit-semester-year" value="${semester.academic_year}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                            <input type="date" id="edit-semester-start-date" value="${semester.start_date}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">End Date</label>
+                            <input type="date" id="edit-semester-end-date" value="${semester.end_date}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-4">
+                            <button type="button" id="cancel-edit-semester-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 font-semibold">Cancel</button>
+                            <button type="submit" id="save-edit-semester-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold">
+                                Save Changes
+                            </button>
+                        </div>
+                        <p id="edit-semester-message" class="text-green-600 text-sm text-center mt-2"></p>
+                        <p id="edit-semester-error" class="text-red-600 text-sm text-center mt-2"></p>
+                    </form>
+                `;
+                openModal("Edit Semester", modalContent);
+
+                document.getElementById('edit-semester-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const saveBtn = document.getElementById('save-edit-semester-btn');
+                    saveBtn.disabled = true;
+                    const editMessage = document.getElementById('edit-semester-message');
+                    const editError = document.getElementById('edit-semester-error');
+                    editMessage.textContent = '';
+                    editError.textContent = '';
+
+                    const updatedData = {
+                        academic_year: document.getElementById('edit-semester-year').value,
+                        start_date: document.getElementById('edit-semester-start-date').value,
+                        end_date: document.getElementById('edit-semester-end-date').value,
+                    };
+
+                    try {
+                        const data = await api.updateSemester(semester.semester_name, updatedData);
+                        if (data.success) {
+                            displayMessage('edit-semester-message', 'Semester updated successfully!', 'success');
+                            closeModal();
+                            fetchAndRenderSemesters();
+                        } else {
+                            displayMessage('edit-semester-error', data.message || 'Failed to update semester.', 'error');
+                        }
+                    } catch (err) {
+                        displayMessage('edit-semester-error', err.message || 'Error updating semester.', 'error');
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                });
+                document.getElementById('cancel-edit-semester-btn').addEventListener('click', closeModal);
+            };
+
+            addSemesterForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                addSemesterButton.disabled = true;
+                addSemesterMessage.textContent = '';
+                addSemesterError.textContent = '';
+
+                const newSemester = {
+                    semester_name: document.getElementById('new-semester-name').value,
+                    academic_year: document.getElementById('new-semester-year').value,
+                    start_date: document.getElementById('new-semester-start-date').value,
+                    end_date: document.getElementById('new-semester-end-date').value,
+                };
+
+                try {
+                    const data = await api.createSemester(newSemester);
+                    if (data.success) {
+                        displayMessage('add-semester-message', 'Semester created successfully!', 'success');
+                        addSemesterForm.reset();
+                        fetchAndRenderSemesters();
+                    } else {
+                        displayMessage('add-semester-error', data.message || 'Failed to create semester.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('add-semester-error', err.message || 'Error creating semester.', 'error');
+                } finally {
+                    addSemesterButton.disabled = false;
+                }
+            });
+
+            fetchAndRenderSemesters();
+        };
+
+        // --- Admin Grade Management ---
+        const renderAdminGradeManagement = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Grade Management</h3>
+
+                    <!-- Add/Update Grade Form -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Add/Update Grade</h4>
+                        <form id="add-update-grade-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="new-grade-student-index" placeholder="Student Index (e.g., ug12345)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="text" id="new-grade-course-code" placeholder="Course Code (e.g., DCIT101)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="text" id="new-grade-semester-name" placeholder="Semester Name (e.g., Alpha)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="number" step="0.01" id="new-grade-score" placeholder="Score (0-100)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" min="0" max="100" required />
+                            <input type="text" id="new-grade-academic-year" placeholder="Academic Year (e.g., 2023/2024)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <button type="submit" id="add-update-grade-button" class="col-span-full bg-green-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50">
+                                Save Grade
+                            </button>
+                        </form>
+                        <p id="add-update-grade-message" class="mt-3 text-center text-sm"></p>
+                        <p id="add-update-grade-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+
+                    <!-- Grade Filter -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Filter Grades</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input type="text" id="filter-student-index" placeholder="Student Index" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="text" id="filter-course-code" placeholder="Course Code" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="text" id="filter-semester-name" placeholder="Semester Name" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <button id="apply-grade-filters-button" class="col-span-full md:col-span-1 bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grade List -->
+                    <h4 class="text-lg font-semibold mb-3 text-gray-700">All Grades</h4>
+                    <p id="grade-list-loading" class="text-center text-gray-600 py-6 hidden">Loading grades...</p>
+                    <p id="grade-list-error" class="text-red-600 text-center py-6 hidden"></p>
+                    <div id="grade-list-container" class="overflow-x-auto rounded-md border border-gray-200">
+                        <!-- Grade table will be rendered here -->
+                    </div>
+                </div>
+            `;
+
+            const addUpdateGradeForm = document.getElementById('add-update-grade-form');
+            const addUpdateGradeButton = document.getElementById('add-update-grade-button');
+            const addUpdateGradeMessage = document.getElementById('add-update-grade-message');
+            const addUpdateGradeError = document.getElementById('add-update-grade-error');
+
+            const filterStudentIndexInput = document.getElementById('filter-student-index');
+            const filterCourseCodeInput = document.getElementById('filter-course-code');
+            const filterSemesterNameInput = document.getElementById('filter-semester-name');
+            const applyGradeFiltersButton = document.getElementById('apply-grade-filters-button');
+
+            const gradeListContainer = document.getElementById('grade-list-container');
+            const gradeListLoading = document.getElementById('grade-list-loading');
+            const gradeListError = document.getElementById('grade-list-error');
+
+            const fetchAndRenderGrades = async () => {
+                gradeListLoading.classList.remove('hidden');
+                gradeListError.classList.add('hidden');
+                gradeListContainer.innerHTML = '';
+
+                const filters = {};
+                if (filterStudentIndexInput.value) filters.student_index = filterStudentIndexInput.value;
+                if (filterCourseCodeInput.value) filters.course_code = filterCourseCodeInput.value;
+                if (filterSemesterNameInput.value) filters.semester = filterSemesterNameInput.value;
+
+                try {
+                    const data = await api.getAllGrades(filters);
+                    if (data.success) {
+                        if (data.data.grades.length === 0) {
+                            gradeListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No grades found for the selected filters.</p>`;
+                        } else {
+                            let tableHtml = `
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Student Index</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Student Name</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Course Code</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Course Title</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Semester</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Score</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Grade</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Year</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                            `;
+                            data.data.grades.forEach(grade => {
+                                tableHtml += `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${grade.student_index}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.student_name}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.course_code}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.course_title}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.semester_name}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.score}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.grade}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.academic_year}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                            <button data-grade-id="${grade.grade_id}" class="edit-grade-btn text-blue-600 hover:text-blue-800">Edit</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            tableHtml += `</tbody></table>`;
+                            gradeListContainer.innerHTML = tableHtml;
+
+                            document.querySelectorAll('.edit-grade-btn').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const gradeId = parseInt(e.target.dataset.gradeId);
+                                    const gradeToEdit = data.data.grades.find(g => g.grade_id === gradeId);
+                                    if (gradeToEdit) openEditGradeModal(gradeToEdit);
+                                });
+                            });
+                        }
+                    } else {
+                        gradeListError.textContent = data.message || 'Failed to fetch grades.';
+                        gradeListError.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    gradeListError.textContent = err.message || 'Error fetching grades.';
+                    gradeListError.classList.remove('hidden');
+                } finally {
+                    gradeListLoading.classList.add('hidden');
+                }
+            };
+
+            const openEditGradeModal = (grade) => {
+                const modalContent = `
+                    <form id="edit-grade-form" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Student Index</label>
+                            <input type="text" value="${grade.student_index}" disabled class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Course Code</label>
+                            <input type="text" value="${grade.course_code}" disabled class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Semester Name</label>
+                            <input type="text" value="${grade.semester_name}" disabled class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Academic Year</label>
+                            <input type="text" value="${grade.academic_year}" disabled class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Score (0-100)</label>
+                            <input type="number" step="0.01" id="edit-grade-score" value="${grade.score}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" min="0" max="100" required />
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-4">
+                            <button type="button" id="cancel-edit-grade-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 font-semibold">Cancel</button>
+                            <button type="submit" id="save-edit-grade-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold">
+                                Save Changes
+                            </button>
+                        </div>
+                        <p id="edit-grade-message" class="text-green-600 text-sm text-center mt-2"></p>
+                        <p id="edit-grade-error" class="text-red-600 text-sm text-center mt-2"></p>
+                    </form>
+                `;
+                openModal("Edit Grade", modalContent);
+
+                document.getElementById('edit-grade-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const saveBtn = document.getElementById('save-edit-grade-btn');
+                    saveBtn.disabled = true;
+                    const editMessage = document.getElementById('edit-grade-message');
+                    const editError = document.getElementById('edit-grade-error');
+                    editMessage.textContent = '';
+                    editError.textContent = '';
+
+                    const updatedData = {
+                        student_index: grade.student_index,
+                        course_code: grade.course_code,
+                        semester_name: grade.semester_name,
+                        academic_year: grade.academic_year,
+                        score: parseFloat(document.getElementById('edit-grade-score').value),
+                    };
+
+                    try {
+                        const data = await api.createGrade(updatedData); // API handles upsert logic
+                        if (data.success) {
+                            displayMessage('edit-grade-message', 'Grade updated successfully!', 'success');
+                            closeModal();
+                            fetchAndRenderGrades();
+                        } else {
+                            displayMessage('edit-grade-error', data.message || 'Failed to update grade.', 'error');
+                        }
+                    } catch (err) {
+                        displayMessage('edit-grade-error', err.message || 'Error updating grade.', 'error');
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                });
+                document.getElementById('cancel-edit-grade-btn').addEventListener('click', closeModal);
+            };
+
+            addUpdateGradeForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                addUpdateGradeButton.disabled = true;
+                addUpdateGradeMessage.textContent = '';
+                addUpdateGradeError.textContent = '';
+
+                const newGradeData = {
+                    student_index: document.getElementById('new-grade-student-index').value,
+                    course_code: document.getElementById('new-grade-course-code').value,
+                    semester_name: document.getElementById('new-grade-semester-name').value,
+                    score: parseFloat(document.getElementById('new-grade-score').value),
+                    academic_year: document.getElementById('new-grade-academic-year').value,
+                };
+
+                if (isNaN(newGradeData.score) || newGradeData.score < 0 || newGradeData.score > 100) {
+                    displayMessage('add-update-grade-error', 'Score must be a number between 0 and 100.', 'error');
+                    addUpdateGradeButton.disabled = false;
+                    return;
+                }
+
+                try {
+                    const data = await api.createGrade(newGradeData);
+                    if (data.success) {
+                        displayMessage('add-update-grade-message', 'Grade saved successfully!', 'success');
+                        addUpdateGradeForm.reset();
+                        fetchAndRenderGrades();
+                    } else {
+                        displayMessage('add-update-grade-error', data.message || 'Failed to save grade.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('add-update-grade-error', err.message || 'Error saving grade.', 'error');
+                } finally {
+                    addUpdateGradeButton.disabled = false;
+                }
+            });
+
+            applyGradeFiltersButton.addEventListener('click', fetchAndRenderGrades);
+
+            fetchAndRenderGrades();
+        };
+
+        // --- Admin User Management ---
+        const renderAdminUserManagement = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">User Management</h3>
+
+                    <!-- Create User Account -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Create New User Account</h4>
+                        <form id="create-user-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="new-user-username" placeholder="Username" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="password" id="new-user-password" placeholder="Password (min 6 chars)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <select id="new-user-role" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                <option value="student">Student</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <button type="submit" id="create-user-button" class="col-span-full bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
+                                Create User
+                            </button>
+                        </form>
+                        <p id="create-user-message" class="mt-3 text-center text-sm"></p>
+                        <p id="create-user-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+
+                    <!-- Create Student Account -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Create Student Account</h4>
+                        <form id="create-student-account-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="new-student-account-index" placeholder="Student Index Number" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="text" id="new-student-account-name" placeholder="Student Full Name" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="password" id="new-student-account-password" placeholder="Optional Password" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <button type="submit" id="create-student-account-button" class="col-span-full bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
+                                Create Student Account
+                            </button>
+                        </form>
+                        <p id="create-student-account-message" class="mt-3 text-center text-sm"></p>
+                        <p id="create-student-account-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+
+                    <!-- Reset Student Password -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Reset Student Password</h4>
+                        <form id="reset-password-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="reset-password-index" placeholder="Student Index Number" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required />
+                            <input type="password" id="reset-password-new-password" placeholder="New Password (optional for default)" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+                            <button type="submit" id="reset-password-button" class="col-span-full bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
+                                Reset Password
+                            </button>
+                        </form>
+                        <p id="reset-password-message" class="mt-3 text-center text-sm"></p>
+                        <p id="reset-password-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+                </div>
+            `;
+
+            const createUserForm = document.getElementById('create-user-form');
+            const createUserButton = document.getElementById('create-user-button');
+            const createUserMessage = document.getElementById('create-user-message');
+            const createUserError = document.getElementById('create-user-error');
+
+            const createStudentAccountForm = document.getElementById('create-student-account-form');
+            const createStudentAccountButton = document.getElementById('create-student-account-button');
+            const createStudentAccountMessage = document.getElementById('create-student-account-message');
+            const createStudentAccountError = document.getElementById('create-student-account-error');
+
+            const resetPasswordForm = document.getElementById('reset-password-form');
+            const resetPasswordButton = document.getElementById('reset-password-button');
+            const resetPasswordMessage = document.getElementById('reset-password-message');
+            const resetPasswordError = document.getElementById('reset-password-error');
+
+            createUserForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                createUserButton.disabled = true;
+                createUserMessage.textContent = '';
+                createUserError.textContent = '';
+
+                const newUser = {
+                    username: document.getElementById('new-user-username').value,
+                    password: document.getElementById('new-user-password').value,
+                    role: document.getElementById('new-user-role').value,
+                };
+
+                if (newUser.password.length < 6) {
+                    displayMessage('create-user-error', 'Password must be at least 6 characters.', 'error');
+                    createUserButton.disabled = false;
+                    return;
+                }
+
+                try {
+                    const data = await api.createUserAccount(newUser);
+                    if (data.success) {
+                        displayMessage('create-user-message', `User '${data.data.username}' (${data.data.role}) created successfully!`, 'success');
+                        createUserForm.reset();
+                    } else {
+                        displayMessage('create-user-error', data.message || 'Failed to create user account.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('create-user-error', err.message || 'Error creating user account.', 'error');
+                } finally {
+                    createUserButton.disabled = false;
+                }
+            });
+
+            createStudentAccountForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                createStudentAccountButton.disabled = true;
+                createStudentAccountMessage.textContent = '';
+                createStudentAccountError.textContent = '';
+
+                const newStudentAccount = {
+                    index_number: document.getElementById('new-student-account-index').value,
+                    full_name: document.getElementById('new-student-account-name').value,
+                    password: document.getElementById('new-student-account-password').value || null,
+                };
+
+                if (newStudentAccount.password && newStudentAccount.password.length < 6) {
+                    displayMessage('create-student-account-error', 'Optional password must be at least 6 characters if provided.', 'error');
+                    createStudentAccountButton.disabled = false;
+                    return;
+                }
+
+                try {
+                    const data = await api.createStudentAccount(newStudentAccount);
+                    if (data.success) {
+                        displayMessage('create-student-account-message', `Student account for '${data.data.index_number}' created successfully! Password: ${data.data.password_generated ? 'Auto-generated' : 'Provided'}`, 'success');
+                        createStudentAccountForm.reset();
+                    } else {
+                        displayMessage('create-student-account-error', data.message || 'Failed to create student account.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('create-student-account-error', err.message || 'Error creating student account.', 'error');
+                } finally {
+                    createStudentAccountButton.disabled = false;
+                }
+            });
+
+            resetPasswordForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                resetPasswordButton.disabled = true;
+                resetPasswordMessage.textContent = '';
+                resetPasswordError.textContent = '';
+
+                const resetData = {
+                    index_number: document.getElementById('reset-password-index').value,
+                    new_password: document.getElementById('reset-password-new-password').value || null,
+                };
+
+                if (resetData.new_password && resetData.new_password.length < 6) {
+                    displayMessage('reset-password-error', 'New password must be at least 6 characters if provided.', 'error');
+                    resetPasswordButton.disabled = false;
+                    return;
+                }
+
+                try {
+                    const data = await api.resetStudentPassword(resetData);
+                    if (data.success) {
+                        displayMessage('reset-password-message', `Password for '${data.data.index_number}' reset successfully!`, 'success');
+                        resetPasswordForm.reset();
+                    } else {
+                        displayMessage('reset-password-error', data.message || 'Failed to reset password.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('reset-password-error', err.message || 'Error resetting password.', 'error');
+                } finally {
+                    resetPasswordButton.disabled = false;
+                }
+            });
+        };
+
+        // --- Admin Bulk Operations ---
+        const renderAdminBulkOperations = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Bulk Operations</h3>
+
+                    <!-- Bulk Import Data (CSV) -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Bulk Import Grades/Student Data</h4>
+                        <p class="text-gray-600 mb-3 text-sm">
+                            Upload a CSV file containing student or grade data. Ensure the CSV headers match the expected fields (e.g., <code>index_number</code>, <code>full_name</code>, <code>course_code</code>, <code>score</code>, etc.).
+                            The backend's <code>/admin/bulk-import</code> endpoint is designed to handle this.
+                        </p>
+                        <form id="bulk-import-form" class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" for="bulk-import-semester-name">Semester Name (for grades import, optional for student data)</label>
+                                <input
+                                    type="text"
+                                    id="bulk-import-semester-name"
+                                    placeholder="e.g., Alpha"
+                                    class="p-2 border border-gray-300 rounded-md w-full focus:ring-blue-500 focus:border-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" for="bulk-import-file">Upload CSV File</label>
+                                <input
+                                    type="file"
+                                    id="bulk-import-file"
+                                    accept=".csv"
+                                    class="block w-full text-sm text-gray-500 file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                id="perform-bulk-import-button"
+                                class="bg-purple-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-purple-700 disabled:opacity-50"
+                            >
+                                Perform Bulk Import
+                            </button>
+                        </form>
+                        <p id="bulk-import-message" class="mt-3 text-center text-sm"></p>
+                        <p id="bulk-import-error" class="mt-3 text-center text-sm"></p>
+                        <div id="bulk-import-result" class="mt-4 p-3 bg-gray-100 rounded-md border border-gray-200 hidden">
+                            <h5 class="font-semibold text-gray-800 mb-2 text-sm">Import Summary:</h5>
+                            <pre id="bulk-import-result-json" class="text-xs text-gray-700 overflow-x-auto p-2 bg-white rounded-md border"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Create Students (API endpoint /admin/students/bulk) - This is distinct from general bulk-import -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Bulk Create Student Profiles</h4>
+                        <p class="text-gray-600 mb-3 text-sm">
+                            While the backend has a <code>/admin/students/bulk</code> endpoint, the current <code>Bulk Import Grades/Student Data</code> section above is designed to handle generic CSV imports.
+                            If you intend to have a separate, dedicated bulk student profile import, its implementation would be similar to the above, expecting CSV data matching the student profile schema.
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            const bulkImportForm = document.getElementById('bulk-import-form');
+            const performBulkImportButton = document.getElementById('perform-bulk-import-button');
+            const bulkImportMessage = document.getElementById('bulk-import-message');
+            const bulkImportError = document.getElementById('bulk-import-error');
+            const bulkImportResultDiv = document.getElementById('bulk-import-result');
+            const bulkImportResultJson = document.getElementById('bulk-import-result-json');
+
+            bulkImportForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                performBulkImportButton.disabled = true;
+                bulkImportMessage.textContent = '';
+                bulkImportError.textContent = '';
+                bulkImportResultDiv.classList.add('hidden');
+
+                const fileInput = document.getElementById('bulk-import-file');
+                const semesterName = document.getElementById('bulk-import-semester-name').value;
+                const file = fileInput.files[0];
+
+                if (!file || !semesterName) {
+                    displayMessage('bulk-import-error', 'Please select a CSV file and enter a semester name.', 'error');
+                    performBulkImportButton.disabled = false;
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const csvText = event.target.result;
+                    try {
+                        const lines = csvText.split('\n').filter(line => line.trim() !== '');
+                        if (lines.length === 0) {
+                            throw new Error("CSV file is empty.");
+                        }
+                        const headers = lines[0].split(',').map(h => h.trim());
+                        const records = lines.slice(1).map(line => {
+                            const values = line.split(',').map(v => v.trim());
+                            const record = {};
+                            headers.forEach((header, i) => {
+                                record[header] = values[i];
+                            });
+                            return record;
+                        });
+
+                        const data = await api.bulkImportData({
+                            semester_name: semesterName,
+                            file_data: records
+                        });
+
+                        if (data.success) {
+                            displayMessage('bulk-import-message', 'Bulk import completed!', 'success');
+                            bulkImportResultJson.textContent = JSON.stringify(data.data, null, 2);
+                            bulkImportResultDiv.classList.remove('hidden');
+                            bulkImportForm.reset();
+                        } else {
+                            displayMessage('bulk-import-error', data.message || 'Bulk import failed.', 'error');
+                        }
+                    } catch (err) {
+                        displayMessage('bulk-import-error', err.message || 'Error processing file or bulk importing data.', 'error');
+                    } finally {
+                        performBulkImportButton.disabled = false;
+                    }
+                };
+                reader.readAsText(file);
+            });
+        };
+
+        // --- Admin Report Management ---
+        const renderAdminReportManagement = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Report Management</h3>
+
+                    <!-- Generate Summary Report -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Generate Summary Report</h4>
+                        <div class="flex flex-col sm:flex-row items-center gap-3 mb-3">
+                            <select id="report-format" class="p-2 border border-gray-300 rounded-md w-full sm:w-auto focus:ring-blue-500 focus:border-blue-500">
+                                <option value="json">JSON</option>
+                                <option value="pdf">PDF</option>
+                                <option value="txt">TXT</option>
+                            </select>
+                            <button
+                                id="generate-summary-report-button"
+                                class="bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto"
+                            >
+                                Generate Report
+                            </button>
+                        </div>
+                        <p id="summary-report-message" class="mt-3 text-center text-sm"></p>
+                        <p id="summary-report-error" class="mt-3 text-center text-sm"></p>
+                        <div id="summary-report-data" class="mt-4 p-3 bg-gray-100 rounded-md border border-gray-200 hidden">
+                            <h5 class="font-semibold text-gray-800 mb-2 text-sm">Summary Report (JSON):</h5>
+                            <pre id="summary-report-json" class="text-xs text-gray-700 overflow-x-auto p-2 bg-white rounded-md border"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Generate Student Transcript -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Generate Student Transcript</h4>
+                        <div class="flex flex-col sm:flex-row items-center gap-3">
+                            <input
+                                type="text"
+                                id="transcript-student-index"
+                                placeholder="Student Index Number"
+                                class="p-2 border border-gray-300 rounded-md w-full sm:w-64 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <button
+                                id="generate-transcript-button"
+                                class="bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto"
+                            >
+                                Generate Transcript
+                            </button>
+                        </div>
+                        <p id="transcript-message" class="mt-3 text-center text-sm"></p>
+                        <p id="transcript-error" class="mt-3 text-center text-sm"></p>
+                        <div id="transcript-data" class="mt-4 p-3 bg-gray-100 rounded-md border border-gray-200 hidden">
+                            <h5 class="font-semibold text-gray-800 mb-2 text-sm">Transcript:</h5>
+                            <pre id="transcript-json" class="text-xs text-gray-700 overflow-x-auto p-2 bg-white rounded-md border"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Analytics & Statistics -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Analytics & Statistics</h4>
+
+                        <!-- Dashboard Analytics -->
+                        <div class="mb-4">
+                            <h5 class="font-semibold text-gray-800 mb-2 text-base">Dashboard Analytics</h5>
+                            <button
+                                id="fetch-dashboard-analytics-button"
+                                class="bg-gray-600 text-white py-1 px-3 rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
+                            >
+                                Fetch Dashboard Analytics
+                            </button>
+                            <div id="dashboard-analytics-data" class="mt-2 p-2 bg-gray-100 rounded-md border border-gray-200 hidden">
+                                <pre id="dashboard-analytics-json" class="text-xs text-gray-700 overflow-x-auto"></pre>
+                            </div>
+                            <p id="dashboard-analytics-error" class="text-red-600 text-sm mt-2"></p>
+                        </div>
+
+                        <!-- Enrollment Statistics -->
+                        <div class="mb-4">
+                            <h5 class="font-semibold text-gray-800 mb-2 text-base">Enrollment Statistics</h5>
+                            <div class="flex items-center gap-2 mb-2">
+                                <input
+                                    type="text"
+                                    id="enrollment-year-filter"
+                                    placeholder="Academic Year (e.g., 2023/2024)"
+                                    class="p-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <button
+                                    id="fetch-enrollment-stats-button"
+                                    class="bg-gray-600 text-white py-1 px-3 rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
+                                >
+                                    Fetch Enrollment Stats
+                                </button>
+                            </div>
+                            <div id="enrollment-stats-data" class="mt-2 p-2 bg-gray-100 rounded-md border border-gray-200 hidden">
+                                <pre id="enrollment-stats-json" class="text-xs text-gray-700 overflow-x-auto"></pre>
+                            </div>
+                            <p id="enrollment-stats-error" class="text-red-600 text-sm mt-2"></p>
+                        </div>
+
+                        <!-- Grades Distribution -->
+                        <div class="mb-4">
+                            <h5 class="font-semibold text-gray-800 mb-2 text-base">Grades Distribution</h5>
+                            <div class="flex flex-wrap items-center gap-2 mb-2">
+                                <input
+                                    type="text"
+                                    id="grades-dist-semester-filter"
+                                    placeholder="Semester Name"
+                                    class="p-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <input
+                                    type="text"
+                                    id="grades-dist-course-filter"
+                                    placeholder="Course Code"
+                                    class="p-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <button
+                                    id="fetch-grades-dist-button"
+                                    class="bg-gray-600 text-white py-1 px-3 rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
+                                >
+                                    Fetch Grades Distribution
+                                </button>
+                            </div>
+                            <div id="grades-dist-data" class="mt-2 p-2 bg-gray-100 rounded-md border border-gray-200 hidden">
+                                <pre id="grades-dist-json" class="text-xs text-gray-700 overflow-x-auto"></pre>
+                            </div>
+                            <p id="grades-dist-error" class="text-red-600 text-sm mt-2"></p>
+                        </div>
+                    </div>
+
+                    <!-- Seed Database -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Seed Database (for testing/setup)</h4>
+                        <p class="text-gray-600 mb-3 text-sm">
+                            This will populate your database with dummy student, course, and grade data for testing purposes. It will clean existing data first.
+                        </p>
+                        <div class="flex flex-col sm:flex-row items-center gap-3">
+                            <input
+                                type="number"
+                                id="num-students-to-seed"
+                                min="10"
+                                max="1000"
+                                value="100"
+                                class="p-2 border border-gray-300 rounded-md w-full sm:w-32 focus:ring-purple-500 focus:border-purple-500"
+                            />
+                            <button
+                                id="seed-database-button"
+                                class="bg-purple-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-purple-700 disabled:opacity-50 w-full sm:w-auto"
+                            >
+                                Seed Comprehensive Data
+                            </button>
+                        </div>
+                        <p id="seed-database-message" class="mt-3 text-center text-sm"></p>
+                        <p id="seed-database-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+                </div>
+            `;
+
+            const generateSummaryReportButton = document.getElementById('generate-summary-report-button');
+            const reportFormatSelect = document.getElementById('report-format');
+            const summaryReportMessage = document.getElementById('summary-report-message');
+            const summaryReportError = document.getElementById('summary-report-error');
+            const summaryReportDataDiv = document.getElementById('summary-report-data');
+            const summaryReportJsonPre = document.getElementById('summary-report-json');
+
+            const generateTranscriptButton = document.getElementById('generate-transcript-button');
+            const transcriptStudentIndexInput = document.getElementById('transcript-student-index');
+            const transcriptMessage = document.getElementById('transcript-message');
+            const transcriptError = document.getElementById('transcript-error');
+            const transcriptDataDiv = document.getElementById('transcript-data');
+            const transcriptJsonPre = document.getElementById('transcript-json');
+
+            const fetchDashboardAnalyticsButton = document.getElementById('fetch-dashboard-analytics-button');
+            const dashboardAnalyticsDataDiv = document.getElementById('dashboard-analytics-data');
+            const dashboardAnalyticsJsonPre = document.getElementById('dashboard-analytics-json');
+            const dashboardAnalyticsError = document.getElementById('dashboard-analytics-error');
+
+            const fetchEnrollmentStatsButton = document.getElementById('fetch-enrollment-stats-button');
+            const enrollmentYearFilterInput = document.getElementById('enrollment-year-filter');
+            const enrollmentStatsDataDiv = document.getElementById('enrollment-stats-data');
+            const enrollmentStatsJsonPre = document.getElementById('enrollment-stats-json');
+            const enrollmentStatsError = document.getElementById('enrollment-stats-error');
+
+            const fetchGradesDistButton = document.getElementById('fetch-grades-dist-button');
+            const gradesDistSemesterFilterInput = document.getElementById('grades-dist-semester-filter');
+            const gradesDistCourseFilterInput = document.getElementById('grades-dist-course-filter');
+            const gradesDistDataDiv = document.getElementById('grades-dist-data');
+            const gradesDistJsonPre = document.getElementById('grades-dist-json');
+            const gradesDistError = document.getElementById('grades-dist-error');
+
+            const seedDatabaseButton = document.getElementById('seed-database-button');
+            const numStudentsToSeedInput = document.getElementById('num-students-to-seed');
+            const seedDatabaseMessage = document.getElementById('seed-database-message');
+            const seedDatabaseError = document.getElementById('seed-database-error');
+
+
+            generateSummaryReportButton.addEventListener('click', async () => {
+                generateSummaryReportButton.disabled = true;
+                summaryReportMessage.textContent = '';
+                summaryReportError.textContent = '';
+                summaryReportDataDiv.classList.add('hidden');
+
+                const format = reportFormatSelect.value;
+                try {
+                    const data = await api.generateSummaryReport({ format: format });
+                    if (data.success) {
+                        displayMessage('summary-report-message', `Summary report generated successfully as ${format}.`, 'success');
+                        if (format === 'json') {
+                            summaryReportJsonPre.textContent = JSON.stringify(data.data, null, 2);
+                            summaryReportDataDiv.classList.remove('hidden');
+                        } else {
+                            // For PDF/TXT, the backend handles file generation, frontend just confirms
+                            summaryReportJsonPre.textContent = `Report generated on server. Path: ${data.data.pdf_path || data.data.txt_path || 'N/A'}`;
+                            summaryReportDataDiv.classList.remove('hidden');
+                        }
+                    } else {
+                        displayMessage('summary-report-error', data.message || 'Failed to generate summary report.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('summary-report-error', err.message || 'Error generating summary report.', 'error');
+                } finally {
+                    generateSummaryReportButton.disabled = false;
+                }
+            });
+
+            generateTranscriptButton.addEventListener('click', async () => {
+                generateTranscriptButton.disabled = true;
+                transcriptMessage.textContent = '';
+                transcriptError.textContent = '';
+                transcriptDataDiv.classList.add('hidden');
+
+                const studentIndex = transcriptStudentIndexInput.value;
+                if (!studentIndex) {
+                    displayMessage('transcript-error', 'Please enter a student index number.', 'error');
+                    generateTranscriptButton.disabled = false;
+                    return;
+                }
+
+                try {
+                    const data = await api.generateStudentTranscript(studentIndex);
+                    if (data.success) {
+                        displayMessage('transcript-message', `Transcript generated for ${studentIndex}.`, 'success');
+                        transcriptJsonPre.textContent = JSON.stringify(data.data, null, 2);
+                        transcriptDataDiv.classList.remove('hidden');
+                    } else {
+                        displayMessage('transcript-error', data.message || 'Failed to generate transcript.', 'error');
+                    }
+                } catch (err) {
+                    displayMessage('transcript-error', err.message || 'Error generating transcript.', 'error');
+                } finally {
+                    generateTranscriptButton.disabled = false;
+                }
+            });
+
+            fetchDashboardAnalyticsButton.addEventListener('click', async () => {
+                fetchDashboardAnalyticsButton.disabled = true;
+                dashboardAnalyticsError.textContent = '';
+                dashboardAnalyticsDataDiv.classList.add('hidden');
+                try {
+                    const data = await api.getAdminDashboardAnalytics();
+                    if (data.success) {
+                        dashboardAnalyticsJsonPre.textContent = JSON.stringify(data.data, null, 2);
+                        dashboardAnalyticsDataDiv.classList.remove('hidden');
+                    } else {
+                        dashboardAnalyticsError.textContent = data.message || 'Failed to fetch dashboard analytics.';
+                    }
+                } catch (err) {
+                    dashboardAnalyticsError.textContent = err.message || 'Error fetching dashboard analytics.';
+                } finally {
+                    fetchDashboardAnalyticsButton.disabled = false;
+                }
+            });
+
+            fetchEnrollmentStatsButton.addEventListener('click', async () => {
+                fetchEnrollmentStatsButton.disabled = true;
+                enrollmentStatsError.textContent = '';
+                enrollmentStatsDataDiv.classList.add('hidden');
+                const academicYear = enrollmentYearFilterInput.value || null;
+                try {
+                    const data = await api.getEnrollmentStatistics(academicYear);
+                    if (data.success) {
+                        enrollmentStatsJsonPre.textContent = JSON.stringify(data.data, null, 2);
+                        enrollmentStatsDataDiv.classList.remove('hidden');
+                    } else {
+                        enrollmentStatsError.textContent = data.message || 'Failed to fetch enrollment statistics.';
+                    }
+                } catch (err) {
+                    enrollmentStatsError.textContent = err.message || 'Error fetching enrollment statistics.';
+                } finally {
+                    fetchEnrollmentStatsButton.disabled = false;
+                }
+            });
+
+            fetchGradesDistButton.addEventListener('click', async () => {
+                fetchGradesDistButton.disabled = true;
+                gradesDistError.textContent = '';
+                gradesDistDataDiv.classList.add('hidden');
+                const semesterName = gradesDistSemesterFilterInput.value || null;
+                const courseCode = gradesDistCourseFilterInput.value || null;
+                try {
+                    const data = await api.getGradesDistribution(semesterName, courseCode);
+                    if (data.success) {
+                        gradesDistJsonPre.textContent = JSON.stringify(data.data, null, 2);
+                        gradesDistDataDiv.classList.remove('hidden');
+                    } else {
+                        gradesDistError.textContent = data.message || 'Failed to fetch grades distribution.';
+                    }
+                } catch (err) {
+                    gradesDistError.textContent = err.message || 'Error fetching grades distribution.';
+                } finally {
+                    fetchGradesDistButton.disabled = false;
+                }
+            });
+
+            seedDatabaseButton.addEventListener('click', () => {
+                const numStudents = parseInt(numStudentsToSeedInput.value) || 100;
+                openConfirmationModal(
+                    "Confirm Database Seeding",
+                    `Are you sure you want to seed the database with ${numStudents} students? This will clean up existing data first and cannot be undone.`,
+                    async () => {
+                        seedDatabaseButton.disabled = true;
+                        seedDatabaseMessage.textContent = '';
+                        seedDatabaseError.textContent = '';
+                        try {
+                            const data = await api.seedDatabase(numStudents, true);
+                            if (data.success) {
+                                displayMessage('seed-database-message', `Database seeded successfully with ${data.data.students_created} students!`, 'success');
+                            } else {
+                                displayMessage('seed-database-error', data.message || 'Failed to seed database.', 'error');
+                            }
+                        } catch (err) {
+                            displayMessage('seed-database-error', err.message || 'Error seeding database.', 'error');
+                        } finally {
+                            seedDatabaseButton.disabled = false;
+                        }
+                    }
+                );
+            });
+        };
+
+        // --- Admin System Management ---
+        const renderAdminSystemManagement = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">System Management</h3>
+                    <p class="text-gray-600 mb-4 text-sm">
+                        This section contains critical system-wide operations. Use with caution.
+                    </p>
+
+                    <!-- Initialize Database Tables -->
+                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Initialize Database Tables</h4>
+                        <p class="text-gray-600 mb-3 text-sm">
+                            This will ensure all necessary database tables exist. Run this if you are setting up the system for the first time or after major database schema changes.
+                        </p>
+                        <button
+                            id="initialize-tables-button"
+                            class="bg-red-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-red-700 disabled:opacity-50"
+                        >
+                            Initialize Tables
+                        </button>
+                        <p id="initialize-tables-message" class="mt-3 text-center text-sm"></p>
+                        <p id="initialize-tables-error" class="mt-3 text-center text-sm"></p>
+                    </div>
+                </div>
+            `;
+
+            const initializeTablesButton = document.getElementById('initialize-tables-button');
+            const initializeTablesMessage = document.getElementById('initialize-tables-message');
+            const initializeTablesError = document.getElementById('initialize-tables-error');
+
+            initializeTablesButton.addEventListener('click', () => {
+                openConfirmationModal(
+                    "Confirm System Initialization",
+                    "Are you sure you want to initialize the database tables? This can affect existing data and cannot be undone.",
+                    async () => {
+                        initializeTablesButton.disabled = true;
+                        initializeTablesMessage.textContent = '';
+                        initializeTablesError.textContent = '';
+                        try {
+                            const data = await api.initializeSystem();
+                            if (data.success) {
+                                displayMessage('initialize-tables-message', 'Database tables initialized successfully!', 'success');
+                            } else {
+                                displayMessage('initialize-tables-error', data.message || 'Failed to initialize system.', 'error');
+                            }
+                        } catch (err) {
+                            displayMessage('initialize-tables-error', err.message || 'Error initializing system.', 'error');
+                        } finally {
+                            initializeTablesButton.disabled = false;
+                        }
+                    }
+                );
+            });
+        };
+
+
+        // --- Student Dashboard ---
+        const renderStudentDashboard = async () => {
+            let activeTab = sessionStorage.getItem('studentActiveTab') || 'profile';
+
+            const studentHeaderHtml = `
+                <header class="bg-gray-800 text-white p-4 shadow-md flex flex-col sm:flex-row justify-between items-center">
+                    <h1 class="text-2xl font-bold mb-4 sm:mb-0">Student Dashboard</h1>
+                    <nav class="w-full sm:w-auto">
+                        <ul class="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-4">
+                            <li><button data-tab="profile" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Profile</button></li>
+                            <li><button data-tab="grades" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Grades</button></li>
+                            <li><button data-tab="gpa" class="tab-button px-3 py-1 rounded-md text-sm font-medium">GPA</button></li>
+                            <li><button id="logout-button" class="px-3 py-1 bg-red-600 rounded-md text-sm font-medium hover:bg-red-700">Logout</button></li>
+                        </ul>
+                    </nav>
+                </header>
+                <main class="p-4 sm:p-6 lg:p-8">
+                    <div id="student-content" class="bg-white p-6 rounded-lg shadow-sm">
+                        <!-- Tab content will be rendered here -->
+                    </div>
+                </main>
+            `;
+            appDiv.innerHTML = studentHeaderHtml;
+
+            const studentContentDiv = document.getElementById('student-content');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const logoutButton = document.getElementById('logout-button');
+
+            const switchTab = (tabName) => {
+                activeTab = tabName;
+                sessionStorage.setItem('studentActiveTab', activeTab);
+                tabButtons.forEach(btn => {
+                    if (btn.dataset.tab === activeTab) {
+                        btn.classList.add('bg-green-600');
+                        btn.classList.remove('hover:bg-gray-700');
+                    } else {
+                        btn.classList.remove('bg-green-600');
+                        btn.classList.add('hover:bg-gray-700');
+                    }
+                });
+                renderStudentTabContent(activeTab);
+            };
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => switchTab(button.dataset.tab));
+            });
+
+            logoutButton.addEventListener('click', () => {
+                setAuthUser(null);
+                sessionStorage.removeItem('studentActiveTab'); // Clear last active tab on logout
+            });
+
+            // Initial render of the active tab content
+            switchTab(activeTab);
+
+            // --- Student Tab Content Renderers ---
+            async function renderStudentTabContent(tab) {
+                studentContentDiv.innerHTML = `<p class="text-center text-gray-600 py-6">Loading ${tab} data...</p>`;
+                try {
+                    switch (tab) {
+                        case 'profile':
+                            await renderStudentProfile(studentContentDiv);
+                            break;
+                        case 'grades':
+                            await renderStudentGrades(studentContentDiv);
+                            break;
+                        case 'gpa':
+                            await renderStudentGPA(studentContentDiv);
+                            break;
+                        default:
+                            studentContentDiv.innerHTML = `<p class="text-red-600 text-center py-6">Unknown tab selected.</p>`;
+                    }
+                } catch (error) {
+                    studentContentDiv.innerHTML = `<p class="text-red-600 text-center py-6">Error loading ${tab} data: ${error.message}</p>`;
+                }
+            }
+        };
+
+        // --- Student Profile ---
+        const renderStudentProfile = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">My Profile</h3>
+                    <p id="profile-loading" class="text-center text-gray-600 py-6">Loading profile...</p>
+                    <p id="profile-error" class="text-red-600 text-center py-6 hidden"></p>
+                    <div id="profile-data" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700 bg-gray-50 p-4 rounded-md hidden">
+                        <!-- Profile data will be rendered here -->
+                    </div>
+                </div>
+            `;
+
+            const profileLoading = document.getElementById('profile-loading');
+            const profileError = document.getElementById('profile-error');
+            const profileDataDiv = document.getElementById('profile-data');
+
+            profileLoading.classList.remove('hidden');
+            profileError.classList.add('hidden');
+            profileDataDiv.classList.add('hidden');
+
+            try {
+                const data = await api.getStudentProfile();
+                if (data.success) {
+                    const profile = data.data;
+                    profileDataDiv.innerHTML = `
+                        <p class="text-base"><strong>Index Number:</strong> <span class="font-medium text-gray-900">${profile.index_number}</span></p>
+                        <p class="text-base"><strong>Full Name:</strong> <span class="font-medium text-gray-900">${profile.full_name}</span></p>
+                        <p class="text-base"><strong>Date of Birth:</strong> ${profile.dob || 'N/A'}</p>
+                        <p class="text-base"><strong>Gender:</strong> ${profile.gender || 'N/A'}</p>
+                        <p class="text-base"><strong>Email:</strong> ${profile.contact_email || 'N/A'}</p>
+                        <p class="text-base"><strong>Phone:</strong> ${profile.contact_phone || 'N/A'}</p>
+                        <p class="text-base"><strong>Program:</strong> ${profile.program || 'N/A'}</p>
+                        <p class="text-base"><strong>Year of Study:</strong> ${profile.year_of_study || 'N/A'}</p>
+                    `;
+                    profileDataDiv.classList.remove('hidden');
+                } else {
+                    profileError.textContent = data.message || 'Failed to fetch profile.';
+                    profileError.classList.remove('hidden');
+                }
+            } catch (err) {
+                profileError.textContent = err.message || 'Error fetching profile.';
+                profileError.classList.remove('hidden');
+            } finally {
+                profileLoading.classList.add('hidden');
+            }
+        };
+
+        // --- Student Grades ---
+        const renderStudentGrades = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">My Grades</h3>
+                    <div class="flex flex-col sm:flex-row gap-3 mb-4 p-3 bg-gray-50 rounded-md">
+                        <input
+                            type="text"
+                            id="student-grades-semester-filter"
+                            placeholder="Filter by Semester (e.g., Alpha)"
+                            class="p-2 border border-gray-300 rounded-md flex-grow focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <input
+                            type="text"
+                            id="student-grades-academic-year-filter"
+                            placeholder="Filter by Academic Year (e.g., 2023/2024)"
+                            class="p-2 border border-gray-300 rounded-md flex-grow focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <button id="apply-student-grades-filter-btn" class="bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">Apply Filters</button>
+                    </div>
+
+                    <p id="student-grades-loading" class="text-center text-gray-600 py-6">Loading grades...</p>
+                    <p id="student-grades-error" class="text-red-600 text-center py-6 hidden"></p>
+                    <div id="student-grades-list-container" class="overflow-x-auto rounded-md border border-gray-200">
+                        <!-- Grades table will be rendered here -->
+                    </div>
+                </div>
+            `;
+
+            const semesterFilterInput = document.getElementById('student-grades-semester-filter');
+            const academicYearFilterInput = document.getElementById('student-grades-academic-year-filter');
+            const applyFilterBtn = document.getElementById('apply-student-grades-filter-btn');
+            const gradesLoading = document.getElementById('student-grades-loading');
+            const gradesError = document.getElementById('student-grades-error');
+            const gradesListContainer = document.getElementById('student-grades-list-container');
+
+            const fetchAndRenderStudentGrades = async () => {
+                gradesLoading.classList.remove('hidden');
+                gradesError.classList.add('hidden');
+                gradesListContainer.innerHTML = '';
+
+                const semester = semesterFilterInput.value || null;
+                const academicYear = academicYearFilterInput.value || null;
+
+                try {
+                    const data = await api.getStudentGrades(semester, academicYear);
+                    if (data.success) {
+                        if (data.data.grades.length === 0) {
+                            gradesListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No grades found for the selected filters.</p>`;
+                        } else {
+                            let tableHtml = `
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Course Code</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Course Title</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Semester</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Academic Year</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Score</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Grade</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Grade Point</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                            `;
+                            data.data.grades.forEach(grade => {
+                                tableHtml += `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${grade.course_code}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.course_title}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.semester_name}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.academic_year}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.score}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.grade}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.grade_point}</td>
+                                    </tr>
+                                `;
+                            });
+                            tableHtml += `</tbody></table>`;
+                            gradesListContainer.innerHTML = tableHtml;
+                        }
+                    } else {
+                        gradesError.textContent = data.message || 'Failed to fetch grades.';
+                        gradesError.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    gradesError.textContent = err.message || 'Error fetching grades.';
+                    gradesError.classList.remove('hidden');
+                } finally {
+                    gradesLoading.classList.add('hidden');
+                }
+            };
+
+            applyFilterBtn.addEventListener('click', fetchAndRenderStudentGrades);
+            fetchAndRenderStudentGrades();
+        };
+
+        // --- Student GPA ---
+        const renderStudentGPA = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">My GPA</h3>
+                    <div class="flex flex-col sm:flex-row gap-3 mb-4 p-3 bg-gray-50 rounded-md">
+                        <input
+                            type="text"
+                            id="student-gpa-semester-filter"
+                            placeholder="Filter by Semester (e.g., Alpha)"
+                            class="p-2 border border-gray-300 rounded-md flex-grow focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <input
+                            type="text"
+                            id="student-gpa-academic-year-filter"
+                            placeholder="Filter by Academic Year (e.g., 2023/2024)"
+                            class="p-2 border border-gray-300 rounded-md flex-grow focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <button id="apply-student-gpa-filter-btn" class="bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">Apply Filters</button>
+                    </div>
+
+                    <p id="student-gpa-loading" class="text-center text-gray-600 py-6">Calculating GPA...</p>
+                    <p id="student-gpa-error" class="text-red-600 text-center py-6 hidden"></p>
+                    <div id="student-gpa-data" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700 bg-gray-50 p-4 rounded-md hidden">
+                        <!-- GPA data will be rendered here -->
+                    </div>
+                    <div id="student-gpa-breakdown" class="mt-6 hidden">
+                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Grade Breakdown</h4>
+                        <div class="overflow-x-auto rounded-md border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Course Code</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Score</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Grade</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Credit Hours</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gpa-breakdown-tbody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Grade breakdown will be rendered here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const semesterFilterInput = document.getElementById('student-gpa-semester-filter');
+            const academicYearFilterInput = document.getElementById('student-gpa-academic-year-filter');
+            const applyFilterBtn = document.getElementById('apply-student-gpa-filter-btn');
+            const gpaLoading = document.getElementById('student-gpa-loading');
+            const gpaError = document.getElementById('student-gpa-error');
+            const gpaDataDiv = document.getElementById('student-gpa-data');
+            const gpaBreakdownDiv = document.getElementById('student-gpa-breakdown');
+            const gpaBreakdownTbody = document.getElementById('gpa-breakdown-tbody');
+
+            const fetchAndRenderStudentGPA = async () => {
+                gpaLoading.classList.remove('hidden');
+                gpaError.classList.add('hidden');
+                gpaDataDiv.classList.add('hidden');
+                gpaBreakdownDiv.classList.add('hidden');
+                gpaBreakdownTbody.innerHTML = '';
+
+                const semester = semesterFilterInput.value || null;
+                const academicYear = academicYearFilterInput.value || null;
+
+                try {
+                    const data = await api.getStudentGPA(semester, academicYear);
+                    if (data.success) {
+                        const gpaData = data.data;
+                        if (gpaData.total_courses === 0 && gpaData.total_credits === 0) {
+                            gpaDataDiv.innerHTML = `<p class="text-gray-600 text-center py-6 col-span-full">No grades available for GPA calculation.</p>`;
+                            gpaDataDiv.classList.remove('hidden');
+                        } else {
+                            gpaDataDiv.innerHTML = `
+                                <p class="text-base"><strong>Semester GPA:</strong> <span class="font-medium text-gray-900">${gpaData.semester_gpa !== undefined ? gpaData.semester_gpa : 'N/A'}</span></p>
+                                <p class="text-base"><strong>Cumulative GPA:</strong> <span class="font-medium text-gray-900">${gpaData.cumulative_gpa !== undefined ? gpaData.cumulative_gpa : 'N/A'}</span></p>
+                                <p class="text-base"><strong>Total Credit Hours:</strong> <span class="font-medium text-gray-900">${gpaData.total_credit_hours}</span></p>
+                                <p class="text-base"><strong>Semester Credit Hours:</strong> <span class="font-medium text-gray-900">${gpaData.semester_credit_hours}</span></p>
+                                <p class="col-span-full text-base"><strong>Total Courses:</strong> <span class="font-medium text-gray-900">${gpaData.total_courses}</span></p>
+                            `;
+                            gpaDataDiv.classList.remove('hidden');
+
+                            if (gpaData.grade_breakdown && gpaData.grade_breakdown.length > 0) {
+                                let breakdownHtml = '';
+                                gpaData.grade_breakdown.forEach(grade => {
+                                    breakdownHtml += `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${grade.course_code}</td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.score}</td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.letter_grade || grade.grade}</td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${grade.credit_hours}</td>
+                                        </tr>
+                                    `;
+                                });
+                                gpaBreakdownTbody.innerHTML = breakdownHtml;
+                                gpaBreakdownDiv.classList.remove('hidden');
+                            }
+                        }
+                    } else {
+                        gpaError.textContent = data.message || 'Failed to calculate GPA.';
+                        gpaError.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    gpaError.textContent = err.message || 'Error calculating GPA.';
+                    gpaError.classList.remove('hidden');
+                } finally {
+                    gpaLoading.classList.add('hidden');
+                }
+            };
+
+            applyFilterBtn.addEventListener('click', fetchAndRenderStudentGPA);
+            fetchAndRenderStudentGPA();
+        };
+
+
+        // --- Main App Renderer ---
+        const renderApp = async () => {
+            const storedUser = sessionStorage.getItem('srmsUser');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+            }
+
+            if (!currentUser) {
+                renderLoginPage();
+            } else if (currentUser.role === 'admin') {
+                renderAdminDashboard();
+            } else if (currentUser.role === 'student') {
+                renderStudentDashboard();
+            } else {
+                // Fallback for unknown roles
+                setAuthUser(null); // Clear invalid session
+                renderLoginPage();
+            }
+        };
+
+        // Initial render on page load
+        document.addEventListener('DOMContentLoaded', renderApp);
+    </script>
+</body>
+</html>

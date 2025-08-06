@@ -10,10 +10,10 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from psycopg2.extras import RealDictCursor
 from db import (
-    connect_to_db, fetch_all_records, insert_student_profile, fetch_student_by_index_number,
-    insert_course, fetch_all_courses, fetch_course_by_code, insert_semester, fetch_all_semesters,
+    connect_to_db, delete_student_profile, fetch_all_records, insert_student_profile, fetch_student_by_index_number,
+    insert_course, fetch_all_courses, fetch_course_by_code, insert_semester, fetch_all_semesters, update_course, update_semester, update_student_profile,
     update_student_score, delete_course, delete_semester, insert_grade,
-    fetch_semester_by_name, create_tables_if_not_exist
+    fetch_semester_by_name, create_tables_if_not_exist, fetch_course_by_code, fetch_semester_by_name # Added fetch_course_by_code, fetch_semester_by_name
 )
 from grade_util import calculate_grade, get_grade_point, calculate_gpa, summarize_grades
 from auth import (
@@ -194,6 +194,7 @@ class SemesterResponse(BaseModel):
 
 class GradeResponse(BaseModel):
     """Grade information response"""
+    grade_id: int # Added grade_id to match db schema
     student_index: str
     student_name: str
     course_code: str
@@ -334,29 +335,33 @@ def fetch_student_grades(conn, index_number, semester=None, academic_year=None):
     try:
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         query = """
-            SELECT g.*, c.course_title, c.credit_hours, s.index_number, s.full_name
+            SELECT g.grade_id, g.score, g.grade, g.grade_point, g.academic_year,
+                   c.course_code, c.course_title, c.credit_hours,
+                   sem.semester_name,
+                   s.index_number as student_index, s.full_name as student_name
             FROM grades g
             JOIN courses c ON g.course_id = c.course_id
             JOIN student_profiles s ON g.student_id = s.student_id
+            JOIN semesters sem ON g.semester_id = sem.semester_id
             WHERE s.index_number = %s
         """
         params = [index_number]
         
         if semester:
-            query += " AND g.semester_name = %s"
+            query += " AND sem.semester_name = %s"
             params.append(semester)
         
         if academic_year:
             query += " AND g.academic_year = %s"
             params.append(academic_year)
             
-        query += " ORDER BY g.academic_year DESC, g.semester_name"
+        query += " ORDER BY g.academic_year DESC, sem.semester_name"
         
         cursor.execute(query, params)
         grades = cursor.fetchall()
         
-        # Convert to list of dictionaries
-        return [dict(grade) for grade in grades]
+        # RealDictCursor already returns dictionaries, so direct return is fine.
+        return grades
         
     except Exception as e:
         logger.error(f"Error fetching student grades: {str(e)}")
@@ -367,83 +372,139 @@ def calculate_student_gpa(conn, index_number, semester=None, academic_year=None)
     try:
         grades = fetch_student_grades(conn, index_number, semester, academic_year)
         if not grades:
-            return {"gpa": 0.0, "total_credits": 0, "total_courses": 0}
+            return {"semester_gpa": 0.0, "cumulative_gpa": 0.0, "total_credit_hours": 0, "semester_credit_hours": 0, "total_courses": 0, "grade_breakdown": []}
         
-        total_points = 0
+        total_points = 0.0
         total_credits = 0
+        semester_points = 0.0
+        semester_credits = 0
         
         for grade in grades:
-            credit_hours = grade.get('credit_hours', 3)  # Default to 3 if not specified
-            grade_points = get_grade_point(grade.get('score', 0))
+            credit_hours = grade.get('credit_hours', 0)
+            grade_point = grade.get('grade_point', 0.0)
             
-            total_points += grade_points * credit_hours
+            total_points += grade_point * credit_hours
             total_credits += credit_hours
+
+            # If filtering by semester/academic year, these are the semester's grades
+            # Otherwise, consider all grades for cumulative.
+            if (semester and grade.get('semester_name') == semester) or \
+               (academic_year and grade.get('academic_year') == academic_year) or \
+               (not semester and not academic_year): # If no filters, all grades contribute to 'semester' for this calculation
+                semester_points += grade_point * credit_hours
+                semester_credits += credit_hours
         
-        gpa = total_points / total_credits if total_credits > 0 else 0.0
+        cumulative_gpa = round(total_points / total_credits, 2) if total_credits > 0 else 0.0
+        semester_gpa = round(semester_points / semester_credits, 2) if semester_credits > 0 else 0.0
+
+        # Fetch student name for the response
+        student_profile = fetch_student_by_index_number(conn, index_number)
+        student_name = student_profile['full_name'] if student_profile else "Unknown Student"
         
         return {
-            "gpa": round(gpa, 2),
-            "total_credits": total_credits,
+            "student_index": index_number,
+            "student_name": student_name,
+            "semester_gpa": semester_gpa,
+            "cumulative_gpa": cumulative_gpa,
+            "total_credit_hours": total_credits,
+            "semester_credit_hours": semester_credits,
             "total_courses": len(grades),
             "grade_breakdown": grades
         }
         
     except Exception as e:
         logger.error(f"Error calculating GPA: {str(e)}")
-        return {"gpa": 0.0, "total_credits": 0, "total_courses": 0}
+        return {"semester_gpa": 0.0, "cumulative_gpa": 0.0, "total_credit_hours": 0, "semester_credit_hours": 0, "total_courses": 0, "grade_breakdown": []}
 
 def insert_student_grade(conn, student_index, course_code, semester_name, score, academic_year):
-    """Insert or update a student grade"""
+    """Insert or update a student grade by resolving IDs."""
     try:
+        # 1. Get student_id
+        student = fetch_student_by_index_number(conn, student_index)
+        if not student:
+            raise ValueError(f"Student with index number {student_index} not found.")
+        student_id = student['student_id']
+
+        # 2. Get course_id
+        course = fetch_course_by_code(conn, course_code)
+        if not course:
+            raise ValueError(f"Course with code {course_code} not found.")
+        course_id = course['course_id']
+
+        # 3. Get semester_id
+        semester_obj = fetch_semester_by_name(conn, semester_name)
+        if not semester_obj:
+            raise ValueError(f"Semester with name {semester_name} not found.")
+        semester_id = semester_obj['semester_id']
+
+        # Calculate grade and grade point
+        grade_letter = calculate_grade(score)
+        grade_point = get_grade_point(score)
+        
         cursor = conn.cursor()
         
-        # Check if grade already exists
+        # Check if grade already exists for this student, course, and semester
         check_query = """
-            SELECT id FROM grades 
-            WHERE student_index = %s AND course_code = %s AND semester_name = %s AND academic_year = %s
+            SELECT grade_id FROM grades 
+            WHERE student_id = %s AND course_id = %s AND semester_id = %s
         """
-        cursor.execute(check_query, (student_index, course_code, semester_name, academic_year))
-        existing = cursor.fetchone()
+        cursor.execute(check_query, (student_id, course_id, semester_id))
+        existing_grade_id = cursor.fetchone()
         
-        if existing:
+        if existing_grade_id:
             # Update existing grade
             update_query = """
                 UPDATE grades 
-                SET score = %s, grade = %s, grade_point = %s
-                WHERE id = %s
+                SET score = %s, grade = %s, grade_point = %s, academic_year = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE grade_id = %s
+                RETURNING grade_id;
             """
-            grade = calculate_grade(score)
-            grade_point = get_grade_point(score)
-            cursor.execute(update_query, (score, grade, grade_point, existing[0]))
+            cursor.execute(update_query, (score, grade_letter, grade_point, academic_year, existing_grade_id[0]))
+            updated_id = cursor.fetchone()[0]
             conn.commit()
-            return existing[0]
+            logger.info(f"Grade updated for student {student_index}, course {course_code}, semester {semester_name}. Grade ID: {updated_id}")
+            return updated_id
         else:
             # Insert new grade
             insert_query = """
-                INSERT INTO grades (student_index, course_code, semester_name, score, grade, grade_point, academic_year)
-                VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id
+                INSERT INTO grades (student_id, course_id, semester_id, score, grade, grade_point, academic_year)
+                VALUES (%s, %s, %s, %s, %s, %s, %s) 
+                RETURNING grade_id;
             """
-            grade = calculate_grade(score)
-            grade_point = get_grade_point(score)
             cursor.execute(insert_query, (
-                student_index, course_code, semester_name, score, grade, grade_point, academic_year
+                student_id, course_id, semester_id, score, grade_letter, grade_point, academic_year
             ))
-            result = cursor.fetchone()
+            new_grade_id = cursor.fetchone()[0]
             conn.commit()
-            return result[0] if result else None
+            logger.info(f"New grade inserted for student {student_index}, course {course_code}, semester {semester_name}. Grade ID: {new_grade_id}")
+            return new_grade_id
             
+    except ValueError as ve:
+        logger.error(f"Data validation error in insert_student_grade: {str(ve)}")
+        conn.rollback() # Ensure rollback on validation errors
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
     except Exception as e:
-        logger.error(f"Error inserting/updating grade: {str(e)}")
+        logger.error(f"Error inserting/updating grade for {student_index}, {course_code}, {semester_name}: {str(e)}")
         conn.rollback()
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save grade: {str(e)}"
+        )
 
 def fetch_grades_with_filters(conn, student_index=None, course_code=None, semester=None, skip=0, limit=100):
     """Fetch grades with filtering and pagination"""
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(cursor_factory=RealDictCursor) # Use RealDictCursor for easier dictionary access
         
         query = """
-            SELECT g.*, s.full_name, s.index_number, c.course_title, c.course_code, sem.semester_name, sem.academic_year
+            SELECT 
+                g.grade_id, g.score, g.grade, g.grade_point, g.academic_year,
+                s.index_number as student_index, s.full_name as student_name,
+                c.course_code, c.course_title, c.credit_hours,
+                sem.semester_name
             FROM grades g
             JOIN student_profiles s ON g.student_id = s.student_id
             JOIN courses c ON g.course_id = c.course_id
@@ -453,35 +514,34 @@ def fetch_grades_with_filters(conn, student_index=None, course_code=None, semest
         params = []
         
         if student_index:
-            query += " AND s.index_number = %s"
-            params.append(student_index)
+            query += " AND s.index_number ILIKE %s" # Use ILIKE for case-insensitive search
+            params.append(f"%{student_index}%")
             
         if course_code:
-            query += " AND c.course_code = %s"
-            params.append(course_code)
+            query += " AND c.course_code ILIKE %s"
+            params.append(f"%{course_code}%")
             
         if semester:
-            query += " AND sem.semester_name = %s"
-            params.append(semester)
+            query += " AND sem.semester_name ILIKE %s"
+            params.append(f"%{semester}%")
         
         # Get total count
         count_query = f"SELECT COUNT(*) FROM ({query}) as filtered"
-        cursor.execute(count_query, params)
-        total_count = cursor.fetchone()[0]
+        # Remove ORDER BY and LIMIT/OFFSET for count query
+        count_query_no_order_limit = count_query.split("ORDER BY")[0].split("LIMIT")[0].split("OFFSET")[0]
+        
+        cursor.execute(count_query_no_order_limit, params)
+        total_count = cursor.fetchone()['count'] # Access count by name
         
         # Add pagination
-        query += " ORDER BY sem.academic_year DESC, sem.semester_name LIMIT %s OFFSET %s"
+        query += " ORDER BY s.index_number, sem.academic_year DESC, sem.semester_name, c.course_code LIMIT %s OFFSET %s"
         params.extend([limit, skip])
         
         cursor.execute(query, params)
-        grades = cursor.fetchall()
-        
-        # Convert to list of dictionaries
-        columns = [desc[0] for desc in cursor.description]
-        grades_list = [dict(zip(columns, row)) for row in grades]
+        grades = cursor.fetchall() # Already dictionaries due to RealDictCursor
         
         return {
-            "grades": grades_list,
+            "grades": grades,
             "total_count": total_count,
             "skip": skip,
             "limit": limit
@@ -551,6 +611,9 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
             "role": current_user.get('role'),
             "authenticated": True
         }
+        # If the user is a student, add their index number
+        if current_user.get('role') == 'student':
+            user_info['index_number'] = current_user.get('index_number')
         
         return APIResponse(
             success=True,
@@ -654,6 +717,11 @@ async def create_student(
         logger.info(f"Admin {current_user.get('username')} creating student: {student.index_number}")
         
         def operation(conn):
+            # Check if student already exists by index_number
+            existing_student = fetch_student_by_index_number(conn, student.index_number)
+            if existing_student:
+                raise ValueError(f"Student with index number {student.index_number} already exists.")
+
             return insert_student_profile(
                 conn, 
                 student.index_number,
@@ -676,13 +744,19 @@ async def create_student(
                 data={"student_id": student_id, "index_number": student.index_number}
             )
         else:
+            # This case might be hit if insert_student_profile returns False due to UniqueViolation
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to create student - index number may already exist"
+                detail="Failed to create student - index number may already exist or other DB error"
             )
             
     except HTTPException:
         raise
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
     except Exception as e:
         logger.error(f"Student creation failed: {str(e)}")
         raise HTTPException(
@@ -709,6 +783,11 @@ async def create_students_bulk(
         for student in bulk_request.students:
             try:
                 def operation(conn):
+                    # Check if student already exists by index_number
+                    existing_student = fetch_student_by_index_number(conn, student.index_number)
+                    if existing_student:
+                        raise ValueError(f"Student with index number {student.index_number} already exists.")
+
                     return insert_student_profile(
                         conn, 
                         student.index_number,
@@ -733,9 +812,15 @@ async def create_students_bulk(
                 else:
                     failed_students.append({
                         "index_number": student.index_number,
-                        "error": "Failed to create - may already exist"
+                        "error": "Failed to create - unknown database error"
                     })
                     
+            except ValueError as ve:
+                failed_students.append({
+                    "index_number": student.index_number,
+                    "error": str(ve)
+                })
+                logger.warning(f"Failed to create student in bulk: {student.index_number} - {ve}")
             except Exception as e:
                 failed_students.append({
                     "index_number": student.index_number,
@@ -779,11 +864,13 @@ async def get_all_students(
     try:
         logger.info(f"Admin {current_user.get('username')} fetching students (skip: {skip}, limit: {limit})")
         
-        students = handle_db_operation(fetch_all_records)
+        # fetch_all_records returns a dict with 'students' key
+        all_records = handle_db_operation(fetch_all_records)
+        students = all_records.get('students', []) if all_records else []
         
-        if students and 'students' in students:
-            student_list = students['students'][skip:skip+limit]
-            total_count = len(students['students'])
+        if students:
+            student_list = students[skip:skip+limit]
+            total_count = len(students)
             
             logger.info(f"Retrieved {len(student_list)} students out of {total_count} total")
             return APIResponse(
@@ -825,7 +912,7 @@ async def search_students(
         logger.info(f"Admin {current_user.get('username')} searching students with filters")
         
         def operation(conn):
-            cursor = conn.cursor()
+            cursor = conn.cursor(cursor_factory=RealDictCursor) # Use RealDictCursor
             
             base_query = """
                 SELECT student_id, index_number, full_name, dob, gender, 
@@ -833,7 +920,6 @@ async def search_students(
                 FROM student_profiles 
                 WHERE 1=1
             """
-            count_query = "SELECT COUNT(*) FROM student_profiles WHERE 1=1"
             
             params = []
             conditions = []
@@ -843,45 +929,37 @@ async def search_students(
                 params.append(f"%{name}%")
             
             if program:
-                conditions.append(" AND program = %s")
-                params.append(program)
+                conditions.append(" AND program ILIKE %s") # Use ILIKE for program
+                params.append(f"%{program}%")
             
             if year_of_study:
                 conditions.append(" AND year_of_study = %s")
                 params.append(year_of_study)
             
             if gender:
-                conditions.append(" AND gender = %s")
-                params.append(gender)
+                conditions.append(" AND gender ILIKE %s") # Use ILIKE for gender
+                params.append(f"%{gender}%")
             
-            # Add conditions to both queries
             condition_string = "".join(conditions)
             full_query = base_query + condition_string + " ORDER BY full_name LIMIT %s OFFSET %s"
-            full_count_query = count_query + condition_string
+            full_count_query = "SELECT COUNT(*) FROM student_profiles WHERE 1=1" + condition_string
             
             # Get total count
             cursor.execute(full_count_query, params)
-            total_count = cursor.fetchone()[0]
+            total_count = cursor.fetchone()['count']
             
             # Get paginated results
             cursor.execute(full_query, params + [limit, skip])
-            return cursor.fetchall(), total_count
+            students_raw = cursor.fetchall()
+            
+            # Format DOB to string
+            for student in students_raw:
+                if student['dob']:
+                    student['dob'] = student['dob'].strftime('%Y-%m-%d')
+            
+            return students_raw, total_count
         
-        students, total_count = handle_db_operation(operation)
-        
-        students_list = []
-        for row in students:
-            students_list.append({
-                "student_id": row[0],
-                "index_number": row[1],
-                "full_name": row[2],
-                "dob": row[3].strftime('%Y-%m-%d') if row[3] else None,
-                "gender": row[4],
-                "contact_email": row[5],
-                "phone": row[6],  # contact_phone from database
-                "program": row[7],
-                "year_of_study": row[8]
-            })
+        students_list, total_count = handle_db_operation(operation)
         
         logger.info(f"Found {len(students_list)} students matching search criteria")
         return APIResponse(
@@ -917,7 +995,10 @@ async def get_student_by_index(
         logger.info(f"Admin {current_user.get('username')} fetching student: {index_number}")
         
         def operation(conn):
-            return fetch_student_by_index_number(conn, index_number)
+            student = fetch_student_by_index_number(conn, index_number)
+            if student and student.get('dob'):
+                student['dob'] = student['dob'].strftime('%Y-%m-%d')
+            return student
         
         student = handle_db_operation(operation)
         
@@ -953,19 +1034,33 @@ async def update_student(
     try:
         logger.info(f"Admin {current_user.get('username')} updating student: {index_number}")
         
-        # First check if student exists
-        def fetch_operation(conn):
-            return fetch_student_by_index_number(conn, index_number)
+        def operation(conn):
+            # Fetch student_id using index_number
+            student = fetch_student_by_index_number(conn, index_number)
+            if not student:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Student with index number {index_number} not found"
+                )
+            student_id = student['student_id']
+
+            # Prepare updates dictionary, converting DOB if present
+            updates = student_update.dict(exclude_unset=True)
+            if 'dob' in updates and updates['dob'] is not None:
+                try:
+                    updates['dob'] = datetime.strptime(updates['dob'], '%Y-%m-%d').date()
+                except ValueError:
+                    raise ValueError('Date of birth must be in YYYY-MM-DD format')
+            elif 'dob' in updates and updates['dob'] is None:
+                updates['dob'] = None # Allow setting DOB to null
+
+            # Call the db function to update the student profile
+            success = update_student_profile(conn, student_id, updates)
+            if not success:
+                raise Exception("Database update operation failed.")
+            return success
         
-        existing_student = handle_db_operation(fetch_operation)
-        if not existing_student:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Student with index number {index_number} not found"
-            )
-        
-        # Update logic would go here - this is a simplified example
-        # In a real implementation, you'd have an update_student_profile function
+        handle_db_operation(operation)
         
         logger.info(f"Student updated successfully: {index_number}")
         return APIResponse(
@@ -973,14 +1068,63 @@ async def update_student(
             message="Student updated successfully",
             data={"index_number": index_number}
         )
-        
+            
     except HTTPException:
         raise
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
     except Exception as e:
         logger.error(f"Failed to update student {index_number}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update student: {str(e)}"
+        )
+
+@app.delete("/admin/students/{index_number}", response_model=APIResponse)
+async def delete_student(
+    index_number: str = Path(..., description="Student index number"),
+    current_user: dict = Depends(require_admin_role)
+):
+    """Delete student profile (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} deleting student: {index_number}")
+        
+        def operation(conn):
+            # Fetch student_id using index_number
+            student = fetch_student_by_index_number(conn, index_number)
+            if not student:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Student with index number {index_number} not found"
+                )
+            student_id = student['student_id']
+            return delete_student_profile(conn, student_id)
+        
+        success = handle_db_operation(operation)
+        
+        if success:
+            logger.info(f"Student deleted successfully: {index_number}")
+            return APIResponse(
+                success=True,
+                message="Student deleted successfully",
+                data={"index_number": index_number}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Student with index number {index_number} not found or could not be deleted"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete student {index_number}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete student: {str(e)}"
         )
 
 # ========================================
@@ -997,6 +1141,11 @@ async def create_course(
         logger.info(f"Admin {current_user.get('username')} creating course: {course.course_code}")
         
         def operation(conn):
+            # Check if course already exists by course_code
+            existing_course = fetch_course_by_code(conn, course.course_code)
+            if existing_course:
+                raise ValueError(f"Course with code {course.course_code} already exists.")
+
             return insert_course(
                 conn, 
                 course.course_code,
@@ -1016,11 +1165,16 @@ async def create_course(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to create course - course code may already exist"
+                detail="Failed to create course - course code may already exist or other DB error"
             )
             
     except HTTPException:
         raise
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
     except Exception as e:
         logger.error(f"Course creation failed: {str(e)}")
         raise HTTPException(
@@ -1038,11 +1192,13 @@ async def get_all_courses(
     try:
         logger.info(f"Admin {current_user.get('username')} fetching courses")
         
-        courses = handle_db_operation(fetch_all_records)
+        # fetch_all_records returns a dict with 'courses' key
+        all_records = handle_db_operation(fetch_all_records)
+        courses = all_records.get('courses', []) if all_records else []
         
-        if courses and 'courses' in courses:
-            course_list = courses['courses'][skip:skip+limit]
-            total_count = len(courses['courses'])
+        if courses:
+            course_list = courses[skip:skip+limit]
+            total_count = len(courses)
             
             logger.info(f"Retrieved {len(course_list)} courses out of {total_count} total")
             return APIResponse(
@@ -1069,6 +1225,98 @@ async def get_all_courses(
             detail=f"Failed to fetch courses: {str(e)}"
         )
 
+@app.put("/admin/courses/{course_code}", response_model=APIResponse)
+async def update_course_endpoint(
+    course_update: CourseCreate, # Reusing CourseCreate for update, assuming all fields can be updated
+    course_code: str = Path(..., description="Course code of the course to update"),
+    current_user: dict = Depends(require_admin_role)
+):
+    """Update course details (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} updating course: {course_code}")
+        
+        def operation(conn):
+            # Fetch course_id using course_code
+            course = fetch_course_by_code(conn, course_code)
+            if not course:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Course with code {course_code} not found"
+                )
+            course_id = course['course_id']
+
+            updates = course_update.dict(exclude_unset=True)
+            # Ensure course_code is not updated if it's the identifier
+            if 'course_code' in updates:
+                del updates['course_code']
+
+            success = update_course(conn, course_id, updates)
+            if not success:
+                raise Exception("Database update operation failed.")
+            return success
+        
+        handle_db_operation(operation)
+        
+        logger.info(f"Course {course_code} updated successfully")
+        return APIResponse(
+            success=True,
+            message="Course updated successfully",
+            data={"course_code": course_code}
+        )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update course {course_code}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update course: {str(e)}"
+        )
+
+@app.delete("/admin/courses/{course_code}", response_model=APIResponse)
+async def delete_course_endpoint(
+    course_code: str = Path(..., description="Course code of the course to delete"),
+    current_user: dict = Depends(require_admin_role)
+):
+    """Delete a course (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} deleting course: {course_code}")
+        
+        def operation(conn):
+            # Fetch course_id using course_code
+            course = fetch_course_by_code(conn, course_code)
+            if not course:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Course with code {course_code} not found"
+                )
+            course_id = course['course_id']
+            return delete_course(conn, course_id)
+        
+        success = handle_db_operation(operation)
+        
+        if success:
+            logger.info(f"Course {course_code} deleted successfully")
+            return APIResponse(
+                success=True,
+                message="Course deleted successfully",
+                data={"course_code": course_code}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Course with code {course_code} not found or could not be deleted"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete course {course_code}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete course: {str(e)}"
+        )
+
 # ========================================
 # ADMIN ENDPOINTS - SEMESTER MANAGEMENT
 # ========================================
@@ -1083,6 +1331,11 @@ async def create_semester(
         logger.info(f"Admin {current_user.get('username')} creating semester: {semester.semester_name}")
         
         def operation(conn):
+            # Check if semester already exists by name
+            existing_semester = fetch_semester_by_name(conn, semester.semester_name)
+            if existing_semester:
+                raise ValueError(f"Semester with name {semester.semester_name} already exists.")
+
             return insert_semester(
                 conn, 
                 semester.semester_name,
@@ -1107,11 +1360,16 @@ async def create_semester(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to create semester"
+                detail="Failed to create semester - semester name may already exist or other DB error"
             )
             
     except HTTPException:
         raise
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
     except Exception as e:
         logger.error(f"Semester creation failed: {str(e)}")
         raise HTTPException(
@@ -1127,14 +1385,16 @@ async def get_all_semesters(
     try:
         logger.info(f"Admin {current_user.get('username')} fetching semesters")
         
-        semesters = handle_db_operation(fetch_all_records)
+        # fetch_all_records returns a dict with 'semesters' key
+        all_records = handle_db_operation(fetch_all_records)
+        semesters = all_records.get('semesters', []) if all_records else []
         
-        if semesters and 'semesters' in semesters:
-            logger.info(f"Retrieved {len(semesters['semesters'])} semesters")
+        if semesters:
+            logger.info(f"Retrieved {len(semesters)} semesters")
             return APIResponse(
                 success=True,
-                message=f"Retrieved {len(semesters['semesters'])} semesters",
-                data={"semesters": semesters['semesters']}
+                message=f"Retrieved {len(semesters)} semesters",
+                data={"semesters": semesters}
             )
         else:
             return APIResponse(
@@ -1148,6 +1408,115 @@ async def get_all_semesters(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch semesters: {str(e)}"
+        )
+
+@app.put("/admin/semesters/{semester_name}", response_model=APIResponse)
+async def update_semester_endpoint(
+    semester_update: SemesterCreate, # Reusing SemesterCreate for update
+    semester_name: str = Path(..., description="Name of the semester to update"),
+    current_user: dict = Depends(require_admin_role)
+):
+    """Update semester details (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} updating semester: {semester_name}")
+        
+        def operation(conn):
+            # Fetch semester_id using semester_name
+            semester_obj = fetch_semester_by_name(conn, semester_name)
+            if not semester_obj:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Semester with name {semester_name} not found"
+                )
+            semester_id = semester_obj['semester_id']
+
+            updates = semester_update.dict(exclude_unset=True)
+            # Ensure semester_name is not updated if it's the identifier in the path
+            if 'semester_name' in updates:
+                del updates['semester_name']
+            
+            # Convert date strings to date objects if present
+            if 'start_date' in updates and updates['start_date'] is not None:
+                try:
+                    updates['start_date'] = datetime.strptime(updates['start_date'], '%Y-%m-%d').date()
+                except ValueError:
+                    raise ValueError('Start date must be in YYYY-MM-DD format')
+            if 'end_date' in updates and updates['end_date'] is not None:
+                try:
+                    updates['end_date'] = datetime.strptime(updates['end_date'], '%Y-%m-%d').date()
+                except ValueError:
+                    raise ValueError('End date must be in YYYY-MM-DD format')
+
+            success = update_semester(conn, semester_id, updates)
+            if not success:
+                raise Exception("Database update operation failed.")
+            return success
+        
+        handle_db_operation(operation)
+        
+        logger.info(f"Semester {semester_name} updated successfully")
+        return APIResponse(
+            success=True,
+            message="Semester updated successfully",
+            data={"semester_name": semester_name}
+        )
+            
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
+    except Exception as e:
+        logger.error(f"Failed to update semester {semester_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update semester: {str(e)}"
+        )
+
+@app.delete("/admin/semesters/{semester_name}", response_model=APIResponse)
+async def delete_semester_endpoint(
+    semester_name: str = Path(..., description="Name of the semester to delete"),
+    current_user: dict = Depends(require_admin_role)
+):
+    """Delete a semester (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} deleting semester: {semester_name}")
+        
+        def operation(conn):
+            # Fetch semester_id using semester_name
+            semester_obj = fetch_semester_by_name(conn, semester_name)
+            if not semester_obj:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Semester with name {semester_name} not found"
+                )
+            semester_id = semester_obj['semester_id']
+            return delete_semester(conn, semester_id)
+        
+        success = handle_db_operation(operation)
+        
+        if success:
+            logger.info(f"Semester {semester_name} deleted successfully")
+            return APIResponse(
+                success=True,
+                message="Semester deleted successfully",
+                data={"semester_name": semester_name}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Semester with name {semester_name} not found or could not be deleted"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete semester {semester_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete semester: {str(e)}"
         )
 
 # ========================================
@@ -1170,7 +1539,10 @@ async def get_student_profile(
         logger.info(f"Student {index_number} fetching profile")
         
         def operation(conn):
-            return fetch_student_by_index_number(conn, index_number)
+            student = fetch_student_by_index_number(conn, index_number)
+            if student and student.get('dob'):
+                student['dob'] = student['dob'].strftime('%Y-%m-%d')
+            return student
         
         student = handle_db_operation(operation)
         
@@ -1197,7 +1569,7 @@ async def get_student_profile(
         )
 
 @app.get("/student/grades", response_model=APIResponse)
-async def get_student_grades(
+async def get_student_grades_endpoint(
     current_user: dict = Depends(require_student_role),
     semester: Optional[str] = Query(None, description="Filter by semester"),
     academic_year: Optional[str] = Query(None, description="Filter by academic year")
@@ -1246,7 +1618,7 @@ async def get_student_grades(
         )
 
 @app.get("/student/gpa", response_model=APIResponse)
-async def get_student_gpa(
+async def get_student_gpa_endpoint(
     current_user: dict = Depends(require_student_role),
     semester: Optional[str] = Query(None, description="Calculate GPA for specific semester"),
     academic_year: Optional[str] = Query(None, description="Calculate GPA for specific academic year")
@@ -1278,7 +1650,7 @@ async def get_student_gpa(
             return APIResponse(
                 success=True,
                 message="No grades available for GPA calculation",
-                data={"gpa": 0.0, "total_credits": 0}
+                data={"semester_gpa": 0.0, "cumulative_gpa": 0.0, "total_credit_hours": 0, "semester_credit_hours": 0, "total_courses": 0, "grade_breakdown": []}
             )
             
     except HTTPException:
@@ -1295,15 +1667,18 @@ async def get_student_gpa(
 # ========================================
 
 @app.post("/admin/grades", response_model=APIResponse)
-async def create_grade(
+async def create_grade_endpoint(
     grade: GradeCreate, 
     current_user: dict = Depends(require_admin_role)
 ):
     """Create or update a student grade (Admin only)"""
     try:
-        logger.info(f"Admin {current_user.get('username')} creating grade for student: {grade.student_index}")
+        logger.info(f"Admin {current_user.get('username')} creating/updating grade for student: {grade.student_index}")
         
+        # The insert_student_grade function in db.py now handles ID resolution
         def operation(conn):
+            # This function will now handle fetching student_id, course_id, semester_id internally
+            # and then call db.insert_grade or db.update_student_score as appropriate.
             return insert_student_grade(
                 conn, 
                 grade.student_index,
@@ -1316,29 +1691,30 @@ async def create_grade(
         grade_id = handle_db_operation(operation)
         
         if grade_id:
-            logger.info(f"Grade created successfully for {grade.student_index} in {grade.course_code}")
+            logger.info(f"Grade created/updated successfully for {grade.student_index} in {grade.course_code}. Grade ID: {grade_id}")
             return APIResponse(
                 success=True,
-                message="Grade created successfully",
+                message="Grade created/updated successfully",
                 data={"grade_id": grade_id, "student_index": grade.student_index}
             )
         else:
+            # This case might be hit if insert_student_grade fails for reasons not caught by HTTPExceptions
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to create grade"
+                detail="Failed to save grade - check logs for details."
             )
             
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Grade creation failed: {str(e)}")
+        logger.error(f"Grade save operation failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Grade creation failed: {str(e)}"
+            detail=f"Grade save operation failed: {str(e)}"
         )
 
 @app.get("/admin/grades", response_model=APIResponse)
-async def get_all_grades(
+async def get_all_grades_endpoint(
     current_user: dict = Depends(require_admin_role),
     student_index: Optional[str] = Query(None, description="Filter by student index"),
     course_code: Optional[str] = Query(None, description="Filter by course code"),
@@ -1371,6 +1747,8 @@ async def get_all_grades(
                 data={"grades": [], "total_count": 0}
             )
             
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to fetch grades: {str(e)}")
         raise HTTPException(
@@ -1429,9 +1807,9 @@ async def create_student_account_endpoint(
         
         def operation(conn):
             return create_student_account(
+                conn,
                 student_account.index_number, 
-                student_account.full_name,
-                student_account.password
+                student_account.full_name
             )
         
         result = handle_db_operation(operation)
@@ -1446,7 +1824,7 @@ async def create_student_account_endpoint(
                     data={
                         "index_number": student_account.index_number,
                         "username": student_account.index_number,
-                        "password_generated": True
+                        "password_generated": True # Assuming password was generated if not provided
                     }
                 )
             else:
@@ -1532,30 +1910,13 @@ async def bulk_import_data(
         logger.info(f"Admin {current_user.get('username')} performing bulk import for semester: {bulk_data.semester_name}")
         
         def operation(conn):
-            # Handle empty file_data for testing
-            if not bulk_data.file_data:
-                return {
-                    "message": "No file data provided",
-                    "total": 0,
-                    "successful": 0,
-                    "skipped": 0,
-                    "errors": ["No file data provided"]
-                }
-            
-            # For actual file import, file_data should contain file content or path
-            # This is a simplified version for testing
-            return {
-                "message": "Bulk import functionality requires actual file upload",
-                "total": 0,
-                "successful": 0,
-                "skipped": 0,
-                "errors": ["File upload not implemented in test endpoint"]
-            }
+            # Pass connection to bulk_import_from_file
+            return bulk_import_from_file(conn, bulk_data.file_data, bulk_data.semester_name)
         
         result = handle_db_operation(operation)
         
         if result:
-            logger.info(f"Bulk import completed: {result.get('imported_count', 0)} records")
+            logger.info(f"Bulk import completed: {result.get('successful_imports', 0)} records")
             return APIResponse(
                 success=True,
                 message="Bulk import completed successfully",
@@ -1581,7 +1942,7 @@ async def bulk_import_data(
 # ========================================
 
 @app.get("/admin/reports/summary", response_model=APIResponse)
-async def generate_summary_report(
+async def generate_summary_report_endpoint(
     current_user: dict = Depends(require_admin_role),
     semester: Optional[str] = Query(None, description="Filter by semester"),
     academic_year: Optional[str] = Query(None, description="Filter by academic year"),
@@ -1626,7 +1987,7 @@ async def generate_summary_report(
         )
 
 @app.get("/admin/analytics/dashboard", response_model=APIResponse)
-async def get_admin_dashboard(
+async def get_admin_dashboard_endpoint(
     current_user: dict = Depends(require_admin_role)
 ):
     """Get admin dashboard analytics (Admin only)"""
@@ -1702,25 +2063,23 @@ async def get_ug_academic_calendar():
         logger.info("Fetching UG academic calendar")
         
         def operation(conn):
-            cursor = conn.cursor()
+            cursor = conn.cursor(cursor_factory=RealDictCursor) # Use RealDictCursor
             cursor.execute("""
                 SELECT semester_id, semester_name, academic_year, start_date, end_date 
                 FROM semesters 
                 ORDER BY start_date DESC
             """)
-            return cursor.fetchall()
+            semesters_raw = cursor.fetchall()
+            
+            # Format dates to string
+            for semester in semesters_raw:
+                if semester['start_date']:
+                    semester['start_date'] = semester['start_date'].strftime('%Y-%m-%d')
+                if semester['end_date']:
+                    semester['end_date'] = semester['end_date'].strftime('%Y-%m-%d')
+            return semesters_raw
         
-        semesters = handle_db_operation(operation)
-        
-        calendar_data = []
-        for row in semesters:
-            calendar_data.append({
-                "semester_id": row[0],
-                "semester_name": row[1],
-                "academic_year": row[2],
-                "start_date": row[3].strftime('%Y-%m-%d'),
-                "end_date": row[4].strftime('%Y-%m-%d')
-            })
+        calendar_data = handle_db_operation(operation)
         
         logger.info(f"Retrieved {len(calendar_data)} academic semesters")
         return APIResponse(
@@ -1746,7 +2105,7 @@ async def get_enrollment_statistics(
         logger.info(f"Admin {current_user.get('username')} fetching enrollment statistics")
         
         def operation(conn):
-            cursor = conn.cursor()
+            cursor = conn.cursor(cursor_factory=RealDictCursor) # Use RealDictCursor
             
             # Base query for enrollment by program
             base_query = """
@@ -1788,7 +2147,7 @@ async def get_enrollment_statistics(
         total_students = 0
         
         for row in enrollment_data:
-            program, year, gender, count = row
+            program, year, gender, count = row['program'], row['year_of_study'], row['gender'], row['student_count']
             total_students += count
             
             if program not in programs_stats:
@@ -1796,7 +2155,7 @@ async def get_enrollment_statistics(
                     "program": program,
                     "total_students": 0,
                     "by_year": {},
-                    "by_gender": {"Male": 0, "Female": 0, "Other": 0}
+                    "by_gender": {"Male": 0, "Female": 0, "Other": 0} # Initialize all genders
                 }
             
             programs_stats[program]["total_students"] += count
@@ -1805,8 +2164,9 @@ async def get_enrollment_statistics(
                 programs_stats[program]["by_year"][year] = 0
             programs_stats[program]["by_year"][year] += count
             
-            if gender in programs_stats[program]["by_gender"]:
-                programs_stats[program]["by_gender"][gender] += count
+            # Ensure gender is handled even if None or unexpected
+            gender_key = gender if gender in ["Male", "Female"] else "Other"
+            programs_stats[program]["by_gender"][gender_key] += count
         
         stats_list = list(programs_stats.values())
         
@@ -1840,7 +2200,7 @@ async def get_grades_distribution(
         logger.info(f"Admin {current_user.get('username')} fetching grade distribution")
         
         def operation(conn):
-            cursor = conn.cursor()
+            cursor = conn.cursor(cursor_factory=RealDictCursor) # Use RealDictCursor
             
             base_query = """
                 SELECT 
@@ -1858,11 +2218,11 @@ async def get_grades_distribution(
             
             params = []
             if semester_name:
-                base_query += " AND s.semester_name = %s"
-                params.append(semester_name)
+                base_query += " AND s.semester_name ILIKE %s"
+                params.append(f"%{semester_name}%")
             if course_code:
-                base_query += " AND c.course_code = %s"
-                params.append(course_code)
+                base_query += " AND c.course_code ILIKE %s"
+                params.append(f"%{course_code}%")
             
             base_query += " GROUP BY g.grade, g.grade_point, c.course_code, c.course_title, s.semester_name"
             base_query += " ORDER BY c.course_code, g.grade_point DESC"
@@ -1874,10 +2234,10 @@ async def get_grades_distribution(
         
         # Process data
         distribution = {}
-        grade_summary = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0}
+        grade_summary = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0} # Initialize all possible grades
         
         for row in grade_data:
-            grade, grade_point, count, course_code, course_title, semester = row
+            grade, grade_point, count, course_code, course_title, semester = row['grade'], row['grade_point'], row['count'], row['course_code'], row['course_title'], row['semester_name']
             
             if course_code not in distribution:
                 distribution[course_code] = {
@@ -1926,7 +2286,7 @@ async def generate_student_transcript(
         logger.info(f"Admin {current_user.get('username')} generating transcript for {index_number}")
         
         def operation(conn):
-            cursor = conn.cursor()
+            cursor = conn.cursor(cursor_factory=RealDictCursor) # Use RealDictCursor
             
             # Get student details
             cursor.execute("""
@@ -1950,8 +2310,8 @@ async def generate_student_transcript(
                 JOIN courses c ON g.course_id = c.course_id
                 JOIN semesters s ON g.semester_id = s.semester_id
                 WHERE g.student_id = %s
-                ORDER BY s.start_date, c.course_code
-            """, (student_data[0],))
+                ORDER BY s.academic_year, s.start_date, c.course_code
+            """, (student_data['student_id'],))
             
             grades_data = cursor.fetchall()
             
@@ -1970,14 +2330,14 @@ async def generate_student_transcript(
         # Process transcript data
         transcript = {
             "student_info": {
-                "index_number": student_data[1],
-                "full_name": student_data[2],
-                "date_of_birth": student_data[3].strftime('%Y-%m-%d') if student_data[3] else None,
-                "gender": student_data[4],
-                "email": student_data[5],
-                "phone": student_data[6],
-                "program": student_data[7],
-                "year_of_study": student_data[8]
+                "index_number": student_data['index_number'],
+                "full_name": student_data['full_name'],
+                "date_of_birth": student_data['dob'].strftime('%Y-%m-%d') if student_data['dob'] else None,
+                "gender": student_data['gender'],
+                "email": student_data['contact_email'],
+                "phone": student_data['contact_phone'],
+                "program": student_data['program'],
+                "year_of_study": student_data['year_of_study']
             },
             "academic_record": {},
             "summary": {
@@ -1988,11 +2348,18 @@ async def generate_student_transcript(
         }
         
         # Group by semester
-        total_points = 0
+        total_points = 0.0
         total_credits = 0
         
         for grade_row in grades_data:
-            course_code, course_title, credit_hours, score, grade, grade_point, semester_name, academic_year = grade_row
+            course_code = grade_row['course_code']
+            course_title = grade_row['course_title']
+            credit_hours = grade_row['credit_hours']
+            score = grade_row['score']
+            grade = grade_row['grade']
+            grade_point = grade_row['grade_point']
+            semester_name = grade_row['semester_name']
+            academic_year = grade_row['academic_year']
             
             if semester_name not in transcript["academic_record"]:
                 transcript["academic_record"][semester_name] = {
@@ -2006,14 +2373,14 @@ async def generate_student_transcript(
                 "course_code": course_code,
                 "course_title": course_title,
                 "credit_hours": credit_hours,
-                "score": score,
+                "score": float(score), # Ensure score is float
                 "grade": grade,
-                "grade_point": grade_point
+                "grade_point": float(grade_point) # Ensure grade_point is float
             })
             
             transcript["academic_record"][semester_name]["semester_credits"] += credit_hours
             total_credits += credit_hours
-            total_points += grade_point * credit_hours
+            total_points += float(grade_point) * credit_hours # Ensure float multiplication
             transcript["summary"]["total_courses"] += 1
         
         # Calculate GPAs
@@ -2119,68 +2486,71 @@ async def get_public_semesters(
 def generate_comprehensive_report(conn, semester=None, academic_year=None, format="json"):
     """Generate comprehensive system report"""
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         
         # Get summary statistics
         stats = {}
         
         # Total students
-        cursor.execute("SELECT COUNT(*) FROM student_profiles") # Corrected table name
-        stats['total_students'] = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM student_profiles")
+        stats['total_students'] = cursor.fetchone()['count']
         
         # Total courses
         cursor.execute("SELECT COUNT(*) FROM courses")
-        stats['total_courses'] = cursor.fetchone()[0]
+        stats['total_courses'] = cursor.fetchone()['count']
         
         # Total grades
-        grade_query = "SELECT COUNT(*) FROM grades"
+        grade_query = "SELECT COUNT(*) as count FROM grades g JOIN semesters s ON g.semester_id = s.semester_id WHERE 1=1"
         params = []
         
         if semester:
-            grade_query += " WHERE semester_name = %s"
-            params.append(semester)
+            grade_query += " AND s.semester_name ILIKE %s"
+            params.append(f"%{semester}%")
             
         if academic_year:
-            if semester:
-                grade_query += " AND academic_year = %s"
-            else:
-                grade_query += " WHERE academic_year = %s"
-            params.append(academic_year)
+            grade_query += " AND s.academic_year ILIKE %s"
+            params.append(f"%{academic_year}%")
             
         cursor.execute(grade_query, params)
-        stats['total_grades'] = cursor.fetchone()[0]
+        stats['total_grades'] = cursor.fetchone()['count']
         
         # Grade distribution
         dist_query = """
-            SELECT grade, COUNT(*) as count 
-            FROM grades 
+            SELECT g.grade, COUNT(*) as count 
+            FROM grades g
+            JOIN semesters s ON g.semester_id = s.semester_id
+            WHERE 1=1
         """
-        if semester or academic_year:
-            dist_query += " WHERE 1=1"
-            if semester:
-                dist_query += " AND semester_name = %s"
-            if academic_year:
-                dist_query += " AND academic_year = %s"
-        dist_query += " GROUP BY grade ORDER BY grade"
+        if semester:
+            dist_query += " AND s.semester_name ILIKE %s"
+            params.append(f"%{semester}%")
+        if academic_year:
+            dist_query += " AND s.academic_year ILIKE %s"
+            params.append(f"%{academic_year}%")
+        dist_query += " GROUP BY g.grade ORDER BY g.grade"
+        
         cursor.execute(dist_query, params)
-        grade_distribution = dict(cursor.fetchall())
+        grade_distribution_raw = cursor.fetchall()
+        grade_distribution = {row['grade']: row['count'] for row in grade_distribution_raw}
         
         # Average GPA calculation
         gpa_query = """
-            SELECT AVG(grade_points) as avg_gpa 
-            FROM grades 
+            SELECT AVG(g.grade_point) as avg_gpa 
+            FROM grades g
+            JOIN semesters s ON g.semester_id = s.semester_id
+            WHERE 1=1
         """
         
-        if semester or academic_year:
-            gpa_query += " WHERE 1=1"
-            if semester:
-                gpa_query += " AND semester_name = %s"
-            if academic_year:
-                gpa_query += " AND academic_year = %s"
+        if semester:
+            gpa_query += " AND s.semester_name ILIKE %s"
+            params.append(f"%{semester}%")
+        if academic_year:
+            gpa_query += " AND s.academic_year ILIKE %s"
+            params.append(f"%{academic_year}%")
         
         cursor.execute(gpa_query, params)
         avg_gpa_result = cursor.fetchone()
-        avg_gpa = round(avg_gpa_result[0], 2) if avg_gpa_result[0] else 0.0
+        avg_gpa = round(avg_gpa_result['avg_gpa'], 2) if avg_gpa_result and avg_gpa_result['avg_gpa'] else 0.0
         
         report_data = {
             "summary_statistics": stats,
@@ -2194,13 +2564,11 @@ def generate_comprehensive_report(conn, semester=None, academic_year=None, forma
         }
         
         if format == "pdf":
-            # Generate PDF report
             all_records = fetch_all_records(conn)
             student_records = all_records.get('students', []) if all_records else []
             pdf_path = export_summary_report_pdf(student_records, f"summary_report_{semester or 'all'}.pdf")
             report_data["pdf_path"] = pdf_path
         elif format == "txt":
-            # Generate TXT report
             all_records = fetch_all_records(conn)
             student_records = all_records.get('students', []) if all_records else []
             txt_path = export_summary_report_txt(student_records, f"summary_report_{semester or 'all'}.txt")
@@ -2215,10 +2583,10 @@ def generate_comprehensive_report(conn, semester=None, academic_year=None, forma
 def get_dashboard_analytics(conn):
     """Get dashboard analytics data"""
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         analytics = {}
         
-        # Recent activity (last 30 days simulation)
+        # Recent activity (last 30 days simulation) - This needs real data or a more complex query
         analytics['recent_grades'] = {
             "total": 0,
             "by_semester": {}
@@ -2236,20 +2604,20 @@ def get_dashboard_analytics(conn):
         semester_performance = []
         for row in cursor.fetchall():
             semester_performance.append({
-                "semester": row[0],
-                "average_gpa": round(row[1], 2) if row[1] else 0.0,
-                "total_grades": row[2]
+                "semester": row['semester_name'],
+                "average_gpa": round(row['avg_gpa'], 2) if row['avg_gpa'] else 0.0,
+                "total_grades": row['total_grades']
             })
         
         analytics['semester_performance'] = semester_performance
         
         # Top performing students
         cursor.execute("""
-            SELECT s.index_number, s.full_name, AVG(g.grade_point) as avg_gpa, COUNT(g.grade_id) as total_courses
-            FROM student_profiles s
-            JOIN grades g ON s.student_id = g.student_id
-            GROUP BY s.index_number, s.full_name
-            HAVING COUNT(g.grade_id) >= 3
+            SELECT sp.index_number, sp.full_name, AVG(g.grade_point) as avg_gpa, COUNT(g.grade_id) as total_courses
+            FROM student_profiles sp
+            JOIN grades g ON sp.student_id = g.student_id
+            GROUP BY sp.index_number, sp.full_name
+            HAVING COUNT(g.grade_id) >= 3 -- Only consider students with at least 3 grades
             ORDER BY avg_gpa DESC
             LIMIT 10
         """)
@@ -2257,17 +2625,17 @@ def get_dashboard_analytics(conn):
         top_students = []
         for row in cursor.fetchall():
             top_students.append({
-                "index_number": row[0],
-                "full_name": row[1],
-                "average_gpa": round(row[2], 2),
-                "total_courses": row[3]
+                "index_number": row['index_number'],
+                "full_name": row['full_name'],
+                "average_gpa": round(row['avg_gpa'], 2),
+                "total_courses": row['total_courses']
             })
         
         analytics['top_students'] = top_students
         
         # Course statistics
         cursor.execute("""
-            SELECT c.course_code, c.course_title, AVG(g.grade_point) as avg_gpa, COUNT(g.grade_id) as enrollments
+            SELECT c.course_code, c.course_title, AVG(g.score) as avg_score, COUNT(g.grade_id) as enrollments
             FROM courses c
             LEFT JOIN grades g ON c.course_id = g.course_id
             GROUP BY c.course_code, c.course_title
@@ -2277,10 +2645,10 @@ def get_dashboard_analytics(conn):
         course_stats = []
         for row in cursor.fetchall():
             course_stats.append({
-                "course_code": row[0],
-                "course_title": row[1],
-                "average_gpa": round(row[2], 2) if row[2] else 0.0,
-                "total_enrollments": row[3] if row[3] else 0
+                "course_code": row['course_code'],
+                "course_title": row['course_title'],
+                "average_score": round(float(row['avg_score']), 2) if row['avg_score'] else 0.0,
+                "total_enrollments": row['enrollments'] if row['enrollments'] else 0
             })
         
         analytics['course_statistics'] = course_stats
@@ -2340,3 +2708,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
+

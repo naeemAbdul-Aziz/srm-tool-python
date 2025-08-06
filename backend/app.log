@@ -39012,3 +39012,483 @@ LINE 7:          ORDER BY g.academic_year DESC, g.semester_name
 2025-08-05 12:56:13,345 - INFO - API startup completed successfully
 2025-08-05 12:56:15,495 - INFO - Shutting down Student Result Management System API...
 2025-08-05 12:56:15,496 - INFO - API shutdown completed
+2025-08-05 14:01:39,972 - INFO - starting fastapi server with uvicorn...
+2025-08-05 14:01:41,171 - INFO - session manager initialized
+2025-08-05 14:01:41,904 - INFO - Starting Student Result Management System API...
+2025-08-05 14:01:42,126 - INFO - Database connection established successfully
+2025-08-05 14:01:42,156 - INFO - Database tables verified/created
+2025-08-05 14:01:42,157 - INFO - API startup completed successfully
+2025-08-05 14:01:55,543 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:01:56,292 - WARNING - Authentication failed for user 'admin'.
+2025-08-05 14:01:56,294 - WARNING - Authentication failed for user: admin
+2025-08-05 14:01:56,302 - ERROR - HTTP Exception: 401 - Invalid username or password
+2025-08-05 14:02:03,115 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:02:04,222 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:02:04,224 - INFO - session created for admin (admin) at 2025-08-05 14:02:04.224150
+2025-08-05 14:02:04,225 - INFO - session created for admin (admin) at 2025-08-05 14:02:04.225417
+2025-08-05 14:02:04,225 - INFO - legacy session set for admin (admin)
+2025-08-05 14:02:04,226 - INFO - Login successful! Welcome, admin (admin).
+2025-08-05 14:02:04,226 - INFO - You have full administrative access.
+2025-08-05 14:02:04,226 - INFO - Session created with id: admin_20250805_140204
+2025-08-05 14:02:04,227 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:02:04,228 - INFO - User info requested by: admin
+2025-08-05 14:02:04,375 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:02:05,645 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:02:05,646 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:02:05,647 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:02:05,650 - INFO - Admin admin searching students with filters
+2025-08-05 14:02:05,652 - DEBUG - Establishing database connection...
+2025-08-05 14:02:05,829 - DEBUG - Executing database operation: operation
+2025-08-05 14:02:05,864 - DEBUG - Database operation completed successfully
+2025-08-05 14:02:05,866 - DEBUG - Database connection closed
+2025-08-05 14:02:05,869 - INFO - Found 100 students matching search criteria
+2025-08-05 14:03:23,508 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:03:25,342 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:03:25,343 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:03:25,344 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:03:25,346 - INFO - Admin admin fetching courses
+2025-08-05 14:03:25,347 - DEBUG - Establishing database connection...
+2025-08-05 14:03:25,441 - DEBUG - Executing database operation: fetch_all_records
+2025-08-05 14:03:26,097 - DEBUG - Database operation completed successfully
+2025-08-05 14:03:26,111 - DEBUG - Database connection closed
+2025-08-05 14:03:26,124 - INFO - Retrieved 100 courses out of 131 total
+2025-08-05 14:09:08,933 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:09:10,311 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:09:10,316 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:09:10,317 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:09:10,319 - INFO - User info requested by: admin
+2025-08-05 14:09:10,353 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:09:11,388 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:09:11,388 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:09:11,390 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:09:11,395 - INFO - Admin admin searching students with filters
+2025-08-05 14:09:11,396 - DEBUG - Establishing database connection...
+2025-08-05 14:09:11,563 - DEBUG - Executing database operation: operation
+2025-08-05 14:09:11,581 - DEBUG - Database operation completed successfully
+2025-08-05 14:09:11,582 - DEBUG - Database connection closed
+2025-08-05 14:09:11,587 - INFO - Found 100 students matching search criteria
+2025-08-05 14:09:18,748 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:09:19,987 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:09:19,988 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:09:19,989 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:09:19,991 - INFO - Admin admin fetching courses
+2025-08-05 14:09:19,992 - DEBUG - Establishing database connection...
+2025-08-05 14:09:20,494 - DEBUG - Executing database operation: fetch_all_records
+2025-08-05 14:09:21,239 - DEBUG - Database operation completed successfully
+2025-08-05 14:09:21,240 - DEBUG - Database connection closed
+2025-08-05 14:09:21,243 - INFO - Retrieved 100 courses out of 131 total
+2025-08-05 14:09:24,681 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:09:26,594 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:09:26,597 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:09:26,601 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:09:26,607 - INFO - Admin admin fetching semesters
+2025-08-05 14:09:26,611 - DEBUG - Establishing database connection...
+2025-08-05 14:09:26,704 - DEBUG - Executing database operation: fetch_all_records
+2025-08-05 14:09:27,006 - DEBUG - Database operation completed successfully
+2025-08-05 14:09:27,011 - DEBUG - Database connection closed
+2025-08-05 14:09:27,013 - INFO - Retrieved 9 semesters
+2025-08-05 14:15:02,503 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:15:03,600 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:15:03,602 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:15:03,602 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:15:03,604 - INFO - User info requested by: admin
+2025-08-05 14:15:03,768 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:15:04,627 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:15:04,628 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:15:04,629 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:15:04,634 - INFO - Admin admin searching students with filters
+2025-08-05 14:15:04,635 - DEBUG - Establishing database connection...
+2025-08-05 14:15:04,776 - DEBUG - Executing database operation: operation
+2025-08-05 14:15:04,795 - DEBUG - Database operation completed successfully
+2025-08-05 14:15:04,798 - DEBUG - Database connection closed
+2025-08-05 14:15:04,804 - INFO - Found 100 students matching search criteria
+2025-08-05 14:15:08,617 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:15:10,305 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:15:10,306 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:15:10,307 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:15:10,323 - INFO - Admin admin fetching grades with filters
+2025-08-05 14:15:10,324 - DEBUG - Establishing database connection...
+2025-08-05 14:15:10,528 - DEBUG - Executing database operation: operation
+2025-08-05 14:15:10,591 - DEBUG - Database operation completed successfully
+2025-08-05 14:15:10,592 - DEBUG - Database connection closed
+2025-08-05 14:15:10,592 - INFO - Retrieved grades data
+2025-08-05 14:22:49,063 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:22:50,357 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:22:50,358 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:22:50,359 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:22:50,361 - INFO - User info requested by: admin
+2025-08-05 14:22:50,538 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:22:51,330 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:22:51,331 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:22:51,332 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:22:51,354 - INFO - Admin admin searching students with filters
+2025-08-05 14:22:51,355 - DEBUG - Establishing database connection...
+2025-08-05 14:22:51,538 - DEBUG - Executing database operation: operation
+2025-08-05 14:22:51,561 - DEBUG - Database operation completed successfully
+2025-08-05 14:22:51,561 - DEBUG - Database connection closed
+2025-08-05 14:22:51,567 - INFO - Found 100 students matching search criteria
+2025-08-05 14:22:53,731 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:22:55,782 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:22:55,784 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:22:55,786 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:22:55,790 - INFO - Admin admin fetching courses
+2025-08-05 14:22:55,794 - DEBUG - Establishing database connection...
+2025-08-05 14:22:56,054 - DEBUG - Executing database operation: fetch_all_records
+2025-08-05 14:22:56,387 - DEBUG - Database operation completed successfully
+2025-08-05 14:22:56,388 - DEBUG - Database connection closed
+2025-08-05 14:22:56,389 - INFO - Retrieved 100 courses out of 131 total
+2025-08-05 14:23:00,713 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:23:01,767 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:23:01,770 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:23:01,772 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:23:01,774 - INFO - Admin admin fetching semesters
+2025-08-05 14:23:01,774 - DEBUG - Establishing database connection...
+2025-08-05 14:23:01,866 - DEBUG - Executing database operation: fetch_all_records
+2025-08-05 14:23:02,237 - DEBUG - Database operation completed successfully
+2025-08-05 14:23:02,243 - DEBUG - Database connection closed
+2025-08-05 14:23:02,244 - INFO - Retrieved 9 semesters
+2025-08-05 14:23:37,078 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:23:38,034 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:23:38,036 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:23:38,036 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:23:38,038 - INFO - User info requested by: admin
+2025-08-05 14:23:38,175 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:23:39,003 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:23:39,004 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:23:39,005 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:23:39,007 - INFO - Admin admin searching students with filters
+2025-08-05 14:23:39,008 - DEBUG - Establishing database connection...
+2025-08-05 14:23:39,130 - DEBUG - Executing database operation: operation
+2025-08-05 14:23:39,142 - DEBUG - Database operation completed successfully
+2025-08-05 14:23:39,144 - DEBUG - Database connection closed
+2025-08-05 14:23:39,160 - INFO - Found 100 students matching search criteria
+2025-08-05 14:23:40,357 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:23:41,404 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:23:41,406 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:23:41,407 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:23:41,409 - INFO - Admin admin fetching courses
+2025-08-05 14:23:41,409 - DEBUG - Establishing database connection...
+2025-08-05 14:23:41,570 - DEBUG - Executing database operation: fetch_all_records
+2025-08-05 14:23:41,749 - DEBUG - Database operation completed successfully
+2025-08-05 14:23:41,751 - DEBUG - Database connection closed
+2025-08-05 14:23:41,751 - INFO - Retrieved 100 courses out of 131 total
+2025-08-05 14:23:42,922 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:23:44,286 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:23:44,286 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:23:44,289 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:23:44,291 - INFO - Admin admin fetching semesters
+2025-08-05 14:23:44,291 - DEBUG - Establishing database connection...
+2025-08-05 14:23:44,475 - DEBUG - Executing database operation: fetch_all_records
+2025-08-05 14:23:44,717 - DEBUG - Database operation completed successfully
+2025-08-05 14:23:44,718 - DEBUG - Database connection closed
+2025-08-05 14:23:44,719 - INFO - Retrieved 9 semesters
+2025-08-05 14:23:46,347 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:23:47,487 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:23:47,488 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:23:47,491 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:23:47,493 - INFO - Admin admin fetching grades with filters
+2025-08-05 14:23:47,493 - DEBUG - Establishing database connection...
+2025-08-05 14:23:47,638 - DEBUG - Executing database operation: operation
+2025-08-05 14:23:47,675 - DEBUG - Database operation completed successfully
+2025-08-05 14:23:47,676 - DEBUG - Database connection closed
+2025-08-05 14:23:47,677 - INFO - Retrieved grades data
+2025-08-05 14:34:39,016 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:34:40,249 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:34:40,251 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:34:40,252 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:34:40,254 - INFO - User info requested by: admin
+2025-08-05 14:34:40,420 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:34:41,280 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:34:41,281 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:34:41,282 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:34:41,291 - INFO - Admin admin searching students with filters
+2025-08-05 14:34:41,292 - DEBUG - Establishing database connection...
+2025-08-05 14:34:41,453 - DEBUG - Executing database operation: operation
+2025-08-05 14:34:41,480 - DEBUG - Database operation completed successfully
+2025-08-05 14:34:41,481 - DEBUG - Database connection closed
+2025-08-05 14:34:41,486 - INFO - Found 100 students matching search criteria
+2025-08-05 14:34:46,330 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:34:47,924 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:34:47,925 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:34:47,926 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:34:47,928 - INFO - Admin admin fetching courses
+2025-08-05 14:34:47,928 - DEBUG - Establishing database connection...
+2025-08-05 14:34:48,106 - DEBUG - Executing database operation: fetch_all_records
+2025-08-05 14:34:48,315 - DEBUG - Database operation completed successfully
+2025-08-05 14:34:48,316 - DEBUG - Database connection closed
+2025-08-05 14:34:48,318 - INFO - Retrieved 100 courses out of 131 total
+2025-08-05 14:35:13,825 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:35:14,730 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:35:14,731 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:35:14,734 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:35:14,744 - INFO - Admin admin generating summary report
+2025-08-05 14:35:14,745 - DEBUG - Establishing database connection...
+2025-08-05 14:35:14,921 - DEBUG - Executing database operation: operation
+2025-08-05 14:35:14,973 - ERROR - Error generating comprehensive report: column "grade_points" does not exist
+LINE 2:             SELECT AVG(grade_points) as avg_gpa 
+                               ^
+HINT:  Perhaps you meant to reference the column "grades.grade_point".
+
+2025-08-05 14:35:14,974 - DEBUG - Database operation completed successfully
+2025-08-05 14:35:14,975 - DEBUG - Database connection closed
+2025-08-05 14:35:57,134 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:35:57,984 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:35:57,986 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:35:57,993 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:35:57,997 - INFO - Admin admin fetching grades with filters
+2025-08-05 14:35:57,999 - DEBUG - Establishing database connection...
+2025-08-05 14:35:58,099 - DEBUG - Executing database operation: operation
+2025-08-05 14:35:58,149 - DEBUG - Database operation completed successfully
+2025-08-05 14:35:58,153 - DEBUG - Database connection closed
+2025-08-05 14:35:58,154 - INFO - Retrieved grades data
+2025-08-05 14:49:50,642 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:49:51,242 - WARNING - Authentication failed for user 'admin'.
+2025-08-05 14:49:51,243 - WARNING - Authentication failed for user: admin
+2025-08-05 14:49:51,248 - ERROR - HTTP Exception: 401 - Invalid username or password
+2025-08-05 14:49:58,496 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:49:59,052 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:49:59,075 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:49:59,077 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:49:59,078 - INFO - User info requested by: admin
+2025-08-05 14:49:59,164 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:49:59,624 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:49:59,625 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:49:59,625 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:49:59,631 - INFO - Admin admin searching students with filters
+2025-08-05 14:49:59,632 - DEBUG - Establishing database connection...
+2025-08-05 14:49:59,757 - DEBUG - Executing database operation: operation
+2025-08-05 14:49:59,783 - DEBUG - Database operation completed successfully
+2025-08-05 14:49:59,783 - DEBUG - Database connection closed
+2025-08-05 14:49:59,788 - INFO - Found 100 students matching search criteria
+2025-08-05 14:50:01,325 - DEBUG - Authentication attempt for user: admin
+2025-08-05 14:50:01,921 - INFO - User 'admin' authenticated successfully.
+2025-08-05 14:50:01,921 - DEBUG - Session already exists for user admin, reusing...
+2025-08-05 14:50:01,921 - INFO - User authenticated successfully: admin (admin)
+2025-08-05 14:50:01,924 - INFO - Admin admin fetching grades with filters
+2025-08-05 14:50:01,924 - DEBUG - Establishing database connection...
+2025-08-05 14:50:01,992 - DEBUG - Executing database operation: operation
+2025-08-05 14:50:02,028 - DEBUG - Database operation completed successfully
+2025-08-05 14:50:02,028 - DEBUG - Database connection closed
+2025-08-05 14:50:02,029 - INFO - Retrieved grades data
+2025-08-06 07:40:11,146 - INFO - Shutting down Student Result Management System API...
+2025-08-06 07:40:11,158 - INFO - API shutdown completed
+2025-08-06 07:43:20,862 - INFO - session manager initialized
+2025-08-06 07:43:22,393 - INFO - Starting Student Result Management System API...
+2025-08-06 07:43:22,545 - INFO - Database connection established successfully
+2025-08-06 07:43:22,568 - INFO - Database tables verified/created
+2025-08-06 07:43:22,568 - INFO - API startup completed successfully
+2025-08-06 07:48:08,923 - INFO - Shutting down Student Result Management System API...
+2025-08-06 07:48:08,938 - INFO - API shutdown completed
+2025-08-06 07:48:11,617 - INFO - session manager initialized
+2025-08-06 07:48:12,531 - INFO - Starting Student Result Management System API...
+2025-08-06 07:48:12,648 - INFO - Database connection established successfully
+2025-08-06 07:48:12,663 - INFO - Database tables verified/created
+2025-08-06 07:48:12,664 - INFO - API startup completed successfully
+2025-08-06 07:48:26,635 - INFO - Shutting down Student Result Management System API...
+2025-08-06 07:48:26,636 - INFO - API shutdown completed
+2025-08-06 07:48:28,565 - INFO - session manager initialized
+2025-08-06 07:48:29,344 - INFO - Starting Student Result Management System API...
+2025-08-06 07:48:29,523 - INFO - Database connection established successfully
+2025-08-06 07:48:29,544 - INFO - Database tables verified/created
+2025-08-06 07:48:29,545 - INFO - API startup completed successfully
+2025-08-06 07:48:29,692 - INFO - Shutting down Student Result Management System API...
+2025-08-06 07:48:29,693 - INFO - API shutdown completed
+2025-08-06 07:48:31,917 - INFO - session manager initialized
+2025-08-06 07:48:32,872 - INFO - Starting Student Result Management System API...
+2025-08-06 07:48:33,001 - INFO - Database connection established successfully
+2025-08-06 07:48:33,021 - INFO - Database tables verified/created
+2025-08-06 07:48:33,021 - INFO - API startup completed successfully
+2025-08-06 08:15:24,636 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:15:25,515 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:15:25,518 - INFO - session created for admin (admin) at 2025-08-06 08:15:25.517292
+2025-08-06 08:15:25,519 - INFO - session created for admin (admin) at 2025-08-06 08:15:25.519834
+2025-08-06 08:15:25,520 - INFO - legacy session set for admin (admin)
+2025-08-06 08:15:25,521 - INFO - Login successful! Welcome, admin (admin).
+2025-08-06 08:15:25,522 - INFO - You have full administrative access.
+2025-08-06 08:15:25,524 - INFO - Session created with id: admin_20250806_081525
+2025-08-06 08:15:25,525 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:15:25,526 - INFO - User info requested by: admin
+2025-08-06 08:15:25,559 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:15:27,699 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:15:27,699 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:15:27,701 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:15:27,711 - INFO - Admin admin searching students with filters
+2025-08-06 08:15:27,712 - DEBUG - Establishing database connection...
+2025-08-06 08:15:27,865 - DEBUG - Executing database operation: operation
+2025-08-06 08:15:28,067 - DEBUG - Database operation completed successfully
+2025-08-06 08:15:28,227 - DEBUG - Database connection closed
+2025-08-06 08:15:28,307 - INFO - Found 100 students matching search criteria
+2025-08-06 08:15:37,928 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:15:39,064 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:15:39,065 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:15:39,068 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:15:39,073 - INFO - Admin admin fetching courses
+2025-08-06 08:15:39,074 - DEBUG - Establishing database connection...
+2025-08-06 08:15:39,232 - DEBUG - Executing database operation: fetch_all_records
+2025-08-06 08:15:39,460 - DEBUG - Database operation completed successfully
+2025-08-06 08:15:39,461 - DEBUG - Database connection closed
+2025-08-06 08:15:39,462 - INFO - Retrieved 100 courses out of 131 total
+2025-08-06 08:15:41,828 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:15:43,241 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:15:43,242 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:15:43,242 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:15:43,245 - INFO - Admin admin fetching semesters
+2025-08-06 08:15:43,246 - DEBUG - Establishing database connection...
+2025-08-06 08:15:43,341 - DEBUG - Executing database operation: fetch_all_records
+2025-08-06 08:15:43,495 - DEBUG - Database operation completed successfully
+2025-08-06 08:15:43,497 - DEBUG - Database connection closed
+2025-08-06 08:15:43,497 - INFO - Retrieved 9 semesters
+2025-08-06 08:15:45,016 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:15:45,690 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:15:45,695 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:15:45,697 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:15:45,700 - INFO - Admin admin fetching grades with filters
+2025-08-06 08:15:45,701 - DEBUG - Establishing database connection...
+2025-08-06 08:15:45,799 - DEBUG - Executing database operation: operation
+2025-08-06 08:15:45,823 - DEBUG - Database operation completed successfully
+2025-08-06 08:15:45,825 - DEBUG - Database connection closed
+2025-08-06 08:15:45,827 - INFO - Retrieved grades data
+2025-08-06 08:15:58,381 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:15:59,951 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:15:59,952 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:15:59,954 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:15:59,956 - INFO - Admin admin generating summary report
+2025-08-06 08:15:59,957 - DEBUG - Establishing database connection...
+2025-08-06 08:16:00,081 - DEBUG - Executing database operation: operation
+2025-08-06 08:16:00,125 - DEBUG - Database operation completed successfully
+2025-08-06 08:16:00,126 - DEBUG - Database connection closed
+2025-08-06 08:16:00,127 - INFO - Summary report generated successfully in json format
+2025-08-06 08:17:21,742 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:17:24,527 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:17:24,529 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:17:24,530 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:17:24,531 - INFO - User info requested by: admin
+2025-08-06 08:17:24,744 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:17:29,506 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:17:29,612 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:17:29,631 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:17:29,826 - INFO - Admin admin searching students with filters
+2025-08-06 08:17:30,171 - DEBUG - Establishing database connection...
+2025-08-06 08:17:30,792 - DEBUG - Executing database operation: operation
+2025-08-06 08:17:31,103 - DEBUG - Database operation completed successfully
+2025-08-06 08:17:31,218 - DEBUG - Database connection closed
+2025-08-06 08:17:31,320 - INFO - Found 100 students matching search criteria
+2025-08-06 08:17:45,024 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:17:45,844 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:17:45,845 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:17:45,846 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:17:45,849 - INFO - Admin admin fetching courses
+2025-08-06 08:17:45,850 - DEBUG - Establishing database connection...
+2025-08-06 08:17:46,008 - DEBUG - Executing database operation: fetch_all_records
+2025-08-06 08:17:46,183 - DEBUG - Database operation completed successfully
+2025-08-06 08:17:46,184 - DEBUG - Database connection closed
+2025-08-06 08:17:46,188 - INFO - Retrieved 100 courses out of 131 total
+2025-08-06 08:17:47,789 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:17:50,882 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:17:50,882 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:17:50,884 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:17:50,888 - INFO - Admin admin fetching semesters
+2025-08-06 08:17:50,888 - DEBUG - Establishing database connection...
+2025-08-06 08:17:51,068 - DEBUG - Executing database operation: fetch_all_records
+2025-08-06 08:17:51,325 - DEBUG - Database operation completed successfully
+2025-08-06 08:17:51,326 - DEBUG - Database connection closed
+2025-08-06 08:17:51,327 - INFO - Retrieved 9 semesters
+2025-08-06 08:17:58,507 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:17:59,432 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:17:59,432 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:17:59,436 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:17:59,448 - INFO - Admin admin fetching grades with filters
+2025-08-06 08:17:59,449 - DEBUG - Establishing database connection...
+2025-08-06 08:17:59,607 - DEBUG - Executing database operation: operation
+2025-08-06 08:17:59,648 - DEBUG - Database operation completed successfully
+2025-08-06 08:17:59,649 - DEBUG - Database connection closed
+2025-08-06 08:17:59,649 - INFO - Retrieved grades data
+2025-08-06 08:19:09,159 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:19:10,032 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:19:10,033 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:19:10,035 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:19:10,040 - INFO - Admin admin fetching enrollment statistics
+2025-08-06 08:19:10,041 - DEBUG - Establishing database connection...
+2025-08-06 08:19:10,186 - DEBUG - Executing database operation: operation
+2025-08-06 08:19:10,213 - DEBUG - Database operation completed successfully
+2025-08-06 08:19:10,214 - DEBUG - Database connection closed
+2025-08-06 08:19:10,217 - INFO - Generated enrollment statistics for 32 programs
+2025-08-06 08:19:37,221 - DEBUG - Authentication attempt for user: admin
+2025-08-06 08:19:38,185 - INFO - User 'admin' authenticated successfully.
+2025-08-06 08:19:38,186 - DEBUG - Session already exists for user admin, reusing...
+2025-08-06 08:19:38,186 - INFO - User authenticated successfully: admin (admin)
+2025-08-06 08:19:38,189 - INFO - Admin admin searching students with filters
+2025-08-06 08:19:38,190 - DEBUG - Establishing database connection...
+2025-08-06 08:19:38,337 - DEBUG - Executing database operation: operation
+2025-08-06 08:19:38,355 - DEBUG - Database operation completed successfully
+2025-08-06 08:19:38,356 - DEBUG - Database connection closed
+2025-08-06 08:19:38,357 - INFO - Found 100 students matching search criteria
+2025-08-06 08:20:02,731 - DEBUG - Authentication attempt for user: ug10058
+2025-08-06 08:20:03,609 - INFO - User 'ug10058' authenticated successfully.
+2025-08-06 08:20:03,628 - INFO - Student data loaded for ug10058.
+2025-08-06 08:20:03,630 - INFO - session created for ug10058 (student) at 2025-08-06 08:20:03.629393
+2025-08-06 08:20:03,631 - INFO - session created for ug10058 (student) at 2025-08-06 08:20:03.631932
+2025-08-06 08:20:03,635 - INFO - legacy session set for ug10058 (student)
+2025-08-06 08:20:03,636 - INFO - Login successful! Welcome, Abena Antwi (student).
+2025-08-06 08:20:03,636 - INFO - You have 40 course grades on record.
+2025-08-06 08:20:03,637 - INFO - Session created with id: ug10058_20250806_082003
+2025-08-06 08:20:03,638 - INFO - User authenticated successfully: ug10058 (student)
+2025-08-06 08:20:03,639 - INFO - User info requested by: ug10058
+2025-08-06 08:20:03,774 - DEBUG - Authentication attempt for user: ug10058
+2025-08-06 08:20:04,594 - INFO - User 'ug10058' authenticated successfully.
+2025-08-06 08:20:04,611 - INFO - Student data loaded for ug10058.
+2025-08-06 08:20:04,611 - DEBUG - Session already exists for user ug10058, reusing...
+2025-08-06 08:20:04,613 - INFO - User authenticated successfully: ug10058 (student)
+2025-08-06 08:20:04,614 - INFO - Student ug10058 fetching profile
+2025-08-06 08:20:04,614 - DEBUG - Establishing database connection...
+2025-08-06 08:20:04,731 - DEBUG - Executing database operation: operation
+2025-08-06 08:20:04,753 - DEBUG - Database operation completed successfully
+2025-08-06 08:20:04,754 - DEBUG - Database connection closed
+2025-08-06 08:20:04,754 - INFO - Profile retrieved for student: ug10058
+2025-08-06 08:20:16,679 - DEBUG - Authentication attempt for user: ug10058
+2025-08-06 08:20:18,136 - INFO - User 'ug10058' authenticated successfully.
+2025-08-06 08:20:18,152 - INFO - Student data loaded for ug10058.
+2025-08-06 08:20:18,154 - DEBUG - Session already exists for user ug10058, reusing...
+2025-08-06 08:20:18,155 - INFO - User authenticated successfully: ug10058 (student)
+2025-08-06 08:20:18,157 - INFO - Student ug10058 fetching grades (semester: None, year: None)
+2025-08-06 08:20:18,158 - DEBUG - Establishing database connection...
+2025-08-06 08:20:18,259 - DEBUG - Executing database operation: operation
+2025-08-06 08:20:18,275 - DEBUG - Database operation completed successfully
+2025-08-06 08:20:18,276 - DEBUG - Database connection closed
+2025-08-06 08:20:18,277 - INFO - Retrieved 40 grades for student: ug10058
+2025-08-06 08:20:44,353 - DEBUG - Authentication attempt for user: ug10058
+2025-08-06 08:20:46,029 - INFO - User 'ug10058' authenticated successfully.
+2025-08-06 08:20:46,050 - INFO - Student data loaded for ug10058.
+2025-08-06 08:20:46,051 - DEBUG - Session already exists for user ug10058, reusing...
+2025-08-06 08:20:46,052 - INFO - User authenticated successfully: ug10058 (student)
+2025-08-06 08:20:46,055 - INFO - Student ug10058 calculating GPA (semester: None, year: None)
+2025-08-06 08:20:46,055 - DEBUG - Establishing database connection...
+2025-08-06 08:20:46,245 - DEBUG - Executing database operation: operation
+2025-08-06 08:20:46,363 - ERROR - Error calculating GPA: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+2025-08-06 08:20:46,370 - DEBUG - Database operation completed successfully
+2025-08-06 08:20:46,372 - DEBUG - Database connection closed
+2025-08-06 08:20:46,378 - INFO - GPA calculated for student: ug10058
+2025-08-06 08:24:05,838 - DEBUG - Authentication attempt for user: ug10058
+2025-08-06 08:24:06,340 - INFO - User 'ug10058' authenticated successfully.
+2025-08-06 08:24:06,372 - INFO - Student data loaded for ug10058.
+2025-08-06 08:24:06,373 - DEBUG - Session already exists for user ug10058, reusing...
+2025-08-06 08:24:06,374 - INFO - User authenticated successfully: ug10058 (student)
+2025-08-06 08:24:06,376 - INFO - Student ug10058 calculating GPA (semester: None, year: None)
+2025-08-06 08:24:06,377 - DEBUG - Establishing database connection...
+2025-08-06 08:24:06,456 - DEBUG - Executing database operation: operation
+2025-08-06 08:24:06,489 - ERROR - Error calculating GPA: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+2025-08-06 08:24:06,490 - DEBUG - Database operation completed successfully
+2025-08-06 08:24:06,491 - DEBUG - Database connection closed
+2025-08-06 08:24:06,496 - INFO - GPA calculated for student: ug10058
+2025-08-06 08:24:07,568 - DEBUG - Authentication attempt for user: ug10058
+2025-08-06 08:24:08,123 - INFO - User 'ug10058' authenticated successfully.
+2025-08-06 08:24:08,145 - INFO - Student data loaded for ug10058.
+2025-08-06 08:24:08,145 - DEBUG - Session already exists for user ug10058, reusing...
+2025-08-06 08:24:08,146 - INFO - User authenticated successfully: ug10058 (student)
+2025-08-06 08:24:08,148 - INFO - Student ug10058 calculating GPA (semester: None, year: None)
+2025-08-06 08:24:08,149 - DEBUG - Establishing database connection...
+2025-08-06 08:24:08,238 - DEBUG - Executing database operation: operation
+2025-08-06 08:24:08,256 - ERROR - Error calculating GPA: unsupported operand type(s) for +=: 'float' and 'decimal.Decimal'
+2025-08-06 08:24:08,257 - DEBUG - Database operation completed successfully
+2025-08-06 08:24:08,258 - DEBUG - Database connection closed
+2025-08-06 08:24:08,258 - INFO - GPA calculated for student: ug10058
