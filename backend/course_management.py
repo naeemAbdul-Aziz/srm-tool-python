@@ -52,8 +52,15 @@ def initialize_connection_pool(minconn, maxconn):
         )
         if connection_pool:
             logger.info("Connection pool initialized successfully.")
+            return True
+    except ImportError as e:
+        logger.error(f"Database driver not available: {e}")
+        print("ERROR: Database driver (psycopg2) not installed. Please install requirements.")
+        return False
     except Exception as e:
         logger.error(f"Error initializing connection pool: {e}")
+        print(f"ERROR: Failed to initialize database connection pool: {e}")
+        return False
 
 # Update connect_to_db to use the connection pool
 def connect_to_db():
@@ -381,7 +388,11 @@ def initialize_enhanced_system():
     """
     logger.info("Initializing enhanced system.")
     try:
-        initialize_connection_pool(minconn=1, maxconn=10)
+        pool_success = initialize_connection_pool(minconn=1, maxconn=10)
+        if not pool_success:
+            logger.error("Failed to initialize connection pool.")
+            return False
+            
         conn = connect_to_db()
         if conn:
             create_tables_if_not_exist(conn)
@@ -390,9 +401,12 @@ def initialize_enhanced_system():
         else:
             logger.error("Failed to connect to database for initialization.")
             print("Failed to connect to database for initialization.")
+            return False  # Return False to indicate initialization failed
     except Exception as e:
         logger.error(f"Error initializing enhanced system: {e}")
-        print("Error initializing enhanced system.")
+        print(f"Error initializing enhanced system: {e}")
+        return False  # Return False to indicate initialization failed
+    return True  # Return True to indicate successful initialization
 
 def validate_menu_choice(choice, valid_choices):
     """Validate menu choice against a list of valid options."""

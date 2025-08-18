@@ -667,7 +667,17 @@ def admin_menu_loop(user_data):
 
 def main_menu_loop():
     """main application loop for login and sign up"""
-    initialize_enhanced_system() # Ensure tables are created on startup
+    # Ensure tables are created on startup
+    initialization_success = initialize_enhanced_system()
+    if not initialization_success:
+        print("ERROR: Database initialization failed. Please check your database configuration.")
+        print("The application cannot start without a database connection.")
+        choice = input("Do you want to continue anyway? (y/N): ").strip().lower()
+        if choice not in ['y', 'yes']:
+            print("Exiting application due to database initialization failure.")
+            return
+        print("WARNING: Continuing with limited functionality...")
+    
     while True:
         print("\nWelcome to Student Result Management System!")
         print("1. Login")

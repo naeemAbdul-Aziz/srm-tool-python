@@ -81,8 +81,13 @@ def process_records_for_display(records):
 def export_summary_report_txt(records: list, filename="summary_report.txt"):
     """
     Exports a detailed summary report of all student records to a text file in tabular format.
+    Returns the file path of the generated TXT file.
     """
     try:
+        # Ensure the filename has the correct extension
+        if not filename.endswith('.txt'):
+            filename += '.txt'
+            
         header_info = get_report_header_info()
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(f"{'='*80}\n")
@@ -96,19 +101,34 @@ def export_summary_report_txt(records: list, filename="summary_report.txt"):
             if not records:
                 f.write("No student records available.\n")
                 logger.info(f"Generated empty summary report: {filename}")
-                return True
+                return filename
+
+            # Collect valid scores for statistics - with robust validation
+            valid_scores = []
+            for student in records:
+                # Validate student record structure
+                if not isinstance(student, dict):
+                    continue
+                    
+                if 'grades' not in student or not isinstance(student['grades'], list):
+                    continue
+                    
+                for grade in student['grades']:
+                    if not isinstance(grade, dict):
+                        continue
+                        
+                    score = grade.get('score')
+                    if score is not None and isinstance(score, (int, float)):
+                        valid_scores.append(score)
 
             # Summary statistics
-            total_students = len(records)
-            average_score = sum(
-                grade['score'] for student in records for grade in student['grades'] if isinstance(student['grades'], list)
-            ) / total_students
-            highest_score = max(
-                grade['score'] for student in records for grade in student['grades'] if isinstance(student['grades'], list)
-            )
-            lowest_score = min(
-                grade['score'] for student in records for grade in student['grades'] if isinstance(student['grades'], list)
-            )
+            total_students = len([s for s in records if isinstance(s, dict) and 'profile' in s])
+            if valid_scores:
+                average_score = sum(valid_scores) / len(valid_scores)
+                highest_score = max(valid_scores)
+                lowest_score = min(valid_scores)
+            else:
+                average_score = highest_score = lowest_score = 0
 
             f.write(f"Total Students: {total_students}\n")
             f.write(f"Average Score: {average_score:.2f}\n")
@@ -116,12 +136,19 @@ def export_summary_report_txt(records: list, filename="summary_report.txt"):
             f.write(f"Lowest Score: {lowest_score}\n")
             f.write(f"{'='*80}\n\n")
 
-            # Grade distribution
+            # Grade distribution - with robust validation
             grade_distribution = {"A": 0, "B": 0, "C": 0, "D": 0, "F": 0}
             for student in records:
+                if not isinstance(student, dict) or 'grades' not in student or not isinstance(student['grades'], list):
+                    continue
+                    
                 for grade in student['grades']:
-                    grade_value = grade['grade'] if isinstance(student['grades'], list) else "F"
-                    grade_distribution[grade_value] += 1
+                    if not isinstance(grade, dict):
+                        continue
+                        
+                    grade_value = grade.get('grade', "F")
+                    if grade_value in grade_distribution:
+                        grade_distribution[grade_value] += 1
 
             f.write("Grade Distribution:\n")
             for grade, count in grade_distribution.items():
@@ -132,17 +159,69 @@ def export_summary_report_txt(records: list, filename="summary_report.txt"):
             f.write(f"{'Name':<25}{'Index':<15}{'Course':<15}{'Score':<10}{'Grade':<10}\n")
             f.write(f"{'-'*80}\n")
 
-            for student_data in sorted(records, key=lambda x: (x['grades'][0]['grade'] if isinstance(x['grades'], list) else "F", x['profile']['full_name'])):
+            # Sort records safely
+            def safe_sort_key(x):
+                try:
+                    if not isinstance(x, dict):
+                        return ("F", "Unknown")
+                        
+                    if 'grades' not in x or not isinstance(x['grades'], list) or not x['grades']:
+                        grade = "F"
+                    else:
+                        grade = x['grades'][0].get('grade', "F") if isinstance(x['grades'][0], dict) else "F"
+                    
+                    if 'profile' not in x or not isinstance(x['profile'], dict):
+                        name = "Unknown"
+                    else:
+                        name = x['profile'].get('full_name', "Unknown")
+                    
+                    return (grade, name)
+                except Exception:
+                    return ("F", "Unknown")
+            
+            try:
+                sorted_records = sorted([r for r in records if isinstance(r, dict)], key=safe_sort_key)
+            except Exception as e:
+                logger.warning(f"Error sorting records: {e}")
+                sorted_records = [r for r in records if isinstance(r, dict)]
+
+            for student_data in sorted_records:
+                # Validate student data structure
+                if not isinstance(student_data, dict) or 'profile' not in student_data or not isinstance(student_data['profile'], dict):
+                    continue
+                    
                 profile = student_data['profile']
+                if 'grades' not in student_data or not isinstance(student_data['grades'], list):
+                    continue
+                    
                 for grade in student_data['grades']:
-                    if isinstance(student_data['grades'], list):
-                        f.write(f"{profile['full_name']:<25}{profile['index_number']:<15}{grade['course_code']:<15}{grade['score']:<10}{grade['grade']:<10}\n")
+                    if not isinstance(grade, dict):
+                        continue
+                        
+                    name = profile.get('full_name', 'Unknown')
+                    index = profile.get('index_number', 'Unknown')
+                    course = grade.get('course_code', 'Unknown')
+                    score = grade.get('score', 'N/A')
+                    grade_value = grade.get('grade', 'F')
+                    
+                    f.write(f"{name:<25}{index:<15}{course:<15}{score:<10}{grade_value:<10}\n")
 
             logger.info(f"Summary report exported to {filename}")
-            return True
+            return filename
     except Exception as e:
         logger.error(f"Error exporting summary report to TXT: {e}")
-        return False
+        # Create a simple error text file to ensure we return a valid file
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(f"{'='*80}\n")
+                f.write("ERROR GENERATING REPORT\n")
+                f.write(f"{'='*80}\n\n")
+                f.write(f"An error occurred: {str(e)}\n")
+        except Exception as inner_e:
+            logger.error(f"Failed to create error text file: {inner_e}")
+            
+        # Return the filename even in case of error to maintain consistent return type
+        return filename
 
 class PDFReport(FPDF):
     def __init__(self, header_info, *args, **kwargs):
@@ -177,8 +256,13 @@ class PDFReport(FPDF):
 def export_summary_report_pdf(records: list, filename="summary_report.pdf"):
     """
     Exports a detailed and professional summary report of all student records to a PDF file in tabular format.
+    Returns the file path of the generated PDF.
     """
     try:
+        # Ensure the filename has the correct extension
+        if not filename.endswith('.pdf'):
+            filename += '.pdf'
+            
         header_info = get_report_header_info()
         pdf = PDFReport(header_info)
         pdf.alias_nb_pages()
@@ -196,34 +280,116 @@ def export_summary_report_pdf(records: list, filename="summary_report.pdf"):
         if not records:
             pdf.set_font('Arial', '', 12)
             pdf.cell(0, 10, "No student records available.", 0, 1, 'C')
-            logger.info(f"Generated empty summary report: {filename}")
+            pdf.ln(10)
+            pdf.set_font('Arial', '', 10)
+            pdf.cell(0, 10, "This could mean:", 0, 1, 'L')
+            pdf.cell(0, 10, "- No students have been added to the system", 0, 1, 'L')
+            pdf.cell(0, 10, "- No grades have been recorded yet", 0, 1, 'L')
+            pdf.cell(0, 10, "- Database connection issues", 0, 1, 'L')
+            logger.info(f"Generated empty summary report")
+            # Save the PDF to file
             pdf.output(filename)
-            return True
+            return filename
 
-        # Group records by course
+        # Overall summary statistics first
+        total_students = len(records)
+        total_grades = sum(len(student.get('grades', [])) for student in records)
+        
+        pdf.set_font('Arial', 'B', 14)
+        pdf.cell(0, 10, 'Overall Statistics', 0, 1, 'L')
+        pdf.set_font('Arial', '', 12)
+        pdf.cell(0, 10, f"Total Students: {total_students}", 0, 1, 'L')
+        pdf.cell(0, 10, f"Total Grade Records: {total_grades}", 0, 1, 'L')
+        
+        # Calculate overall GPA if we have grades
+        all_scores = []
+        all_grades = []
+        for student in records:
+            for grade in student.get('grades', []):
+                if isinstance(grade, dict):
+                    score = grade.get('score')
+                    if score is not None and isinstance(score, (int, float)):
+                        all_scores.append(score)
+                    grade_letter = grade.get('grade')
+                    if grade_letter:
+                        all_grades.append(grade_letter)
+        
+        if all_scores:
+            avg_score = sum(all_scores) / len(all_scores)
+            pdf.cell(0, 10, f"Overall Average Score: {avg_score:.2f}", 0, 1, 'L')
+        
+        # Grade distribution
+        if all_grades:
+            grade_counts = Counter(all_grades)
+            pdf.ln(5)
+            pdf.set_font('Arial', 'B', 12)
+            pdf.cell(0, 10, 'Grade Distribution:', 0, 1, 'L')
+            pdf.set_font('Arial', '', 10)
+            for grade in ['A', 'B', 'C', 'D', 'F']:
+                count = grade_counts.get(grade, 0)
+                percentage = (count / len(all_grades)) * 100 if all_grades else 0
+                pdf.cell(0, 8, f"Grade {grade}: {count} students ({percentage:.1f}%)", 0, 1, 'L')
+        
+        pdf.ln(10)
+
+        # Group records by course with robust validation
         courses = {}
         for student in records:
+            # Validate student record structure
+            if not isinstance(student, dict):
+                continue
+                
+            if 'grades' not in student or not isinstance(student['grades'], list):
+                continue
+                
+            if 'profile' not in student or not isinstance(student['profile'], dict):
+                continue
+                
             for grade in student['grades']:
-                course_code = grade['course_code']
+                if not isinstance(grade, dict):
+                    continue
+                    
+                course_code = grade.get('course_code')
+                if not course_code:  # Skip if no course code
+                    continue
+                    
                 if course_code not in courses:
                     courses[course_code] = []
-                courses[course_code].append({
-                    'name': student['profile']['full_name'],
-                    'index': student['profile']['index_number'],
-                    'score': grade['score'],
-                    'grade': grade['grade']
-                })
+                    
+                # Get student data safely
+                student_data = {
+                    'name': student['profile'].get('full_name', 'Unknown'),
+                    'index': student['profile'].get('index_number', 'Unknown'),
+                    'score': grade.get('score', 0),
+                    'grade': grade.get('grade', 'F')
+                }
+                courses[course_code].append(student_data)
 
         # Iterate through courses and add sections
         for course_code, students in courses.items():
+            if not students:  # Skip empty courses
+                continue
+                
             pdf.set_font('Arial', 'B', 14)
             pdf.cell(0, 10, f"Course: {course_code}", 0, 1, 'L')
 
-            # Course statistics
-            scores = [student['score'] for student in students]
-            average_score = sum(scores) / len(scores)
-            highest_score = max(scores)
-            lowest_score = min(scores)
+            # Course statistics - safely calculate
+            try:
+                valid_scores = []
+                for student in students:
+                    score = student.get('score')
+                    if score is not None and isinstance(score, (int, float)):
+                        valid_scores.append(score)
+                        
+                if valid_scores:
+                    average_score = sum(valid_scores) / len(valid_scores)
+                    highest_score = max(valid_scores)
+                    lowest_score = min(valid_scores)
+                else:
+                    average_score = highest_score = lowest_score = 0
+            except Exception as e:
+                logger.warning(f"Error calculating course statistics: {e}")
+                average_score = highest_score = lowest_score = 0
 
             pdf.set_font('Arial', '', 12)
             pdf.cell(0, 10, f"Average Score: {average_score:.2f}", 0, 1, 'L')
@@ -241,34 +407,54 @@ def export_summary_report_pdf(records: list, filename="summary_report.pdf"):
             # Add student data with color coding for grades
             pdf.set_font('Arial', '', 10)
             for student in students:
+                if not isinstance(student, dict):
+                    continue
+                    
+                grade_value = student.get('grade', 'F')
                 grade_color = {
                     'A': (0, 128, 0),  # Green
                     'B': (0, 0, 255),  # Blue
                     'C': (255, 255, 0),  # Yellow
                     'D': (255, 165, 0),  # Orange
                     'F': (255, 0, 0)   # Red
-                }.get(student['grade'], (0, 0, 0))  # Default to black
+                }.get(grade_value, (0, 0, 0))  # Default to black
 
                 pdf.set_text_color(*grade_color)
-                pdf.cell(50, 10, student['name'], 1, 0, 'C')
-                pdf.cell(30, 10, student['index'], 1, 0, 'C')
-                pdf.cell(20, 10, str(student['score']), 1, 0, 'C')
-                pdf.cell(20, 10, student['grade'], 1, 1, 'C')
+                pdf.cell(50, 10, str(student.get('name', 'Unknown')), 1, 0, 'C')
+                pdf.cell(30, 10, str(student.get('index', 'Unknown')), 1, 0, 'C')
+                pdf.cell(20, 10, str(student.get('score', 'N/A')), 1, 0, 'C')
+                pdf.cell(20, 10, str(grade_value), 1, 1, 'C')
 
             pdf.set_text_color(0, 0, 0)  # Reset to black
             pdf.ln(10)
 
-        logger.info(f"Summary report exported to {filename}")
+        logger.info(f"Summary report generated successfully: {filename}")
+        # Save the PDF to file
         pdf.output(filename)
-        return True
+        return filename
     except Exception as e:
         logger.error(f"Error exporting summary report to PDF: {e}")
-        return False
+        # Create a simple error PDF to ensure we return a valid file
+        try:
+            error_pdf = PDFReport(get_report_header_info())
+            error_pdf.alias_nb_pages()
+            error_pdf.add_page()
+            error_pdf.set_font('Arial', 'B', 16)
+            error_pdf.cell(0, 10, 'Error Generating Report', 0, 1, 'C')
+            error_pdf.set_font('Arial', '', 12)
+            error_pdf.cell(0, 10, f"An error occurred: {str(e)}", 0, 1, 'C')
+            error_pdf.output(filename)
+        except Exception as inner_e:
+            logger.error(f"Failed to create error PDF: {inner_e}")
+            
+        # Return the filename even in case of error to maintain consistent return type
+        return filename
 
 def export_personal_academic_report(student_index, format_type='pdf'):
     """
     Generates a personal academic report for a specific student.
     Can export to PDF or TXT.
+    Returns the report content - bytes for PDF or string for TXT.
     """
     logger.info(f"generating personal academic report for {student_index} in {format_type} format")
     try:
@@ -285,36 +471,71 @@ def export_personal_academic_report(student_index, format_type='pdf'):
                     record = {**student_data['profile'], **grade}
                     records.append(record)
                 
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"personal_report_{student_index}_{timestamp}"
-                
+                # For API endpoints, we don't need to save to file, just return the content
                 if format_type.lower() == 'pdf':
-                    return export_summary_report_pdf(records, filename + '.pdf')
+                    pdf_path = export_summary_report_pdf(records)
+                    if not pdf_path or not os.path.exists(pdf_path):
+                        logger.error(f"Failed to generate PDF report for student {student_index}")
+                        return None
+                    return pdf_path
                 else:
-                    return export_summary_report_txt(records, filename + '.txt')
+                    # For text reports, we still need a filename for the function to work
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    filename = f"personal_report_{student_index}_{timestamp}.txt"
+                    result = export_summary_report_txt(records, filename)
+                    # If successful, read the file content and return it
+                    if result and os.path.exists(filename):
+                        try:
+                            with open(filename, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            # Clean up the file after reading
+                            try:
+                                os.remove(filename)
+                            except Exception as e:
+                                logger.warning(f"Failed to remove temporary file {filename}: {e}")
+                            return content
+                        except Exception as e:
+                            logger.error(f"Error reading file {filename}: {e}")
+                            return None
+                    logger.error(f"Failed to generate TXT report for student {student_index}")
+                    return None
             else:
                 logger.warning(f"no data found for student {student_index}")
-                return False
+                return None
         else:
             logger.error("database connection failed for personal report")
-            return False
+            return None
     except Exception as e:
         logger.error(f"error generating personal report for {student_index}: {e}")
-        return False
+        return None
 
 def export_admin_comprehensive_report(records, format_type='txt'):
-    """export comprehensive administrative report"""
+    """Export comprehensive administrative report
+    Returns the report content - bytes for PDF or string for TXT.
+    """
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"admin_comprehensive_report_{timestamp}"
-        
         if format_type.lower() == 'pdf':
-            return export_summary_report_pdf(records, filename + '.pdf')
+            return export_summary_report_pdf(records)
         else:
-            return export_summary_report_txt(records, filename + '.txt')
+            # For text reports, we still need a filename for the function to work
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"admin_comprehensive_report_{timestamp}.txt"
+            result = export_summary_report_txt(records, filename)
+            # If successful, read the file content and return it
+            if result and os.path.exists(filename):
+                with open(filename, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                # Clean up the file after reading
+                try:
+                    os.remove(filename)
+                except Exception as e:
+                    logger.warning(f"Failed to remove temporary file {filename}: {e}")
+                return content
+            # Return None instead of filename if we couldn't read it to prevent looping
+            return None
     except Exception as e:
         logger.error(f"error generating admin comprehensive report: {e}")
-        return False
+        return None
 
 def fetch_all_records_with_admin_check(conn):
     """Fetch all records with admin validation."""
@@ -324,3 +545,28 @@ def fetch_all_records_with_admin_check(conn):
         return None
 
     return fetch_all_records(conn)
+
+def aggregate_student_data_for_reports(db_records):
+    """
+    Processes database records into a format suitable for report generation.
+    Returns a list of student records with profile and grades information.
+    """
+    if not db_records:
+        logger.warning("No records provided for report aggregation.")
+        return []
+
+    # Process the records using the existing function
+    processed_records = process_records_for_display(db_records)
+    
+    # processed_records is already a list, so assign directly
+    records_list = processed_records
+    
+    # Add grade letter to each grade record if not present
+    for student in records_list:
+        if 'grades' in student and isinstance(student['grades'], list):
+            for grade in student['grades']:
+                if 'grade' not in grade and 'score' in grade:
+                    grade['grade'] = calculate_grade(grade['score'])
+    
+    logger.info(f"Aggregated {len(records_list)} student records for report generation.")
+    return records_list

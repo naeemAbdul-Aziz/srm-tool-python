@@ -4,7 +4,8 @@
 from fastapi import FastAPI, HTTPException, Depends, status, Query, Path
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+import os
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
@@ -13,7 +14,7 @@ from db import (
     connect_to_db, delete_student_profile, fetch_all_records, insert_student_profile, fetch_student_by_index_number,
     insert_course, fetch_all_courses, fetch_course_by_code, insert_semester, fetch_all_semesters, update_course, update_semester, update_student_profile,
     update_student_score, delete_course, delete_semester, insert_grade,
-    fetch_semester_by_name, create_tables_if_not_exist, fetch_course_by_code, fetch_semester_by_name # Added fetch_course_by_code, fetch_semester_by_name
+    fetch_semester_by_name, create_tables_if_not_exist
 )
 from grade_util import calculate_grade, get_grade_point, calculate_gpa, summarize_grades
 from auth import (
@@ -224,24 +225,22 @@ def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
     Returns user data if authentication successful.
     """
     try:
-        logger.debug(f"Authentication attempt for user: {credentials.username}")
+        logger.debug(f"[AUTH] Attempt for user: {credentials.username}")
+        logger.debug(f"[AUTH] Raw credentials: username={credentials.username}, password={'*' * len(credentials.password) if credentials.password else ''}")
         user = authenticate_user(credentials.username, credentials.password)
-        
         if not user:
-            logger.warning(f"Authentication failed for user: {credentials.username}")
+            logger.warning(f"[AUTH] Authentication failed for user: {credentials.username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid username or password",
                 headers={"WWW-Authenticate": "Basic"},
             )
-        
-        logger.info(f"User authenticated successfully: {credentials.username} ({user.get('role')})")
+        logger.info(f"[AUTH] User authenticated successfully: {credentials.username} ({user.get('role')})")
         return user
-        
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Authentication error for user {credentials.username}: {str(e)}")
+        logger.error(f"[AUTH] Authentication error for user {credentials.username}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication service error"
@@ -380,8 +379,8 @@ def calculate_student_gpa(conn, index_number, semester=None, academic_year=None)
         semester_credits = 0
         
         for grade in grades:
-            credit_hours = grade.get('credit_hours', 0)
-            grade_point = grade.get('grade_point', 0.0)
+            credit_hours = float(grade.get('credit_hours', 0))
+            grade_point = float(grade.get('grade_point', 0.0))
             
             total_points += grade_point * credit_hours
             total_credits += credit_hours
@@ -604,8 +603,8 @@ async def health_check():
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     """Get current authenticated user information"""
     try:
-        logger.info(f"User info requested by: {current_user.get('username')}")
-        
+        logger.info(f"[ME] User info requested by: {current_user.get('username')}")
+        logger.debug(f"[ME] Current user dict: {current_user}")
         user_info = {
             "username": current_user.get('username'),
             "role": current_user.get('role'),
@@ -614,15 +613,14 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         # If the user is a student, add their index number
         if current_user.get('role') == 'student':
             user_info['index_number'] = current_user.get('index_number')
-        
+        logger.debug(f"[ME] Returning user_info: {user_info}")
         return APIResponse(
             success=True,
             message="User information retrieved successfully",
             data=user_info
         )
-        
     except Exception as e:
-        logger.error(f"Error retrieving user info: {str(e)}")
+        logger.error(f"[ME] Error retrieving user info: {str(e)}")
         return APIResponse(
             success=False,
             message="Failed to retrieve user information",
@@ -1756,6 +1754,151 @@ async def get_all_grades_endpoint(
             detail=f"Failed to fetch grades: {str(e)}"
         )
 
+@app.put("/admin/grades/{grade_id}", response_model=APIResponse)
+async def update_grade_endpoint(
+    grade_id: str,
+    grade_update: dict,
+    current_user: dict = Depends(require_admin_role)
+):
+    """Update an existing grade (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} updating grade: {grade_id}")
+        
+        def operation(conn):
+            cursor = conn.cursor()
+            
+            # Check if grade exists
+            cursor.execute("SELECT grade_id FROM grades WHERE grade_id = %s", (grade_id,))
+            if not cursor.fetchone():
+                raise ValueError(f"Grade with ID {grade_id} not found")
+            
+            # Build update query dynamically
+            update_fields = []
+            values = []
+            
+            # If score is provided, recalculate letter grade and grade point
+            if 'score' in grade_update:
+                score = grade_update['score']
+                letter_grade = calculate_grade(score)
+                grade_point = get_grade_point(score)
+                
+                update_fields.extend(["score = %s", "grade = %s", "grade_point = %s"])
+                values.extend([score, letter_grade, grade_point])
+            else:
+                # Fallback to direct letter grade and grade point updates
+                if 'letter_grade' in grade_update:
+                    update_fields.append("grade = %s")
+                    values.append(grade_update['letter_grade'])
+                
+                if 'grade_point' in grade_update:
+                    update_fields.append("grade_point = %s")
+                    values.append(grade_update['grade_point'])
+            
+            if not update_fields:
+                raise ValueError("No valid fields to update")
+            
+            values.append(grade_id)
+            
+            update_query = f"""
+                UPDATE grades 
+                SET {', '.join(update_fields)}
+                WHERE grade_id = %s
+            """
+            
+            cursor.execute(update_query, values)
+            
+            if cursor.rowcount == 0:
+                raise ValueError("No grade was updated")
+            
+            conn.commit()
+            return cursor.rowcount
+        
+        updated_count = handle_db_operation(operation)
+        
+        if updated_count:
+            logger.info(f"Grade {grade_id} updated successfully")
+            return APIResponse(
+                success=True,
+                message="Grade updated successfully",
+                data={"grade_id": grade_id, "updated_fields": list(grade_update.keys())}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Grade not found or no changes made"
+            )
+            
+    except ValueError as ve:
+        logger.error(f"Validation error updating grade {grade_id}: {str(ve)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update grade {grade_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Grade update failed: {str(e)}"
+        )
+
+@app.delete("/admin/grades/{grade_id}", response_model=APIResponse)
+async def delete_grade_endpoint(
+    grade_id: str,
+    current_user: dict = Depends(require_admin_role)
+):
+    """Delete an existing grade (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} deleting grade: {grade_id}")
+        
+        def operation(conn):
+            cursor = conn.cursor()
+            
+            # Check if grade exists
+            cursor.execute("SELECT grade_id FROM grades WHERE grade_id = %s", (grade_id,))
+            if not cursor.fetchone():
+                raise ValueError(f"Grade with ID {grade_id} not found")
+            
+            # Delete the grade
+            cursor.execute("DELETE FROM grades WHERE grade_id = %s", (grade_id,))
+            
+            if cursor.rowcount == 0:
+                raise ValueError("No grade was deleted")
+            
+            conn.commit()
+            return cursor.rowcount
+        
+        deleted_count = handle_db_operation(operation)
+        
+        if deleted_count:
+            logger.info(f"Grade {grade_id} deleted successfully")
+            return APIResponse(
+                success=True,
+                message="Grade deleted successfully",
+                data={"grade_id": grade_id}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Grade not found"
+            )
+            
+    except ValueError as ve:
+        logger.error(f"Validation error deleting grade {grade_id}: {str(ve)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete grade {grade_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Grade deletion failed: {str(e)}"
+        )
+
 # ========================================
 # ADMIN ENDPOINTS - USER MANAGEMENT
 # ========================================
@@ -1949,6 +2092,33 @@ async def generate_summary_report_endpoint(
     format: str = Query("json", description="Report format (json/pdf/txt)")
 ):
     """Generate comprehensive summary report (Admin only)"""
+    return await generate_summary_report_common(current_user, semester, academic_year, format)
+
+@app.get("/admin/reports/summary/pdf", response_model=APIResponse)
+async def generate_summary_report_pdf_endpoint(
+    current_user: dict = Depends(require_admin_role),
+    semester: Optional[str] = Query(None, description="Filter by semester"),
+    academic_year: Optional[str] = Query(None, description="Filter by academic year")
+):
+    """Generate comprehensive summary report in PDF format (Admin only)"""
+    return await generate_summary_report_common(current_user, semester, academic_year, "pdf")
+
+@app.get("/admin/reports/summary/txt", response_model=APIResponse)
+async def generate_summary_report_txt_endpoint(
+    current_user: dict = Depends(require_admin_role),
+    semester: Optional[str] = Query(None, description="Filter by semester"),
+    academic_year: Optional[str] = Query(None, description="Filter by academic year")
+):
+    """Generate comprehensive summary report in TXT format (Admin only)"""
+    return await generate_summary_report_common(current_user, semester, academic_year, "txt")
+
+async def generate_summary_report_common(
+    current_user: dict,
+    semester: Optional[str] = None,
+    academic_year: Optional[str] = None,
+    format: str = "json"
+):
+    """Generate comprehensive summary report (Admin only)"""
     try:
         logger.info(f"Admin {current_user.get('username')} generating summary report")
         
@@ -1965,11 +2135,43 @@ async def generate_summary_report_endpoint(
         
         if report_data:
             logger.info(f"Summary report generated successfully in {format} format")
-            return APIResponse(
-                success=True,
-                message=f"Summary report generated successfully ({format})",
-                data=report_data
-            )
+            
+            # For PDF and TXT formats, we need to return the file content directly
+            if format in ["pdf", "txt"]:
+                # Get the file path from the report data
+                file_path = report_data.get(f"{format}_path")
+                if file_path and os.path.exists(file_path):
+                    # Read the file content
+                    with open(file_path, "rb") as f:
+                        file_content = f.read()
+                    
+                    # Clean up the file after reading
+                    try:
+                        os.remove(file_path)
+                    except Exception as e:
+                        logger.warning(f"Failed to remove temporary file {file_path}: {e}")
+                    
+                    # Return the file content directly
+                    return Response(
+                        content=file_content,
+                        media_type="application/pdf" if format == "pdf" else "text/plain",
+                        headers={
+                            "Content-Disposition": f"attachment; filename=summary_report.{format}"
+                        }
+                    )
+                else:
+                    return APIResponse(
+                        success=False,
+                        message=f"Failed to generate {format.upper()} report",
+                        data=None
+                    )
+            else:
+                # For JSON format, return the report data as usual
+                return APIResponse(
+                    success=True,
+                    message=f"Summary report generated successfully ({format})",
+                    data=report_data
+                )
         else:
             return APIResponse(
                 success=True,
@@ -2565,13 +2767,89 @@ def generate_comprehensive_report(conn, semester=None, academic_year=None, forma
         
         if format == "pdf":
             all_records = fetch_all_records(conn)
-            student_records = all_records.get('students', []) if all_records else []
-            pdf_path = export_summary_report_pdf(student_records, f"summary_report_{semester or 'all'}.pdf")
+            if all_records and all_records.get('students') and all_records.get('grades'):
+                # Transform the data structure for the PDF report
+                student_records = []
+                students_dict = {s['student_id']: s for s in all_records['students']}
+                
+                # Group grades by student
+                student_grades = {}
+                for grade in all_records['grades']:
+                    student_id = None
+                    # Find student_id from index_number
+                    for sid, student in students_dict.items():
+                        if student['index_number'] == grade['index_number']:
+                            student_id = sid
+                            break
+                    
+                    if student_id:
+                        if student_id not in student_grades:
+                            student_grades[student_id] = []
+                        student_grades[student_id].append({
+                            'course_code': grade['course_code'],
+                            'course_title': grade['course_title'],
+                            'semester_name': grade['semester_name'],
+                            'academic_year': grade['academic_year'],
+                            'score': grade['score'],
+                            'grade': grade['grade'],
+                            'grade_point': grade['grade_point']
+                        })
+                
+                # Create the expected structure
+                for student_id, student_profile in students_dict.items():
+                    student_record = {
+                        'profile': student_profile,
+                        'grades': student_grades.get(student_id, [])
+                    }
+                    student_records.append(student_record)
+                
+                pdf_path = export_summary_report_pdf(student_records, f"summary_report_{semester or 'all'}.pdf")
+            else:
+                # Create empty report if no data
+                pdf_path = export_summary_report_pdf([], f"summary_report_{semester or 'all'}.pdf")
             report_data["pdf_path"] = pdf_path
         elif format == "txt":
             all_records = fetch_all_records(conn)
-            student_records = all_records.get('students', []) if all_records else []
-            txt_path = export_summary_report_txt(student_records, f"summary_report_{semester or 'all'}.txt")
+            if all_records and all_records.get('students') and all_records.get('grades'):
+                # Transform the data structure for the TXT report
+                student_records = []
+                students_dict = {s['student_id']: s for s in all_records['students']}
+                
+                # Group grades by student
+                student_grades = {}
+                for grade in all_records['grades']:
+                    student_id = None
+                    # Find student_id from index_number
+                    for sid, student in students_dict.items():
+                        if student['index_number'] == grade['index_number']:
+                            student_id = sid
+                            break
+                    
+                    if student_id:
+                        if student_id not in student_grades:
+                            student_grades[student_id] = []
+                        student_grades[student_id].append({
+                            'course_code': grade['course_code'],
+                            'course_title': grade['course_title'],
+                            'semester_name': grade['semester_name'],
+                            'academic_year': grade['academic_year'],
+                            'score': grade['score'],
+                            'grade': grade['grade'],
+                            'grade_point': grade['grade_point']
+                        })
+                
+                # Create the expected structure
+                for student_id, student_profile in students_dict.items():
+                    student_record = {
+                        'profile': student_profile,
+                        'grades': student_grades.get(student_id, [])
+                    }
+                    student_records.append(student_record)
+                
+                txt_path = export_summary_report_txt(student_records, f"summary_report_{semester or 'all'}.txt")
+            else:
+                # Create empty report if no data
+                txt_path = export_summary_report_txt([], f"summary_report_{semester or 'all'}.txt")
             report_data["txt_path"] = txt_path
         
         return report_data
