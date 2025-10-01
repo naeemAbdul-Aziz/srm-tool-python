@@ -63,6 +63,11 @@ def process_records_for_display(records):
     student_records = {}
     for record in records:
         try:
+            # Ensure record is a dictionary
+            if not isinstance(record, dict):
+                logger.warning(f"Skipping non-dict record: {type(record)}")
+                continue
+                
             index_number = record.get('index_number', 'unknown')
             if index_number not in student_records:
                 student_records[index_number] = {
@@ -73,10 +78,15 @@ def process_records_for_display(records):
             if 'course_code' in record and record.get('score') is not None:
                 student_records[index_number]['grades'].append(process_student_grades(record))
         except Exception as e:
-            logger.error(f"Error processing record for index_number {record.get('index_number', 'unknown')}: {e}")
+            logger.error(f"Error processing record for index_number {record.get('index_number', 'unknown') if isinstance(record, dict) else 'unknown'}: {e}")
 
-    logger.info(f"Processed {len(student_records)} student records.")
-    return student_records
+    # Convert to list format expected by report functions
+    result = []
+    for index_number, data in student_records.items():
+        result.append(data)
+    
+    logger.info(f"Processed {len(result)} student records.")
+    return result
 
 def export_summary_report_txt(records: list, filename="summary_report.txt"):
     """
@@ -463,17 +473,33 @@ def export_personal_academic_report(student_index, format_type='pdf'):
             student_data = fetch_student_by_index_number(conn, student_index)
             conn.close()
 
-            if student_data and student_data.get('profile') and student_data.get('grades'):
-                # process_records_for_display expects a list of flattened records
-                # so we need to transform student_data back into that format for consistency
-                records = []
-                for grade in student_data['grades']:
-                    record = {**student_data['profile'], **grade}
-                    records.append(record)
+            if student_data and student_data.get('grades') is not None:
+                # Transform the data structure to match what the report functions expect
+                student_record = {
+                    'profile': {
+                        'student_id': student_data.get('student_id'),
+                        'index_number': student_data.get('index_number'),
+                        'full_name': student_data.get('full_name'),
+                        'dob': student_data.get('dob'),
+                        'gender': student_data.get('gender'),
+                        'contact_email': student_data.get('contact_email'),
+                        'contact_phone': student_data.get('contact_phone'),
+                        'program': student_data.get('program'),
+                        'year_of_study': student_data.get('year_of_study'),
+                        'created_at': student_data.get('created_at'),
+                        'updated_at': student_data.get('updated_at')
+                    },
+                    'grades': list(student_data.get('grades', []))
+                }
+                
+                # Convert to list format expected by report functions
+                student_records = [student_record]
                 
                 # For API endpoints, we don't need to save to file, just return the content
                 if format_type.lower() == 'pdf':
-                    pdf_path = export_summary_report_pdf(records)
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    filename = f"personal_report_{student_index}_{timestamp}.pdf"
+                    pdf_path = export_summary_report_pdf(student_records, filename)
                     if not pdf_path or not os.path.exists(pdf_path):
                         logger.error(f"Failed to generate PDF report for student {student_index}")
                         return None
@@ -482,7 +508,7 @@ def export_personal_academic_report(student_index, format_type='pdf'):
                     # For text reports, we still need a filename for the function to work
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     filename = f"personal_report_{student_index}_{timestamp}.txt"
-                    result = export_summary_report_txt(records, filename)
+                    result = export_summary_report_txt(student_records, filename)
                     # If successful, read the file content and return it
                     if result and os.path.exists(filename):
                         try:
@@ -555,18 +581,51 @@ def aggregate_student_data_for_reports(db_records):
         logger.warning("No records provided for report aggregation.")
         return []
 
-    # Process the records using the existing function
-    processed_records = process_records_for_display(db_records)
-    
-    # processed_records is already a list, so assign directly
-    records_list = processed_records
-    
-    # Add grade letter to each grade record if not present
-    for student in records_list:
-        if 'grades' in student and isinstance(student['grades'], list):
-            for grade in student['grades']:
+    # Handle the structure returned by fetch_all_records
+    if isinstance(db_records, dict) and 'students' in db_records and 'grades' in db_records:
+        students = db_records['students']
+        grades = db_records['grades']
+        
+        # Create a mapping of students by index_number
+        students_by_index = {}
+        for student in students:
+            if isinstance(student, dict) and 'index_number' in student:
+                students_by_index[student['index_number']] = student
+        
+        # Group grades by student index_number
+        grades_by_student = {}
+        for grade in grades:
+            if isinstance(grade, dict) and 'index_number' in grade:
+                index_num = grade['index_number']
+                if index_num not in grades_by_student:
+                    grades_by_student[index_num] = []
+                
+                # Add grade letter if not present
                 if 'grade' not in grade and 'score' in grade:
-                    grade['grade'] = calculate_grade(grade['score'])
-    
-    logger.info(f"Aggregated {len(records_list)} student records for report generation.")
-    return records_list
+                    try:
+                        grade['grade'] = calculate_grade(grade['score'])
+                    except Exception as e:
+                        logger.warning(f"Error calculating grade for score {grade['score']}: {e}")
+                        grade['grade'] = 'F'
+                        
+                grades_by_student[index_num].append(grade)
+        
+        # Combine students with their grades
+        records_list = []
+        for index_num, student_profile in students_by_index.items():
+            student_record = {
+                'profile': student_profile,
+                'grades': grades_by_student.get(index_num, [])
+            }
+            records_list.append(student_record)
+        
+        logger.info(f"Aggregated {len(records_list)} student records for report generation.")
+        return records_list
+    else:
+        # Fallback to original processing if different structure
+        logger.warning("Unexpected data structure, attempting fallback processing")
+        if isinstance(db_records, list):
+            return process_records_for_display(db_records)
+        else:
+            logger.error(f"Cannot process data structure: {type(db_records)}")
+            return []

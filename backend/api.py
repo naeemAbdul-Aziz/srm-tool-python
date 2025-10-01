@@ -1,7 +1,7 @@
 # api.py - FastAPI application for Student Result Management System
 # Production-ready REST API with comprehensive endpoints, authentication, and error handling
 
-from fastapi import FastAPI, HTTPException, Depends, status, Query, Path
+from fastapi import FastAPI, HTTPException, Depends, status, Query, Path, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -2202,6 +2202,107 @@ async def generate_summary_report_common(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Report generation failed: {str(e)}"
+        )
+
+# STUDENT ENDPOINTS - PERSONAL REPORTS
+@app.get("/student/report/pdf")
+async def download_student_personal_report_pdf(
+    current_user: dict = Depends(require_student_role)
+):
+    """Download personal academic report in PDF format (Student only)"""
+    try:
+        logger.info(f"Student {current_user.get('username')} downloading personal PDF report")
+        
+        # Get student's index number from their profile
+        student_index = current_user.get('user_data', {}).get('index_number')
+        if not student_index:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student index number not found in profile"
+            )
+        
+        # Import the personal report function
+        from report_utils import export_personal_academic_report
+        
+        pdf_path = export_personal_academic_report(student_index, 'pdf')
+        
+        if pdf_path and os.path.exists(pdf_path):
+            # Read the file content
+            with open(pdf_path, "rb") as f:
+                file_content = f.read()
+            
+            # Clean up the file after reading
+            try:
+                os.remove(pdf_path)
+            except Exception as e:
+                logger.warning(f"Failed to remove temporary file {pdf_path}: {e}")
+            
+            # Return the file content directly
+            return Response(
+                content=file_content,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f"attachment; filename=personal_academic_report_{student_index}.pdf"
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Unable to generate personal academic report"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Personal PDF report generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Personal PDF report generation failed: {str(e)}"
+        )
+
+@app.get("/student/report/txt")
+async def download_student_personal_report_txt(
+    current_user: dict = Depends(require_student_role)
+):
+    """Download personal academic report in TXT format (Student only)"""
+    try:
+        logger.info(f"Student {current_user.get('username')} downloading personal TXT report")
+        
+        # Get student's index number from their profile
+        student_index = current_user.get('user_data', {}).get('index_number')
+        if not student_index:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student index number not found in profile"
+            )
+        
+        # Import the personal report function
+        from report_utils import export_personal_academic_report
+        
+        txt_content = export_personal_academic_report(student_index, 'txt')
+        
+        if txt_content:
+            # Return the file content directly
+            return Response(
+                content=txt_content.encode('utf-8'),
+                media_type="text/plain",
+                headers={
+                    "Content-Disposition": f"attachment; filename=personal_academic_report_{student_index}.txt"
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Unable to generate personal academic report"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Personal TXT report generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Personal TXT report generation failed: {str(e)}"
         )
 
 @app.get("/admin/analytics/dashboard", response_model=APIResponse)

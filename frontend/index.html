@@ -215,6 +215,49 @@
             animation: slideInRight 0.4s ease-out;
         }
         
+        /* Enhanced Student Card Hover Effects */
+        .student-card {
+            transform: translateY(0);
+            border-color: #e5e7eb;
+        }
+        
+        .student-card:hover {
+            transform: translateY(-2px);
+            border-color: #d1d5db;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Quick Action Button Animations */
+        .quick-action-btn {
+            transform: scale(0.8);
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+        
+        .student-card:hover .quick-action-btn {
+            transform: scale(1);
+            opacity: 1;
+        }
+        
+        .quick-action-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Checkbox fade-in effect */
+        .student-card .bulk-checkbox {
+            transition: opacity 0.2s ease;
+        }
+        
+        /* Avatar pulse effect on hover */
+        .student-card:hover .w-14.h-14 {
+            animation: avatarPulse 2s infinite;
+        }
+        
+        @keyframes avatarPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -2846,7 +2889,12 @@
                         displayMessage('grade-edit-message', 'Grade updated successfully!', 'success');
                         setTimeout(() => {
                             closeModal();
-                            fetchAndRenderGrades(); // Refresh the grade list
+                            // Refresh grades data if pagination is available, otherwise use legacy method
+                            if (typeof refreshGradesData === 'function' && gradesPaginationState?.isLoaded) {
+                                refreshGradesData();
+                            } else if (typeof fetchAndRenderGrades === 'function') {
+                                fetchAndRenderGrades();
+                            }
                         }, 1500);
                     } else {
                         displayMessage('grade-edit-error', result.message, 'error');
@@ -3228,12 +3276,32 @@
                                 <h4 class="text-xl font-semibold text-gray-800">Student Directory</h4>
                                 <p class="text-sm text-gray-600 mt-1">Manage student profiles and perform bulk operations</p>
                             </div>
-                            <button id="load-all-students-button" data-loaded="false" class="bg-green-600 text-white py-2.5 px-5 rounded-lg font-medium hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 transition-colors">
-                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                </svg>
-                                Load Students
-                            </button>
+                            <div class="flex items-center space-x-3">
+                                <!-- Page Size Selector -->
+                                <div class="flex items-center space-x-2">
+                                    <label for="students-per-page" class="text-sm text-gray-600">Per page:</label>
+                                    <select id="students-per-page" class="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="10">10</option>
+                                        <option value="20" selected>20</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                                <button id="load-all-students-button" data-loaded="false" class="bg-green-600 text-white py-2.5 px-5 rounded-lg font-medium hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 transition-colors">
+                                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                    </svg>
+                                    Load Students
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Pagination Info Bar -->
+                        <div id="students-pagination-info" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex items-center justify-between text-sm">
+                                <div id="students-count-info" class="text-blue-800"></div>
+                                <div id="students-loading-progress" class="text-blue-600"></div>
+                            </div>
                         </div>
                         
                         <!-- Bulk Operations Panel - Always visible but contextual -->
@@ -3276,7 +3344,7 @@
                     </div>
 
                     
-                    <p id="student-list-loading" class="text-center text-gray-600 py-6 hidden">Loading students...</p>
+                    
                     <p id="student-list-error" class="text-red-600 text-center py-6 hidden"></p>
                     <div id="student-list-container" class="rounded-md">
                         <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -3285,6 +3353,30 @@
                             </svg>
                             <h3 class="mt-2 text-sm font-medium text-gray-900">No students loaded</h3>
                             <p class="mt-1 text-sm text-gray-500">Click "Load Students" to view all students or use search filters to find specific students.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div id="students-pagination-controls" class="hidden mt-6 flex items-center justify-between bg-white px-4 py-3 border border-gray-200 rounded-lg">
+                        <div class="flex items-center text-sm text-gray-700">
+                            <span id="students-pagination-showing">Showing 1 to 20 of 100 students</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="students-pagination-first" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                First
+                            </button>
+                            <button id="students-pagination-prev" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                Previous
+                            </button>
+                            <div id="students-pagination-pages" class="flex items-center space-x-1">
+                                <!-- Page numbers will be dynamically inserted here -->
+                            </div>
+                            <button id="students-pagination-next" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                            <button id="students-pagination-last" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Last
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -3310,7 +3402,6 @@
 
             // --- Updated Student Management with Enhanced Pagination ---
             const studentListContainer = document.getElementById('student-list-container');
-            const studentListLoading = document.getElementById('student-list-loading');
             const studentListError = document.getElementById('student-list-error');
 
             // Initialize pagination manager for students
@@ -3319,6 +3410,229 @@
             let studentSearchInterface = null;
             let studentVirtualScroll = null;
             let useVirtualScrolling = false; // Toggle for virtual scrolling vs traditional pagination
+
+            // Simple Students Pagination State
+            let studentsPaginationState = {
+                currentPage: 1,
+                pageSize: 20,
+                totalStudents: 0,
+                totalPages: 0,
+                allStudents: [],
+                isLoaded: false
+            };
+
+            // Initialize simple students pagination controls
+            const initializeStudentsPagination = () => {
+                const pageSize = document.getElementById('students-per-page');
+                const paginationInfo = document.getElementById('students-pagination-info');
+                const countInfo = document.getElementById('students-count-info');
+                const progressInfo = document.getElementById('students-loading-progress');
+                const paginationControls = document.getElementById('students-pagination-controls');
+                const showingText = document.getElementById('students-pagination-showing');
+                const firstBtn = document.getElementById('students-pagination-first');
+                const prevBtn = document.getElementById('students-pagination-prev');
+                const nextBtn = document.getElementById('students-pagination-next');
+                const lastBtn = document.getElementById('students-pagination-last');
+                const pagesContainer = document.getElementById('students-pagination-pages');
+
+                // Page size change handler
+                pageSize.addEventListener('change', (e) => {
+                    studentsPaginationState.pageSize = parseInt(e.target.value);
+                    studentsPaginationState.currentPage = 1;
+                    if (studentsPaginationState.isLoaded) {
+                        renderStudentsPage();
+                        updateStudentsPaginationUI();
+                    }
+                });
+
+                // Navigation button handlers
+                firstBtn.addEventListener('click', () => {
+                    if (studentsPaginationState.currentPage > 1) {
+                        studentsPaginationState.currentPage = 1;
+                        renderStudentsPage();
+                        updateStudentsPaginationUI();
+                    }
+                });
+
+                prevBtn.addEventListener('click', () => {
+                    if (studentsPaginationState.currentPage > 1) {
+                        studentsPaginationState.currentPage--;
+                        renderStudentsPage();
+                        updateStudentsPaginationUI();
+                    }
+                });
+
+                nextBtn.addEventListener('click', () => {
+                    if (studentsPaginationState.currentPage < studentsPaginationState.totalPages) {
+                        studentsPaginationState.currentPage++;
+                        renderStudentsPage();
+                        updateStudentsPaginationUI();
+                    }
+                });
+
+                lastBtn.addEventListener('click', () => {
+                    if (studentsPaginationState.currentPage < studentsPaginationState.totalPages) {
+                        studentsPaginationState.currentPage = studentsPaginationState.totalPages;
+                        renderStudentsPage();
+                        updateStudentsPaginationUI();
+                    }
+                });
+            };
+
+            // Update pagination UI state
+            const updateStudentsPaginationUI = () => {
+                const showingText = document.getElementById('students-pagination-showing');
+                const firstBtn = document.getElementById('students-pagination-first');
+                const prevBtn = document.getElementById('students-pagination-prev');
+                const nextBtn = document.getElementById('students-pagination-next');
+                const lastBtn = document.getElementById('students-pagination-last');
+                const pagesContainer = document.getElementById('students-pagination-pages');
+                const paginationControls = document.getElementById('students-pagination-controls');
+
+                if (!studentsPaginationState.isLoaded || studentsPaginationState.totalStudents === 0) {
+                    paginationControls.classList.add('hidden');
+                    return;
+                }
+
+                // Calculate display ranges
+                const startRecord = (studentsPaginationState.currentPage - 1) * studentsPaginationState.pageSize + 1;
+                const endRecord = Math.min(studentsPaginationState.currentPage * studentsPaginationState.pageSize, studentsPaginationState.totalStudents);
+
+                // Update showing text
+                showingText.textContent = `Showing ${startRecord} to ${endRecord} of ${studentsPaginationState.totalStudents} students`;
+
+                // Update button states
+                firstBtn.disabled = studentsPaginationState.currentPage <= 1;
+                prevBtn.disabled = studentsPaginationState.currentPage <= 1;
+                nextBtn.disabled = studentsPaginationState.currentPage >= studentsPaginationState.totalPages;
+                lastBtn.disabled = studentsPaginationState.currentPage >= studentsPaginationState.totalPages;
+
+                // Generate page numbers
+                generateStudentPageNumbers();
+
+                // Show pagination controls
+                paginationControls.classList.remove('hidden');
+            };
+
+            // Generate page number buttons
+            const generateStudentPageNumbers = () => {
+                const pagesContainer = document.getElementById('students-pagination-pages');
+                pagesContainer.innerHTML = '';
+
+                const currentPage = studentsPaginationState.currentPage;
+                const totalPages = studentsPaginationState.totalPages;
+
+                // Show max 5 page numbers
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                
+                // Adjust if we're near the end
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.className = `px-3 py-1 text-sm border rounded hover:bg-gray-50 ${
+                        i === currentPage 
+                            ? 'bg-blue-600 text-white border-blue-600 font-medium' 
+                            : 'border-gray-300'
+                    }`;
+                    
+                    if (i !== currentPage) {
+                        pageBtn.addEventListener('click', () => {
+                            studentsPaginationState.currentPage = i;
+                            renderStudentsPage();
+                            updateStudentsPaginationUI();
+                        });
+                    }
+                    
+                    pagesContainer.appendChild(pageBtn);
+                }
+            };
+
+            // Render current page of students
+            const renderStudentsPage = () => {
+                const startIndex = (studentsPaginationState.currentPage - 1) * studentsPaginationState.pageSize;
+                const endIndex = startIndex + studentsPaginationState.pageSize;
+                const pageStudents = studentsPaginationState.allStudents.slice(startIndex, endIndex);
+                
+                renderStudentCards(pageStudents);
+            };
+
+            // Load all students with progress tracking and chunked loading
+            const loadAllStudentsWithPagination = async () => {
+                const paginationInfo = document.getElementById('students-pagination-info');
+                const countInfo = document.getElementById('students-count-info');
+                const progressInfo = document.getElementById('students-loading-progress');
+
+                try {
+                    // Show loading info
+                    paginationInfo.classList.remove('hidden');
+                    progressInfo.textContent = 'Loading students...';
+                    
+                    // Start with empty array and load in chunks
+                    let allStudents = [];
+                    let skip = 0;
+                    const chunkSize = 1000; // Maximum allowed by backend
+                    let hasMore = true;
+                    let totalFetched = 0;
+
+                    while (hasMore) {
+                        progressInfo.textContent = `Loading students... (${totalFetched} loaded)`;
+                        
+                        const response = await api.searchStudents({}, skip, chunkSize);
+                        
+                        if (response.success && response.data.students) {
+                            const students = response.data.students;
+                            allStudents = allStudents.concat(students);
+                            totalFetched += students.length;
+                            
+                            // Update progress
+                            countInfo.textContent = `Loaded ${totalFetched} students`;
+                            
+                            // Check if we got fewer records than requested (indicating end of data)
+                            if (students.length < chunkSize) {
+                                hasMore = false;
+                            } else {
+                                skip += chunkSize;
+                            }
+                        } else {
+                            hasMore = false;
+                            if (!response.success) {
+                                throw new Error(response.message || 'Failed to load students');
+                            }
+                        }
+                    }
+
+                    // Update pagination state
+                    studentsPaginationState.allStudents = allStudents;
+                    studentsPaginationState.totalStudents = allStudents.length;
+                    studentsPaginationState.totalPages = Math.ceil(allStudents.length / studentsPaginationState.pageSize);
+                    studentsPaginationState.currentPage = 1;
+                    studentsPaginationState.isLoaded = true;
+                    
+                    // Update UI
+                    countInfo.textContent = `Loaded ${studentsPaginationState.totalStudents} students`;
+                    progressInfo.textContent = 'Ready';
+                    
+                    // Render first page
+                    renderStudentsPage();
+                    updateStudentsPaginationUI();
+                    
+                    // Auto-hide info after success
+                    setTimeout(() => {
+                        paginationInfo.classList.add('hidden');
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error('Error loading students:', error);
+                    progressInfo.textContent = 'Error loading students';
+                    countInfo.textContent = error.message;
+                    studentListContainer.innerHTML = `<p class="text-red-600 text-center py-6">${error.message}</p>`;
+                }
+            };
 
             const initializeStudentPagination = () => {
                 // Create pagination manager
@@ -3538,7 +3852,6 @@
                     studentListError.classList.remove('hidden');
                     hideSkeletonLoading(); // Make sure to hide skeleton on error
                 } finally {
-                    studentListLoading.classList.add('hidden');
                     isLoadingStudents = false; // Reset flag
                 }
             };
@@ -3603,7 +3916,7 @@
                 // Use document fragment for better performance
                 const fragment = document.createDocumentFragment();
                 const studentsGrid = document.createElement('div');
-                studentsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+                studentsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
                 studentsGrid.id = 'students-grid';
 
                 students.forEach((student, index) => {
@@ -3621,7 +3934,7 @@
 
             const createStudentCard = (student, index = 0) => {
                 const card = document.createElement('div');
-                card.className = 'student-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 hover-lift fade-in';
+                card.className = 'student-card bg-white border border-gray-200 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover-lift fade-in relative group';
                 card.dataset.studentName = student.full_name;
                 card.dataset.studentIndex = student.index_number;
                 card.dataset.program = student.program || '';
@@ -3637,46 +3950,46 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-start">
-                        <div class="flex items-start space-x-3">
+                        <div class="flex items-start space-x-2 sm:space-x-3">
                             <input type="checkbox" class="bulk-checkbox student-checkbox mt-1" 
                                    value="${student.id}" data-student-id="${student.id}" />
                             <div class="flex-1 min-w-0">
-                                <div class="flex items-center space-x-3 mb-3">
-                                    <div class="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                                <div class="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
+                                    <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-sm">
                                         ${initials}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <h4 class="student-name text-lg font-semibold text-gray-900 truncate">${student.full_name}</h4>
-                                        <p class="text-sm text-gray-600 truncate">${student.index_number}</p>
+                                        <h4 class="student-name text-base sm:text-lg font-semibold text-gray-900 truncate">${student.full_name}</h4>
+                                        <p class="text-xs sm:text-sm text-gray-600 truncate">${student.index_number}</p>
                                     </div>
                                 </div>
-                                <div class="space-y-2">
-                                    <p class="student-email text-sm text-gray-600 truncate">
+                                <div class="space-y-1.5 sm:space-y-2">
+                                    <p class="student-email text-xs sm:text-sm text-gray-600 truncate">
                                         <span class="inline-flex items-center">
-                                            <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
                                             </svg>
                                             ${student.contact_email || 'No email'}
                                         </span>
                                     </p>
-                                    <p class="student-course text-sm text-gray-600 truncate">
+                                    <p class="student-course text-xs sm:text-sm text-gray-600 truncate">
                                         <span class="inline-flex items-center">
-                                            <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                                             </svg>
                                             ${student.program || 'N/A'}
                                         </span>
                                     </p>
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between mt-3">
                                     ${yearBadge}
                                     <div class="flex space-x-1">
                                         <button data-action="edit" data-index="${student.index_number}" 
-                                                class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                                class="px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                                                 title="Edit student">
                                             Edit
                                         </button>
                                         <button data-action="delete" data-index="${student.index_number}" 
-                                                class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                                                class="px-2 py-1 sm:px-3 sm:py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
                                                 title="Delete student">
                                             Delete
                                         </button>
@@ -3806,6 +4119,55 @@
                 let searchTimeout;
                 let selectedSuggestionIndex = -1;
                 let suggestions = [];
+                
+                // Real-time search with debouncing
+                const performRealTimeSearch = async (searchTerm) => {
+                    if (!searchTerm.trim()) {
+                        // If search is empty, reload all students
+                        await fetchAndRenderStudents(false);
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const searchSpinner = document.getElementById('search-spinner');
+                    if (searchSpinner) searchSpinner.classList.remove('hidden');
+                    
+                    try {
+                        // Build search filters
+                        const filters = { name: searchTerm.trim() };
+                        
+                        // Get other filter values if they exist
+                        const programInput = document.getElementById('search-program');
+                        const yearInput = document.getElementById('search-year'); 
+                        const genderInput = document.getElementById('search-gender');
+                        
+                        if (programInput?.value) filters.program = programInput.value;
+                        if (yearInput?.value) filters.year_of_study = parseInt(yearInput.value);
+                        if (genderInput?.value) filters.gender = genderInput.value;
+                        
+                        // Perform search
+                        if (studentPaginationManager) {
+                            await studentPaginationManager.search(filters, 0);
+                            const data = await studentPaginationManager.goToPage(1);
+                            if (data && data.records) {
+                                handleStudentDataUpdate(data);
+                            }
+                        } else {
+                            // Fallback search
+                            await fetchAndRenderStudents(true);
+                        }
+                        
+                        // Update search history
+                        if (searchTerm.trim().length >= 2) {
+                            addToSearchHistory(searchTerm.trim());
+                        }
+                        
+                    } catch (error) {
+                        console.error('Real-time search error:', error);
+                    } finally {
+                        if (searchSpinner) searchSpinner.classList.add('hidden');
+                    }
+                };
                 
                 // Search history management
                 const getSearchHistory = () => {
@@ -3976,6 +4338,23 @@
                         clearSearchBtn.classList.add('hidden');
                         hideAutocomplete();
                     }
+                    
+                    // Clear previous timeout
+                    if (searchTimeout) {
+                        clearTimeout(searchTimeout);
+                    }
+                    
+                    // Debounced real-time search (300ms delay)
+                    searchTimeout = setTimeout(async () => {
+                        await performRealTimeSearch(value);
+                        
+                        // Update search results summary
+                        if (window.updateSearchResultsSummary) {
+                            const isSearchActive = value.length > 0;
+                            const studentCards = document.querySelectorAll('.student-card');
+                            window.updateSearchResultsSummary(studentCards.length, isSearchActive);
+                        }
+                    }, 300);
 
                     // Show spinner during search
                     searchSpinner.classList.remove('hidden');
@@ -4416,15 +4795,8 @@
                 });
             };
 
-            // Initialize enhanced search
-            setupEnhancedSearch();
-            
-            // Initialize bulk operations
-            setupBulkOperations();
-
-
-
-
+            // Initialize simple pagination controls
+            initializeStudentsPagination();
             
             // Enhanced Load All / Hide Students functionality
             loadAllStudentsButton.addEventListener('click', async () => {
@@ -4432,16 +4804,10 @@
                 const isCurrentlyLoaded = loadAllStudentsButton.dataset.loaded === 'true';
                 
                 if (!isCurrentlyLoaded) {
-                    // Load students
+                    // Load students with pagination
                     loadAllStudentsButton.disabled = true;
-                    loadAllStudentsButton.innerHTML = `
-                        <svg class="w-4 h-4 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        Loading...
-                    `;
                     
-                    await fetchAndRenderStudents(false);
+                    await loadAllStudentsWithPagination();
                     
                     loadAllStudentsButton.innerHTML = `
                         <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4455,7 +4821,18 @@
                     // Enable bulk operations
                     if (selectAllCheckbox) selectAllCheckbox.disabled = false;
                 } else {
-                    // Hide students
+                    // Hide students and reset pagination
+                    studentsPaginationState.isLoaded = false;
+                    studentsPaginationState.allStudents = [];
+                    studentsPaginationState.totalStudents = 0;
+                    studentsPaginationState.currentPage = 1;
+                    
+                    // Hide pagination controls
+                    const paginationControls = document.getElementById('students-pagination-controls');
+                    const paginationInfo = document.getElementById('students-pagination-info');
+                    paginationControls.classList.add('hidden');
+                    paginationInfo.classList.add('hidden');
+                    
                     studentListContainer.innerHTML = `
                         <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4466,7 +4843,7 @@
                         </div>
                     `;
                     
-                    // Hide pagination components
+                    // Hide pagination components (legacy cleanup)
                     if (studentPaginationUI && document.getElementById('student-pagination')) {
                         document.getElementById('student-pagination').innerHTML = '';
                     }
@@ -4498,6 +4875,12 @@
                 }
             });
 
+            // Initialize enhanced search
+            setupEnhancedSearch();
+            
+            // Initialize bulk operations
+            setupBulkOperations();
+
             // Don't auto-fetch students on page load - let user search explicitly
             // Users can click "Search Students" to load the initial data
         };
@@ -4527,11 +4910,30 @@
                             <h4 class="text-lg font-semibold text-gray-700">Course Catalog</h4>
                             <p class="text-sm text-gray-500 mt-1">Manage courses with detailed information and easy access</p>
                         </div>
-                        <button id="load-all-courses-button" class="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
-                            Load Courses
-                        </button>
+                        <div class="flex items-center space-x-3">
+                            <!-- Page Size Selector -->
+                            <div class="flex items-center space-x-2">
+                                <label for="courses-per-page" class="text-sm text-gray-600">Per page:</label>
+                                <select id="courses-per-page" class="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <button id="load-all-courses-button" class="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
+                                Load Courses
+                            </button>
+                        </div>
                     </div>
-                    <p id="course-list-loading" class="text-center text-gray-600 py-6 hidden">Loading courses...</p>
+                    
+                    <!-- Pagination Info Bar -->
+                    <div id="courses-pagination-info" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center justify-between text-sm">
+                            <div id="courses-count-info" class="text-blue-800"></div>
+                            <div id="courses-loading-progress" class="text-blue-600"></div>
+                        </div>
+                    </div>
                     <p id="course-list-error" class="text-red-600 text-center py-6 hidden"></p>
                     <div id="course-list-container" class="rounded-md">
                         <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -4540,6 +4942,30 @@
                             </svg>
                             <h3 class="mt-2 text-sm font-medium text-gray-900">No courses loaded</h3>
                             <p class="mt-1 text-sm text-gray-500">Click "Load Courses" to view the course catalog.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div id="courses-pagination-controls" class="hidden mt-6 flex items-center justify-between bg-white px-4 py-3 border border-gray-200 rounded-lg">
+                        <div class="flex items-center text-sm text-gray-700">
+                            <span id="courses-pagination-showing">Showing 1 to 20 of 100 courses</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="courses-pagination-first" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                First
+                            </button>
+                            <button id="courses-pagination-prev" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                Previous
+                            </button>
+                            <div id="courses-pagination-pages" class="flex items-center space-x-1">
+                                <!-- Page numbers will be dynamically inserted here -->
+                            </div>
+                            <button id="courses-pagination-next" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                            <button id="courses-pagination-last" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Last
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -4551,11 +4977,204 @@
             const addCourseError = document.getElementById('add-course-error');
             const loadAllCoursesButton = document.getElementById('load-all-courses-button');
             const courseListContainer = document.getElementById('course-list-container');
-            const courseListLoading = document.getElementById('course-list-loading');
             const courseListError = document.getElementById('course-list-error');
 
+            // Simple Courses Pagination State
+            let coursesPaginationState = {
+                currentPage: 1,
+                pageSize: 20,
+                totalCourses: 0,
+                totalPages: 0,
+                allCourses: [],
+                isLoaded: false
+            };
+
+            // Initialize simple courses pagination controls
+            const initializeCoursesPagination = () => {
+                const pageSize = document.getElementById('courses-per-page');
+                const paginationInfo = document.getElementById('courses-pagination-info');
+                const countInfo = document.getElementById('courses-count-info');
+                const progressInfo = document.getElementById('courses-loading-progress');
+                const paginationControls = document.getElementById('courses-pagination-controls');
+                const showingText = document.getElementById('courses-pagination-showing');
+                const firstBtn = document.getElementById('courses-pagination-first');
+                const prevBtn = document.getElementById('courses-pagination-prev');
+                const nextBtn = document.getElementById('courses-pagination-next');
+                const lastBtn = document.getElementById('courses-pagination-last');
+                const pagesContainer = document.getElementById('courses-pagination-pages');
+
+                // Page size change handler
+                pageSize.addEventListener('change', (e) => {
+                    coursesPaginationState.pageSize = parseInt(e.target.value);
+                    coursesPaginationState.currentPage = 1;
+                    if (coursesPaginationState.isLoaded) {
+                        renderCoursesPage();
+                        updateCoursesPaginationUI();
+                    }
+                });
+
+                // Navigation button handlers
+                firstBtn.addEventListener('click', () => {
+                    if (coursesPaginationState.currentPage > 1) {
+                        coursesPaginationState.currentPage = 1;
+                        renderCoursesPage();
+                        updateCoursesPaginationUI();
+                    }
+                });
+
+                prevBtn.addEventListener('click', () => {
+                    if (coursesPaginationState.currentPage > 1) {
+                        coursesPaginationState.currentPage--;
+                        renderCoursesPage();
+                        updateCoursesPaginationUI();
+                    }
+                });
+
+                nextBtn.addEventListener('click', () => {
+                    if (coursesPaginationState.currentPage < coursesPaginationState.totalPages) {
+                        coursesPaginationState.currentPage++;
+                        renderCoursesPage();
+                        updateCoursesPaginationUI();
+                    }
+                });
+
+                lastBtn.addEventListener('click', () => {
+                    if (coursesPaginationState.currentPage < coursesPaginationState.totalPages) {
+                        coursesPaginationState.currentPage = coursesPaginationState.totalPages;
+                        renderCoursesPage();
+                        updateCoursesPaginationUI();
+                    }
+                });
+            };
+
+            // Update pagination UI state
+            const updateCoursesPaginationUI = () => {
+                const showingText = document.getElementById('courses-pagination-showing');
+                const firstBtn = document.getElementById('courses-pagination-first');
+                const prevBtn = document.getElementById('courses-pagination-prev');
+                const nextBtn = document.getElementById('courses-pagination-next');
+                const lastBtn = document.getElementById('courses-pagination-last');
+                const pagesContainer = document.getElementById('courses-pagination-pages');
+                const paginationControls = document.getElementById('courses-pagination-controls');
+
+                if (!coursesPaginationState.isLoaded || coursesPaginationState.totalCourses === 0) {
+                    paginationControls.classList.add('hidden');
+                    return;
+                }
+
+                // Calculate display ranges
+                const startRecord = (coursesPaginationState.currentPage - 1) * coursesPaginationState.pageSize + 1;
+                const endRecord = Math.min(coursesPaginationState.currentPage * coursesPaginationState.pageSize, coursesPaginationState.totalCourses);
+
+                // Update showing text
+                showingText.textContent = `Showing ${startRecord} to ${endRecord} of ${coursesPaginationState.totalCourses} courses`;
+
+                // Update button states
+                firstBtn.disabled = coursesPaginationState.currentPage <= 1;
+                prevBtn.disabled = coursesPaginationState.currentPage <= 1;
+                nextBtn.disabled = coursesPaginationState.currentPage >= coursesPaginationState.totalPages;
+                lastBtn.disabled = coursesPaginationState.currentPage >= coursesPaginationState.totalPages;
+
+                // Generate page numbers
+                generateCoursePageNumbers();
+
+                // Show pagination controls
+                paginationControls.classList.remove('hidden');
+            };
+
+            // Generate page number buttons
+            const generateCoursePageNumbers = () => {
+                const pagesContainer = document.getElementById('courses-pagination-pages');
+                pagesContainer.innerHTML = '';
+
+                const currentPage = coursesPaginationState.currentPage;
+                const totalPages = coursesPaginationState.totalPages;
+
+                // Show max 5 page numbers
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                
+                // Adjust if we're near the end
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.className = `px-3 py-1 text-sm border rounded hover:bg-gray-50 ${
+                        i === currentPage 
+                            ? 'bg-blue-600 text-white border-blue-600 font-medium' 
+                            : 'border-gray-300'
+                    }`;
+                    
+                    if (i !== currentPage) {
+                        pageBtn.addEventListener('click', () => {
+                            coursesPaginationState.currentPage = i;
+                            renderCoursesPage();
+                            updateCoursesPaginationUI();
+                        });
+                    }
+                    
+                    pagesContainer.appendChild(pageBtn);
+                }
+            };
+
+            // Render current page of courses
+            const renderCoursesPage = () => {
+                const startIndex = (coursesPaginationState.currentPage - 1) * coursesPaginationState.pageSize;
+                const endIndex = startIndex + coursesPaginationState.pageSize;
+                const pageCourses = coursesPaginationState.allCourses.slice(startIndex, endIndex);
+                
+                renderCourseCards(pageCourses);
+            };
+
+            // Load all courses with progress tracking
+            const loadAllCoursesWithPagination = async () => {
+                const paginationInfo = document.getElementById('courses-pagination-info');
+                const countInfo = document.getElementById('courses-count-info');
+                const progressInfo = document.getElementById('courses-loading-progress');
+
+                try {
+                    // Show loading info
+                    paginationInfo.classList.remove('hidden');
+                    progressInfo.textContent = 'Loading courses...';
+                    
+                    // Fetch all courses
+                    const response = await api.getAllCourses();
+                    
+                    if (response.success && response.data.courses) {
+                        coursesPaginationState.allCourses = response.data.courses;
+                        coursesPaginationState.totalCourses = response.data.courses.length;
+                        coursesPaginationState.totalPages = Math.ceil(coursesPaginationState.totalCourses / coursesPaginationState.pageSize);
+                        coursesPaginationState.currentPage = 1;
+                        coursesPaginationState.isLoaded = true;
+                        
+                        // Update UI
+                        countInfo.textContent = `Loaded ${coursesPaginationState.totalCourses} courses`;
+                        progressInfo.textContent = 'Ready';
+                        
+                        // Render first page
+                        renderCoursesPage();
+                        updateCoursesPaginationUI();
+                        
+                        // Auto-hide info after success
+                        setTimeout(() => {
+                            paginationInfo.classList.add('hidden');
+                        }, 2000);
+                        
+                    } else {
+                        throw new Error(response.message || 'Failed to load courses');
+                    }
+                } catch (error) {
+                    console.error('Error loading courses:', error);
+                    progressInfo.textContent = 'Error loading courses';
+                    countInfo.textContent = error.message;
+                    courseListContainer.innerHTML = `<p class="text-red-600 text-center py-6">${error.message}</p>`;
+                }
+            };
+
             const fetchAndRenderCourses = async () => {
-                courseListLoading.classList.remove('hidden');
                 courseListError.classList.add('hidden');
                 courseListContainer.innerHTML = '';
                 try {
@@ -4573,8 +5192,6 @@
                 } catch (error) {
                     courseListError.textContent = error.message || 'An error occurred while fetching courses.';
                     courseListError.classList.remove('hidden');
-                } finally {
-                    courseListLoading.classList.add('hidden');
                 }
             };
 
@@ -4634,6 +5251,12 @@
                 }
             };
 
+            const refreshCourseData = async () => {
+                if (coursesPaginationState.isLoaded) {
+                    await loadAllCoursesWithPagination();
+                }
+            };
+
             addCourseForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 addCourseButton.disabled = true;
@@ -4651,7 +5274,7 @@
                     if (result.success) {
                         displayMessage('add-course-message', result.message, 'success');
                         addCourseForm.reset();
-                        fetchAndRenderCourses();
+                        await refreshCourseData(); // Use pagination refresh
                     } else {
                         displayMessage('add-course-error', result.message, 'error');
                     }
@@ -4681,7 +5304,7 @@
                                     const result = await api.deleteCourse(courseCode);
                                     if (result.success) {
                                         displayMessage('course-list-message', result.message, 'success');
-                                        fetchAndRenderCourses();
+                                        await refreshCourseData(); // Use pagination refresh
                                     } else {
                                         displayMessage('course-list-error', result.message, 'error');
                                     }
@@ -4694,12 +5317,31 @@
                 }
             });
 
-            // Toggle functionality for Load All / Hide Courses
-            loadAllCoursesButton.addEventListener('click', () => {
+            // Initialize courses pagination controls
+            initializeCoursesPagination();
+
+            // Toggle functionality for Load All / Hide Courses with pagination
+            loadAllCoursesButton.addEventListener('click', async () => {
                 if (loadAllCoursesButton.textContent.trim() === 'Load Courses') {
-                    fetchAndRenderCourses();
+                    loadAllCoursesButton.disabled = true;
+                    
+                    await loadAllCoursesWithPagination();
+                    
                     loadAllCoursesButton.textContent = 'Hide Courses';
+                    loadAllCoursesButton.disabled = false;
                 } else {
+                    // Hide courses and reset pagination
+                    coursesPaginationState.isLoaded = false;
+                    coursesPaginationState.allCourses = [];
+                    coursesPaginationState.totalCourses = 0;
+                    coursesPaginationState.currentPage = 1;
+                    
+                    // Hide pagination controls
+                    const paginationControls = document.getElementById('courses-pagination-controls');
+                    const paginationInfo = document.getElementById('courses-pagination-info');
+                    paginationControls.classList.add('hidden');
+                    paginationInfo.classList.add('hidden');
+                    
                     courseListContainer.innerHTML = `
                         <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4734,15 +5376,62 @@
                     </div>
 
                     <div class="mb-6 flex justify-between items-center">
-                        <h4 class="text-lg font-semibold text-gray-700">All Semesters</h4>
-                        <button id="load-all-semesters-button" class="bg-green-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50">
-                            Load All Semesters
-                        </button>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-700">All Semesters</h4>
+                            <p class="text-sm text-gray-500 mt-1">Manage semester records with pagination</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <!-- Page Size Selector -->
+                            <div class="flex items-center space-x-2">
+                                <label for="semesters-per-page" class="text-sm text-gray-600">Per page:</label>
+                                <select id="semesters-per-page" class="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <button id="load-all-semesters-button" class="bg-green-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50">
+                                Load All Semesters
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination Info Bar -->
+                    <div id="semesters-pagination-info" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center justify-between text-sm">
+                            <div id="semesters-count-info" class="text-blue-800"></div>
+                            <div id="semesters-loading-progress" class="text-blue-600"></div>
+                        </div>
                     </div>
                     <p id="semester-list-loading" class="text-center text-gray-600 py-6 hidden">Loading semesters...</p>
                     <p id="semester-list-error" class="text-red-600 text-center py-6 hidden"></p>
                     <div id="semester-list-container" class="overflow-x-auto rounded-md border border-gray-200">
                         <p class="text-gray-600 text-center py-6">Click "Load All Semesters" to view all semesters.</p>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div id="semesters-pagination-controls" class="hidden mt-6 flex items-center justify-between bg-white px-4 py-3 border border-gray-200 rounded-lg">
+                        <div class="flex items-center text-sm text-gray-700">
+                            <span id="semesters-pagination-showing">Showing 1 to 10 of 50 semesters</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="semesters-pagination-first" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                First
+                            </button>
+                            <button id="semesters-pagination-prev" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                Previous
+                            </button>
+                            <div id="semesters-pagination-pages" class="flex items-center space-x-1">
+                                <!-- Page numbers will be dynamically inserted here -->
+                            </div>
+                            <button id="semesters-pagination-next" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                            <button id="semesters-pagination-last" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Last
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -4754,6 +5443,241 @@
             const semesterListContainer = document.getElementById('semester-list-container');
             const semesterListLoading = document.getElementById('semester-list-loading');
             const semesterListError = document.getElementById('semester-list-error');
+
+            // Semesters Pagination State
+            let semestersPaginationState = {
+                currentPage: 1,
+                pageSize: 10,
+                totalSemesters: 0,
+                totalPages: 0,
+                allSemesters: [],
+                isLoaded: false
+            };
+
+            // Initialize semesters pagination controls
+            const initializeSemestersPagination = () => {
+                const pageSize = document.getElementById('semesters-per-page');
+                const paginationInfo = document.getElementById('semesters-pagination-info');
+                const countInfo = document.getElementById('semesters-count-info');
+                const progressInfo = document.getElementById('semesters-loading-progress');
+                const paginationControls = document.getElementById('semesters-pagination-controls');
+                const showingText = document.getElementById('semesters-pagination-showing');
+                const firstBtn = document.getElementById('semesters-pagination-first');
+                const prevBtn = document.getElementById('semesters-pagination-prev');
+                const nextBtn = document.getElementById('semesters-pagination-next');
+                const lastBtn = document.getElementById('semesters-pagination-last');
+                const pagesContainer = document.getElementById('semesters-pagination-pages');
+
+                // Page size change handler
+                pageSize.addEventListener('change', (e) => {
+                    semestersPaginationState.pageSize = parseInt(e.target.value);
+                    semestersPaginationState.currentPage = 1;
+                    if (semestersPaginationState.isLoaded) {
+                        renderSemestersPage();
+                        updateSemestersPaginationUI();
+                    }
+                });
+
+                // Navigation button handlers
+                firstBtn.addEventListener('click', () => {
+                    if (semestersPaginationState.currentPage > 1) {
+                        semestersPaginationState.currentPage = 1;
+                        renderSemestersPage();
+                        updateSemestersPaginationUI();
+                    }
+                });
+
+                prevBtn.addEventListener('click', () => {
+                    if (semestersPaginationState.currentPage > 1) {
+                        semestersPaginationState.currentPage--;
+                        renderSemestersPage();
+                        updateSemestersPaginationUI();
+                    }
+                });
+
+                nextBtn.addEventListener('click', () => {
+                    if (semestersPaginationState.currentPage < semestersPaginationState.totalPages) {
+                        semestersPaginationState.currentPage++;
+                        renderSemestersPage();
+                        updateSemestersPaginationUI();
+                    }
+                });
+
+                lastBtn.addEventListener('click', () => {
+                    if (semestersPaginationState.currentPage < semestersPaginationState.totalPages) {
+                        semestersPaginationState.currentPage = semestersPaginationState.totalPages;
+                        renderSemestersPage();
+                        updateSemestersPaginationUI();
+                    }
+                });
+            };
+
+            // Update semesters pagination UI state
+            const updateSemestersPaginationUI = () => {
+                const showingText = document.getElementById('semesters-pagination-showing');
+                const firstBtn = document.getElementById('semesters-pagination-first');
+                const prevBtn = document.getElementById('semesters-pagination-prev');
+                const nextBtn = document.getElementById('semesters-pagination-next');
+                const lastBtn = document.getElementById('semesters-pagination-last');
+                const pagesContainer = document.getElementById('semesters-pagination-pages');
+                const paginationControls = document.getElementById('semesters-pagination-controls');
+
+                if (!semestersPaginationState.isLoaded || semestersPaginationState.totalSemesters === 0) {
+                    paginationControls.classList.add('hidden');
+                    return;
+                }
+
+                // Calculate display ranges
+                const startRecord = (semestersPaginationState.currentPage - 1) * semestersPaginationState.pageSize + 1;
+                const endRecord = Math.min(semestersPaginationState.currentPage * semestersPaginationState.pageSize, semestersPaginationState.totalSemesters);
+
+                // Update showing text
+                showingText.textContent = `Showing ${startRecord} to ${endRecord} of ${semestersPaginationState.totalSemesters} semesters`;
+
+                // Update button states
+                firstBtn.disabled = semestersPaginationState.currentPage <= 1;
+                prevBtn.disabled = semestersPaginationState.currentPage <= 1;
+                nextBtn.disabled = semestersPaginationState.currentPage >= semestersPaginationState.totalPages;
+                lastBtn.disabled = semestersPaginationState.currentPage >= semestersPaginationState.totalPages;
+
+                // Generate page numbers
+                generateSemesterPageNumbers();
+
+                // Show pagination controls
+                paginationControls.classList.remove('hidden');
+            };
+
+            // Generate semester page number buttons
+            const generateSemesterPageNumbers = () => {
+                const pagesContainer = document.getElementById('semesters-pagination-pages');
+                pagesContainer.innerHTML = '';
+
+                const currentPage = semestersPaginationState.currentPage;
+                const totalPages = semestersPaginationState.totalPages;
+
+                // Show max 5 page numbers
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                
+                // Adjust if we're near the end
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.className = `px-3 py-1 text-sm border rounded hover:bg-gray-50 ${
+                        i === currentPage 
+                            ? 'bg-blue-500 text-white border-blue-500' 
+                            : 'border-gray-300'
+                    }`;
+                    
+                    if (i !== currentPage) {
+                        pageBtn.addEventListener('click', () => {
+                            semestersPaginationState.currentPage = i;
+                            renderSemestersPage();
+                            updateSemestersPaginationUI();
+                        });
+                    }
+                    
+                    pagesContainer.appendChild(pageBtn);
+                }
+            };
+
+            // Render current page of semesters
+            const renderSemestersPage = () => {
+                const startIndex = (semestersPaginationState.currentPage - 1) * semestersPaginationState.pageSize;
+                const endIndex = startIndex + semestersPaginationState.pageSize;
+                const pageSemesters = semestersPaginationState.allSemesters.slice(startIndex, endIndex);
+                
+                renderSemesterTable(pageSemesters);
+            };
+
+            // Render semester table for given semesters
+            const renderSemesterTable = (semesters) => {
+                if (semesters.length === 0) {
+                    semesterListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No semesters found.</p>`;
+                    return;
+                }
+
+                let tableHtml = `
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Semester Name</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Academic Year</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                semesters.forEach(semester => {
+                    tableHtml += `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${semester.semester_name}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${semester.academic_year}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                                    <button data-action="edit" data-name="${semester.semester_name}" class="text-blue-600 hover:text-blue-900 mx-1">Edit</button>
+                                    <button data-action="delete" data-name="${semester.semester_name}" class="text-red-600 hover:text-red-900 mx-1">Delete</button>
+                                </td>
+                            </tr>
+                    `;
+                });
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+                semesterListContainer.innerHTML = tableHtml;
+            };
+
+            // Load all semesters with pagination
+            const loadAllSemestersWithPagination = async () => {
+                const paginationInfo = document.getElementById('semesters-pagination-info');
+                const countInfo = document.getElementById('semesters-count-info');
+                const progressInfo = document.getElementById('semesters-loading-progress');
+
+                try {
+                    // Show loading info
+                    paginationInfo.classList.remove('hidden');
+                    progressInfo.textContent = 'Loading semesters...';
+                    
+                    // Fetch all semesters
+                    const response = await api.getAllSemesters();
+                    
+                    if (response.success) {
+                        semestersPaginationState.allSemesters = response.data.semesters;
+                        semestersPaginationState.totalSemesters = response.data.semesters.length;
+                        semestersPaginationState.totalPages = Math.ceil(semestersPaginationState.totalSemesters / semestersPaginationState.pageSize);
+                        semestersPaginationState.currentPage = 1;
+                        semestersPaginationState.isLoaded = true;
+                        
+                        // Update UI
+                        countInfo.textContent = `Loaded ${semestersPaginationState.totalSemesters} semesters`;
+                        progressInfo.textContent = 'Ready';
+                        
+                        // Render first page
+                        renderSemestersPage();
+                        updateSemestersPaginationUI();
+                        
+                        // Auto-hide info after success
+                        setTimeout(() => {
+                            paginationInfo.classList.add('hidden');
+                        }, 2000);
+                        
+                    } else {
+                        throw new Error(response.message || 'Failed to load semesters');
+                    }
+                } catch (error) {
+                    console.error('Error loading semesters:', error);
+                    progressInfo.textContent = 'Error loading semesters';
+                    countInfo.textContent = error.message;
+                    semesterListContainer.innerHTML = `<p class="text-red-600 text-center py-6">${error.message}</p>`;
+                }
+            };
+
+            // Initialize pagination controls
+            initializeSemestersPagination();
 
             const fetchAndRenderSemesters = async () => {
                 semesterListLoading.classList.remove('hidden');
@@ -4819,7 +5743,12 @@
                     if (result.success) {
                         displayMessage('add-semester-message', result.message, 'success');
                         addSemesterForm.reset();
-                        fetchAndRenderSemesters();
+                        // Refresh pagination if loaded
+                        if (semestersPaginationState.isLoaded) {
+                            await loadAllSemestersWithPagination();
+                        } else {
+                            fetchAndRenderSemesters();
+                        }
                     } else {
                         displayMessage('add-semester-error', result.message, 'error');
                     }
@@ -4842,7 +5771,12 @@
                                     const result = await api.deleteSemester(semesterName);
                                     if (result.success) {
                                         displayMessage('semester-list-message', result.message, 'success');
-                                        fetchAndRenderSemesters();
+                                        // Refresh pagination if loaded
+                                        if (semestersPaginationState.isLoaded) {
+                                            await loadAllSemestersWithPagination();
+                                        } else {
+                                            fetchAndRenderSemesters();
+                                        }
                                     } else {
                                         displayMessage('semester-list-error', result.message, 'error');
                                     }
@@ -4855,13 +5789,30 @@
                 }
             });
             
-            // Toggle functionality for Load All / Hide Semesters
-            loadAllSemestersButton.addEventListener('click', () => {
+            // Toggle functionality for Load All / Hide Semesters with pagination
+            loadAllSemestersButton.addEventListener('click', async () => {
                 if (loadAllSemestersButton.textContent.trim() === 'Load All Semesters') {
-                    fetchAndRenderSemesters();
-                    loadAllSemestersButton.textContent = 'Hide Semesters';
+                    // Load semesters with pagination
+                    loadAllSemestersButton.disabled = true;
+                    
+                    await loadAllSemestersWithPagination();
+                    
+                    loadAllSemestersButton.innerHTML = 'Hide Semesters';
+                    loadAllSemestersButton.disabled = false;
                 } else {
-                    semesterListContainer.innerHTML = '';
+                    // Hide semesters and reset pagination
+                    semestersPaginationState.isLoaded = false;
+                    semestersPaginationState.allSemesters = [];
+                    semestersPaginationState.totalSemesters = 0;
+                    semestersPaginationState.currentPage = 1;
+                    
+                    // Hide pagination controls
+                    const paginationControls = document.getElementById('semesters-pagination-controls');
+                    const paginationInfo = document.getElementById('semesters-pagination-info');
+                    paginationControls.classList.add('hidden');
+                    paginationInfo.classList.add('hidden');
+                    
+                    semesterListContainer.innerHTML = '<p class="text-gray-600 text-center py-6">Click "Load All Semesters" to view all semesters.</p>';
                     loadAllSemestersButton.textContent = 'Load All Semesters';
                 }
             });
@@ -4894,11 +5845,32 @@
                             <h4 class="text-lg font-semibold text-gray-700">Student Grades Overview</h4>
                             <p class="text-sm text-gray-500 mt-1">Organized by student with GPA calculations and expandable details</p>
                         </div>
-                        <button id="load-all-grades-button" class="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
-                            Load Student Grades
-                        </button>
+                        <div class="flex items-center space-x-3">
+                            <!-- Page Size Selector -->
+                            <div class="flex items-center space-x-2">
+                                <label for="grades-per-page" class="text-sm text-gray-600">Per page:</label>
+                                <select id="grades-per-page" class="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <button id="load-all-grades-button" class="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
+                                Load Student Grades
+                            </button>
+                        </div>
                     </div>
-                    <p id="grade-list-loading" class="text-center text-gray-600 py-6 hidden">Loading student grades...</p>
+                    
+                    <!-- Pagination Info Bar -->
+                    <div id="grades-pagination-info" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center justify-between text-sm">
+                            <div id="grades-count-info" class="text-blue-800"></div>
+                            <div id="grades-loading-progress" class="text-blue-600"></div>
+                        </div>
+                    </div>
+                    
+                    
                     <p id="grade-list-error" class="text-red-600 text-center py-6 hidden"></p>
                     <div id="grade-list-container" class="rounded-md">
                         <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -4909,6 +5881,30 @@
                             <p class="mt-1 text-sm text-gray-500">Click "Load Student Grades" to view student performance data.</p>
                         </div>
                     </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div id="grades-pagination-controls" class="hidden mt-6 flex items-center justify-between bg-white px-4 py-3 border border-gray-200 rounded-lg">
+                        <div class="flex items-center text-sm text-gray-700">
+                            <span id="grades-pagination-showing">Showing 1 to 20 of 100 students</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="grades-pagination-first" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                First
+                            </button>
+                            <button id="grades-pagination-prev" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                Previous
+                            </button>
+                            <div id="grades-pagination-pages" class="flex items-center space-x-1">
+                                <!-- Page numbers will be dynamically inserted here -->
+                            </div>
+                            <button id="grades-pagination-next" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                            <button id="grades-pagination-last" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Last
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
             const addGradeForm = document.getElementById('add-grade-form');
@@ -4917,30 +5913,363 @@
             const addGradeError = document.getElementById('add-grade-error');
             const loadAllGradesButton = document.getElementById('load-all-grades-button');
             const gradeListContainer = document.getElementById('grade-list-container');
-            const gradeListLoading = document.getElementById('grade-list-loading');
             const gradeListError = document.getElementById('grade-list-error');
 
+            // Simple Grades Pagination State
+            let gradesPaginationState = {
+                currentPage: 1,
+                pageSize: 20,
+                totalStudents: 0,
+                totalPages: 0,
+                allStudentGrades: {},
+                allStudentsList: [],
+                isLoaded: false
+            };
+
+            // Initialize grades pagination controls
+            const initializeGradesPagination = () => {
+                const pageSize = document.getElementById('grades-per-page');
+                const paginationInfo = document.getElementById('grades-pagination-info');
+                const countInfo = document.getElementById('grades-count-info');
+                const progressInfo = document.getElementById('grades-loading-progress');
+                const paginationControls = document.getElementById('grades-pagination-controls');
+                const showingText = document.getElementById('grades-pagination-showing');
+                const firstBtn = document.getElementById('grades-pagination-first');
+                const prevBtn = document.getElementById('grades-pagination-prev');
+                const nextBtn = document.getElementById('grades-pagination-next');
+                const lastBtn = document.getElementById('grades-pagination-last');
+                const pagesContainer = document.getElementById('grades-pagination-pages');
+
+                // Page size change handler
+                pageSize.addEventListener('change', (e) => {
+                    gradesPaginationState.pageSize = parseInt(e.target.value);
+                    gradesPaginationState.currentPage = 1;
+                    if (gradesPaginationState.isLoaded) {
+                        renderGradesPage();
+                        updateGradesPaginationUI();
+                    }
+                });
+
+                // Navigation button handlers
+                firstBtn.addEventListener('click', () => {
+                    if (gradesPaginationState.currentPage > 1) {
+                        gradesPaginationState.currentPage = 1;
+                        renderGradesPage();
+                        updateGradesPaginationUI();
+                    }
+                });
+
+                prevBtn.addEventListener('click', () => {
+                    if (gradesPaginationState.currentPage > 1) {
+                        gradesPaginationState.currentPage--;
+                        renderGradesPage();
+                        updateGradesPaginationUI();
+                    }
+                });
+
+                nextBtn.addEventListener('click', () => {
+                    if (gradesPaginationState.currentPage < gradesPaginationState.totalPages) {
+                        gradesPaginationState.currentPage++;
+                        renderGradesPage();
+                        updateGradesPaginationUI();
+                    }
+                });
+
+                lastBtn.addEventListener('click', () => {
+                    if (gradesPaginationState.currentPage < gradesPaginationState.totalPages) {
+                        gradesPaginationState.currentPage = gradesPaginationState.totalPages;
+                        renderGradesPage();
+                        updateGradesPaginationUI();
+                    }
+                });
+            };
+
+            // Update grades pagination UI state
+            const updateGradesPaginationUI = () => {
+                const showingText = document.getElementById('grades-pagination-showing');
+                const firstBtn = document.getElementById('grades-pagination-first');
+                const prevBtn = document.getElementById('grades-pagination-prev');
+                const nextBtn = document.getElementById('grades-pagination-next');
+                const lastBtn = document.getElementById('grades-pagination-last');
+                const pagesContainer = document.getElementById('grades-pagination-pages');
+                const paginationControls = document.getElementById('grades-pagination-controls');
+
+                if (!gradesPaginationState.isLoaded || gradesPaginationState.totalStudents === 0) {
+                    paginationControls.classList.add('hidden');
+                    return;
+                }
+
+                // Calculate display ranges
+                const startRecord = (gradesPaginationState.currentPage - 1) * gradesPaginationState.pageSize + 1;
+                const endRecord = Math.min(gradesPaginationState.currentPage * gradesPaginationState.pageSize, gradesPaginationState.totalStudents);
+
+                // Update showing text
+                showingText.textContent = `Showing ${startRecord} to ${endRecord} of ${gradesPaginationState.totalStudents} students`;
+
+                // Update button states
+                firstBtn.disabled = gradesPaginationState.currentPage <= 1;
+                prevBtn.disabled = gradesPaginationState.currentPage <= 1;
+                nextBtn.disabled = gradesPaginationState.currentPage >= gradesPaginationState.totalPages;
+                lastBtn.disabled = gradesPaginationState.currentPage >= gradesPaginationState.totalPages;
+
+                // Generate page numbers
+                generateGradePageNumbers();
+
+                // Show pagination controls
+                paginationControls.classList.remove('hidden');
+            };
+
+            // Generate page number buttons for grades
+            const generateGradePageNumbers = () => {
+                const pagesContainer = document.getElementById('grades-pagination-pages');
+                pagesContainer.innerHTML = '';
+
+                const currentPage = gradesPaginationState.currentPage;
+                const totalPages = gradesPaginationState.totalPages;
+
+                // Show max 5 page numbers
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                
+                // Adjust if we're near the end
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.className = `px-3 py-1 text-sm border rounded hover:bg-gray-50 ${
+                        i === currentPage 
+                            ? 'bg-blue-600 text-white border-blue-600 font-medium' 
+                            : 'border-gray-300'
+                    }`;
+                    
+                    if (i !== currentPage) {
+                        pageBtn.addEventListener('click', () => {
+                            gradesPaginationState.currentPage = i;
+                            renderGradesPage();
+                            updateGradesPaginationUI();
+                        });
+                    }
+                    
+                    pagesContainer.appendChild(pageBtn);
+                }
+            };
+
+            // Render current page of students with grades
+            const renderGradesPage = () => {
+                const startIndex = (gradesPaginationState.currentPage - 1) * gradesPaginationState.pageSize;
+                const endIndex = startIndex + gradesPaginationState.pageSize;
+                const pageStudents = gradesPaginationState.allStudentsList.slice(startIndex, endIndex);
+                
+                // Create subset of student grades for this page
+                const pageStudentGrades = {};
+                pageStudents.forEach(studentIndex => {
+                    if (gradesPaginationState.allStudentGrades[studentIndex]) {
+                        pageStudentGrades[studentIndex] = gradesPaginationState.allStudentGrades[studentIndex];
+                    }
+                });
+                
+                renderStudentCentricGradesPage(pageStudentGrades);
+            };
+
+            // Load all grades with pagination 
+            const loadAllGradesWithPagination = async () => {
+                const paginationInfo = document.getElementById('grades-pagination-info');
+                const countInfo = document.getElementById('grades-count-info');
+                const progressInfo = document.getElementById('grades-loading-progress');
+
+                try {
+                    // Show loading info
+                    paginationInfo.classList.remove('hidden');
+                    progressInfo.textContent = 'Loading grades...';
+                    
+                    // Load all grades with chunked loading
+                    let allGrades = [];
+                    let skip = 0;
+                    const limit = 1000; // Max allowed by backend
+                    let hasMore = true;
+                    
+                    while (hasMore) {
+                        progressInfo.textContent = `Loading grades... (${allGrades.length} loaded so far)`;
+                        const data = await api.getAllGrades({}, skip, limit);
+                        if (data.success && data.data.grades.length > 0) {
+                            allGrades = allGrades.concat(data.data.grades);
+                            skip += limit;
+                            hasMore = data.data.grades.length === limit; // Continue if we got a full batch
+                        } else {
+                            hasMore = false;
+                        }
+                    }
+                    
+                    if (allGrades.length === 0) {
+                        gradeListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No grades found.</p>`;
+                        return;
+                    }
+
+                    // Process grades into student-centric structure
+                    processGradesForPagination(allGrades);
+                    
+                    // Update UI
+                    countInfo.textContent = `Loaded ${allGrades.length} grades for ${gradesPaginationState.totalStudents} students`;
+                    progressInfo.textContent = 'Ready';
+                    
+                    // Render first page
+                    renderGradesPage();
+                    updateGradesPaginationUI();
+                    
+                    // Auto-hide info after success
+                    setTimeout(() => {
+                        paginationInfo.classList.add('hidden');
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error('Error loading grades:', error);
+                    progressInfo.textContent = 'Error loading grades';
+                    countInfo.textContent = error.message;
+                    gradeListContainer.innerHTML = `<p class="text-red-600 text-center py-6">${error.message}</p>`;
+                }
+            };
+
+            // Process grades into pagination-ready structure
+            const processGradesForPagination = (grades) => {
+                // Group grades by student
+                const studentGrades = {};
+                grades.forEach(grade => {
+                    if (!studentGrades[grade.student_index]) {
+                        studentGrades[grade.student_index] = {
+                            student_name: grade.student_name || grade.student_index,
+                            grades: [],
+                            totalCredits: 0,
+                            totalPoints: 0
+                        };
+                    }
+                    studentGrades[grade.student_index].grades.push(grade);
+                    // Calculate GPA (assuming credit hours of 3 for each course for now)
+                    const creditHours = grade.credit_hours || 3;
+                    const gradePoint = grade.grade_point || 0;
+                    studentGrades[grade.student_index].totalCredits += creditHours;
+                    studentGrades[grade.student_index].totalPoints += (gradePoint * creditHours);
+                });
+
+                // Update pagination state
+                gradesPaginationState.allStudentGrades = studentGrades;
+                gradesPaginationState.allStudentsList = Object.keys(studentGrades).sort();
+                gradesPaginationState.totalStudents = gradesPaginationState.allStudentsList.length;
+                gradesPaginationState.totalPages = Math.ceil(gradesPaginationState.totalStudents / gradesPaginationState.pageSize);
+                gradesPaginationState.currentPage = 1;
+                gradesPaginationState.isLoaded = true;
+            };
+
+            // Render student-centric grades for the current page
+            const renderStudentCentricGradesPage = (studentGrades) => {
+                // Simple search interface
+                let html = `
+                    <div class="mb-4">
+                        <input type="text" id="student-search" placeholder="Search students by index or name..." 
+                               class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div id="students-container" class="space-y-4">`;
+
+                // Render each student's grades
+                Object.keys(studentGrades).forEach(studentIndex => {
+                    const student = studentGrades[studentIndex];
+                    const gpa = student.totalCredits > 0 ? (student.totalPoints / student.totalCredits).toFixed(2) : 'N/A';
+                    
+                    html += `
+                        <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                            <div class="p-4 cursor-pointer" onclick="toggleGrades('${studentIndex}')">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <h5 class="font-semibold text-gray-900">${student.student_name}</h5>
+                                        <p class="text-sm text-gray-600">Index: ${studentIndex}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-lg font-bold ${gpa >= 3.0 ? 'text-green-600' : gpa >= 2.0 ? 'text-yellow-600' : 'text-red-600'}">
+                                            GPA: ${gpa}
+                                        </div>
+                                        <p class="text-sm text-gray-500">${student.grades.length} courses</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="grades-${studentIndex}" class="hidden border-t border-gray-200 p-4 bg-gray-50">
+                                <div class="grid gap-2">`;
+                    
+                    student.grades.forEach(grade => {
+                        const gradePoint = parseFloat(grade.grade_point) || 0;
+                        const gradeColor = gradePoint >= 3.0 ? 'text-green-600' : gradePoint >= 2.0 ? 'text-yellow-600' : 'text-red-600';
+                        html += `
+                            <div class="flex justify-between items-center py-2 px-3 bg-white rounded border">
+                                <div>
+                                    <span class="font-medium">${grade.course_code}</span>
+                                    <span class="text-gray-600 ml-2">${grade.semester_name} ${grade.academic_year}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-semibold ${gradeColor}">${grade.score}</span>
+                                    <span class="text-gray-500 text-sm ml-2">(${gradePoint.toFixed(1)})</span>
+                                </div>
+                            </div>`;
+                    });
+                    
+                    html += `
+                                </div>
+                            </div>
+                        </div>`;
+                });
+                
+                html += `</div>`;
+                gradeListContainer.innerHTML = html;
+                
+                // Add search functionality
+                const searchInput = document.getElementById('student-search');
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        const searchTerm = e.target.value.toLowerCase();
+                        const studentCards = document.querySelectorAll('#students-container > div');
+                        
+                        studentCards.forEach(card => {
+                            const studentName = card.querySelector('h5').textContent.toLowerCase();
+                            const studentIndex = card.querySelector('p').textContent.toLowerCase();
+                            const isVisible = studentName.includes(searchTerm) || studentIndex.includes(searchTerm);
+                            card.style.display = isVisible ? 'block' : 'none';
+                        });
+                    });
+                }
+            };
+
+            // Initialize grades pagination controls
+            initializeGradesPagination();
+
             const fetchAndRenderGrades = async () => {
-                gradeListLoading.classList.remove('hidden');
                 gradeListError.classList.add('hidden');
                 gradeListContainer.innerHTML = '';
                 try {
-                    const data = await api.getAllGrades();
-                    if (data.success) {
-                        if (data.data.grades.length === 0) {
-                            gradeListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No grades found.</p>`;
+                    // Load all grades with pagination since we have 4394+ grades
+                    let allGrades = [];
+                    let skip = 0;
+                    const limit = 1000; // Max allowed by backend
+                    let hasMore = true;
+                    
+                    while (hasMore) {
+                        const data = await api.getAllGrades({}, skip, limit);
+                        if (data.success && data.data.grades.length > 0) {
+                            allGrades = allGrades.concat(data.data.grades);
+                            skip += limit;
+                            hasMore = data.data.grades.length === limit; // Continue if we got a full batch
                         } else {
-                            renderStudentCentricGrades(data.data.grades);
+                            hasMore = false;
                         }
+                    }
+                    
+                    if (allGrades.length === 0) {
+                        gradeListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No grades found.</p>`;
                     } else {
-                        gradeListError.textContent = data.message || 'Failed to fetch grades.';
-                        gradeListError.classList.remove('hidden');
+                        renderStudentCentricGrades(allGrades);
                     }
                 } catch (error) {
                     gradeListError.textContent = error.message || 'An error occurred while fetching grades.';
                     gradeListError.classList.remove('hidden');
-                } finally {
-                    gradeListLoading.classList.add('hidden');
                 }
             };
 
@@ -4960,7 +6289,7 @@
                     // Calculate GPA (assuming credit hours of 3 for each course for now)
                     const creditHours = grade.credit_hours || 3;
                     studentGrades[grade.student_index].totalCredits += creditHours;
-                    studentGrades[grade.student_index].totalPoints += (grade.grade_point * creditHours);
+                    studentGrades[grade.student_index].totalPoints += (parseFloat(grade.grade_point) || 0) * creditHours;
                 });
 
                 // Simple search interface
@@ -5122,6 +6451,13 @@
                 }
             };
 
+            // Refresh grades data for pagination
+            const refreshGradesData = async () => {
+                if (gradesPaginationState.isLoaded) {
+                    await loadAllGradesWithPagination();
+                }
+            };
+
             addGradeForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 addGradeButton.disabled = true;
@@ -5139,7 +6475,7 @@
                     if (result.success) {
                         displayMessage('add-grade-message', result.message, 'success');
                         addGradeForm.reset();
-                        fetchAndRenderGrades();
+                        await refreshGradesData(); // Use pagination refresh instead
                     } else {
                         displayMessage('add-grade-error', result.message, 'error');
                     }
@@ -5150,12 +6486,30 @@
                 }
             });
             
-            // Toggle functionality for Load All / Hide Grades
-            loadAllGradesButton.addEventListener('click', () => {
+            // Toggle functionality for Load All / Hide Grades with pagination
+            loadAllGradesButton.addEventListener('click', async () => {
                 if (loadAllGradesButton.textContent.trim() === 'Load Student Grades') {
-                    fetchAndRenderGrades();
+                    // Load grades with pagination
+                    loadAllGradesButton.disabled = true;
+                    
+                    await loadAllGradesWithPagination();
+                    
                     loadAllGradesButton.textContent = 'Hide Grades';
+                    loadAllGradesButton.disabled = false;
                 } else {
+                    // Hide grades and reset pagination
+                    gradesPaginationState.isLoaded = false;
+                    gradesPaginationState.allStudentGrades = {};
+                    gradesPaginationState.allStudentsList = [];
+                    gradesPaginationState.totalStudents = 0;
+                    gradesPaginationState.currentPage = 1;
+                    
+                    // Hide pagination controls
+                    const paginationControls = document.getElementById('grades-pagination-controls');
+                    const paginationInfo = document.getElementById('grades-pagination-info');
+                    paginationControls.classList.add('hidden');
+                    paginationInfo.classList.add('hidden');
+                    
                     gradeListContainer.innerHTML = `
                         <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5190,7 +6544,7 @@
                                     const result = await api.deleteGrade(gradeId);
                                     if (result.success) {
                                         showToast('Grade deleted successfully!', 'success');
-                                        fetchAndRenderGrades();
+                                        await refreshGradesData(); // Use pagination refresh instead
                                     } else {
                                         showToast(result.message, 'error');
                                     }
