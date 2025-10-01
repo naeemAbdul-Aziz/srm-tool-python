@@ -2341,6 +2341,284 @@ async def get_admin_dashboard_endpoint(
             detail=f"Dashboard analytics failed: {str(e)}"
         )
 
+@app.get("/admin/analytics/gpa-stats", response_model=APIResponse)
+async def get_gpa_stats(current_user: dict = Depends(require_admin_role)):
+    """Get overall GPA statistics (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} accessing GPA statistics")
+        
+        def operation(conn):
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("""
+                SELECT 
+                    AVG(grade_point) as average_gpa,
+                    MIN(grade_point) as min_gpa,
+                    MAX(grade_point) as max_gpa,
+                    COUNT(*) as total_grades
+                FROM grades 
+                WHERE grade_point IS NOT NULL
+            """)
+            return cursor.fetchone()
+        
+        stats = handle_db_operation(operation)
+        
+        # Convert to float for JSON serialization
+        if stats and stats['average_gpa']:
+            stats['average_gpa'] = float(stats['average_gpa'])
+            stats['min_gpa'] = float(stats['min_gpa'])
+            stats['max_gpa'] = float(stats['max_gpa'])
+        
+        return APIResponse(
+            success=True,
+            message="GPA statistics retrieved successfully",
+            data=stats
+        )
+        
+    except Exception as e:
+        logger.error(f"GPA statistics failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"GPA statistics failed: {str(e)}"
+        )
+
+@app.get("/admin/analytics/grade-distribution", response_model=APIResponse)
+async def get_grade_distribution(current_user: dict = Depends(require_admin_role)):
+    """Get grade distribution for charts (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} accessing grade distribution")
+        
+        def operation(conn):
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("""
+                SELECT 
+                    grade, 
+                    COUNT(*) as count
+                FROM grades 
+                WHERE grade IS NOT NULL
+                GROUP BY grade
+                ORDER BY grade
+            """)
+            results = cursor.fetchall()
+            
+            labels = [row['grade'] for row in results]
+            values = [row['count'] for row in results]
+            
+            return {"labels": labels, "values": values}
+        
+        distribution = handle_db_operation(operation)
+        
+        return APIResponse(
+            success=True,
+            message="Grade distribution retrieved successfully",
+            data=distribution
+        )
+        
+    except Exception as e:
+        logger.error(f"Grade distribution failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Grade distribution failed: {str(e)}"
+        )
+
+@app.get("/admin/analytics/gpa-trends", response_model=APIResponse)
+async def get_gpa_trends(current_user: dict = Depends(require_admin_role)):
+    """Get GPA trends by semester (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} accessing GPA trends")
+        
+        def operation(conn):
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("""
+                SELECT 
+                    s.semester_name,
+                    s.academic_year,
+                    AVG(g.grade_point) as avg_gpa
+                FROM grades g
+                JOIN semesters s ON g.semester_id = s.semester_id
+                WHERE g.grade_point IS NOT NULL
+                GROUP BY s.semester_id, s.semester_name, s.academic_year
+                ORDER BY s.academic_year, s.semester_name
+            """)
+            results = cursor.fetchall()
+            
+            semesters = [f"{row['semester_name']} {row['academic_year']}" for row in results]
+            gpa_values = [float(row['avg_gpa']) if row['avg_gpa'] else 0 for row in results]
+            
+            return {"semesters": semesters, "gpa_values": gpa_values}
+        
+        trends = handle_db_operation(operation)
+        
+        return APIResponse(
+            success=True,
+            message="GPA trends retrieved successfully",
+            data=trends
+        )
+        
+    except Exception as e:
+        logger.error(f"GPA trends failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"GPA trends failed: {str(e)}"
+        )
+
+@app.get("/admin/analytics/program-performance", response_model=APIResponse)
+async def get_program_performance(current_user: dict = Depends(require_admin_role)):
+    """Get performance by academic program (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} accessing program performance")
+        
+        def operation(conn):
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("""
+                SELECT 
+                    st.program,
+                    AVG(g.grade_point) as avg_gpa,
+                    COUNT(g.grade_id) as total_grades
+                FROM grades g
+                JOIN student_profiles st ON g.student_id = st.student_id
+                WHERE g.grade_point IS NOT NULL AND st.program IS NOT NULL
+                GROUP BY st.program
+                HAVING COUNT(g.grade_id) >= 5
+                ORDER BY avg_gpa DESC
+                LIMIT 10
+            """)
+            results = cursor.fetchall()
+            
+            programs = [row['program'] for row in results]
+            gpa_values = [float(row['avg_gpa']) if row['avg_gpa'] else 0 for row in results]
+            
+            return {"programs": programs, "gpa_values": gpa_values}
+        
+        performance = handle_db_operation(operation)
+        
+        return APIResponse(
+            success=True,
+            message="Program performance retrieved successfully",
+            data=performance
+        )
+        
+    except Exception as e:
+        logger.error(f"Program performance failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Program performance failed: {str(e)}"
+        )
+
+@app.get("/admin/analytics/dashboard-insights", response_model=APIResponse)
+async def get_dashboard_insights(current_user: dict = Depends(require_admin_role)):
+    """Get comprehensive dashboard insights (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} accessing dashboard insights")
+        
+        def operation(conn):
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # Get recent activity (last 10 grades added)
+            cursor.execute("""
+                SELECT 
+                    sp.full_name as student_name,
+                    c.course_title as course_name,
+                    g.grade,
+                    g.created_at
+                FROM grades g
+                JOIN student_profiles sp ON g.student_id = sp.student_id
+                JOIN courses c ON g.course_id = c.course_id
+                ORDER BY g.created_at DESC
+                LIMIT 5
+            """)
+            recent_activities = cursor.fetchall()
+            
+            # Get semester with most activity
+            cursor.execute("""
+                SELECT 
+                    s.semester_name,
+                    s.academic_year,
+                    COUNT(g.grade_id) as grade_count
+                FROM semesters s
+                LEFT JOIN grades g ON s.semester_id = g.semester_id
+                GROUP BY s.semester_id, s.semester_name, s.academic_year
+                ORDER BY grade_count DESC
+                LIMIT 1
+            """)
+            active_semester = cursor.fetchone()
+            
+            # Get grade distribution summary
+            cursor.execute("""
+                SELECT 
+                    COUNT(CASE WHEN grade = 'A' THEN 1 END) as a_count,
+                    COUNT(CASE WHEN grade = 'B' THEN 1 END) as b_count,
+                    COUNT(CASE WHEN grade = 'C' THEN 1 END) as c_count,
+                    COUNT(CASE WHEN grade = 'D' THEN 1 END) as d_count,
+                    COUNT(CASE WHEN grade = 'F' THEN 1 END) as f_count,
+                    COUNT(*) as total_grades
+                FROM grades
+                WHERE grade IS NOT NULL
+            """)
+            grade_summary = cursor.fetchone()
+            
+            return {
+                "recent_activities": recent_activities,
+                "active_semester": active_semester,
+                "grade_summary": grade_summary
+            }
+        
+        insights = handle_db_operation(operation)
+        
+        return APIResponse(
+            success=True,
+            message="Dashboard insights retrieved successfully",
+            data=insights
+        )
+        
+    except Exception as e:
+        logger.error(f"Dashboard insights failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Dashboard insights failed: {str(e)}"
+        )
+
+@app.get("/admin/analytics/course-enrollment", response_model=APIResponse)
+async def get_course_enrollment(current_user: dict = Depends(require_admin_role)):
+    """Get course enrollment statistics (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} accessing course enrollment")
+        
+        def operation(conn):
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("""
+                SELECT 
+                    c.course_title,
+                    c.course_code,
+                    COUNT(g.grade_id) as enrollment_count
+                FROM courses c
+                LEFT JOIN grades g ON c.course_id = g.course_id
+                GROUP BY c.course_id, c.course_title, c.course_code
+                HAVING COUNT(g.grade_id) > 0
+                ORDER BY enrollment_count DESC
+                LIMIT 10
+            """)
+            results = cursor.fetchall()
+            
+            courses = [f"{row['course_code']} - {row['course_title']}" for row in results]
+            enrollment_counts = [row['enrollment_count'] for row in results]
+            
+            return {"courses": courses, "enrollment_counts": enrollment_counts}
+        
+        enrollment = handle_db_operation(operation)
+        
+        return APIResponse(
+            success=True,
+            message="Course enrollment retrieved successfully",
+            data=enrollment
+        )
+        
+    except Exception as e:
+        logger.error(f"Course enrollment failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Course enrollment failed: {str(e)}"
+        )
+
 # ========================================
 # UNIVERSITY OF GHANA SPECIFIC ENDPOINTS
 # ========================================

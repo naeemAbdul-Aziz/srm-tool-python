@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Result Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <style>
@@ -2994,15 +2995,16 @@
             });
         };
 
-        // --- Admin Dashboard ---
-        const renderAdminDashboard = async () => {
-            let activeTab = sessionStorage.getItem('adminActiveTab') || 'students';
+        // --- Admin View ---
+        const renderAdminView = async () => {
+            let activeTab = sessionStorage.getItem('adminActiveTab') || 'dashboard';
 
             const adminHeaderHtml = `
                 <header class="bg-gray-800 text-white p-4 shadow-md flex flex-col sm:flex-row justify-between items-center">
                     <h1 class="text-2xl font-bold mb-4 sm:mb-0">Admin Dashboard</h1>
                     <nav class="w-full sm:w-auto">
                         <ul class="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-4 overflow-x-auto pb-2">
+                            <li><button data-tab="dashboard" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Dashboard</button></li>
                             <li><button data-tab="students" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Students</button></li>
                             <li><button data-tab="courses" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Courses</button></li>
                             <li><button data-tab="semesters" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Semesters</button></li>
@@ -3058,6 +3060,9 @@
                 adminContentDiv.innerHTML = `<p class="text-center text-gray-600 py-6">Loading ${tab} management...</p>`;
                 try {
                     switch (tab) {
+                        case 'dashboard':
+                            await renderAdminDashboard(adminContentDiv);
+                            break;
                         case 'students':
                             await renderAdminStudentManagement(adminContentDiv);
                             break;
@@ -3088,6 +3093,508 @@
                 } catch (error) {
                     adminContentDiv.innerHTML = `<p class="text-red-600 text-center py-6">Error loading ${tab} management: ${error.message}</p>`;
                 }
+            }
+        };
+
+        // --- Admin Dashboard ---
+        let dashboardDataCache = null;
+        let dashboardChartsCache = {};
+        
+        const renderAdminDashboard = async (parentDiv) => {
+            parentDiv.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">Analytics Dashboard</h3>
+                        <button id="refresh-dashboard" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+                            <span id="refresh-text">Refresh Data</span>
+                            <span id="refresh-spinner" class="hidden ml-2">🔄</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Key Metrics Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-blue-50 p-6 rounded-lg border border-blue-200 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-sm font-medium text-blue-600">Total Students</h4>
+                                <span class="text-blue-500">👥</span>
+                            </div>
+                            <p class="text-3xl font-bold text-blue-900 mb-1" id="total-students">-</p>
+                            <p class="text-xs text-blue-600" id="students-growth">Loading...</p>
+                        </div>
+                        <div class="bg-green-50 p-6 rounded-lg border border-green-200 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-sm font-medium text-green-600">Total Courses</h4>
+                                <span class="text-green-500">📚</span>
+                            </div>
+                            <p class="text-3xl font-bold text-green-900 mb-1" id="total-courses">-</p>
+                            <p class="text-xs text-green-600" id="courses-info">Loading...</p>
+                        </div>
+                        <div class="bg-purple-50 p-6 rounded-lg border border-purple-200 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-sm font-medium text-purple-600">Total Grades</h4>
+                                <span class="text-purple-500">📊</span>
+                            </div>
+                            <p class="text-3xl font-bold text-purple-900 mb-1" id="total-grades">-</p>
+                            <p class="text-xs text-purple-600" id="grades-info">Loading...</p>
+                        </div>
+                        <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-sm font-medium text-yellow-600">Average GPA</h4>
+                                <span class="text-yellow-500">🎯</span>
+                            </div>
+                            <p class="text-3xl font-bold text-yellow-900 mb-1" id="average-gpa">-</p>
+                            <p class="text-xs text-yellow-600" id="gpa-range">Loading...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Stats Row -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                            <h5 class="text-sm font-medium text-indigo-600 mb-2">Active Semesters</h5>
+                            <p class="text-2xl font-bold text-indigo-900" id="active-semesters">-</p>
+                        </div>
+                        <div class="bg-pink-50 p-4 rounded-lg border border-pink-200">
+                            <h5 class="text-sm font-medium text-pink-600 mb-2">Top Performing Program</h5>
+                            <p class="text-lg font-semibold text-pink-900" id="top-program">Loading...</p>
+                        </div>
+                        <div class="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                            <h5 class="text-sm font-medium text-teal-600 mb-2">Recent Activity</h5>
+                            <p class="text-sm text-teal-900" id="recent-activity">Loading...</p>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Grade Distribution Chart -->
+                        <div class="bg-white p-4 rounded-lg border border-gray-200">
+                            <h4 class="text-lg font-semibold mb-3 text-gray-800">Grade Distribution</h4>
+                            <div class="relative h-64">
+                                <canvas id="gradeDistributionChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- GPA Trends Chart -->
+                        <div class="bg-white p-4 rounded-lg border border-gray-200">
+                            <h4 class="text-lg font-semibold mb-3 text-gray-800">GPA Trends by Semester</h4>
+                            <div class="relative h-64">
+                                <canvas id="gpaTrendsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Student Performance Chart -->
+                        <div class="bg-white p-4 rounded-lg border border-gray-200">
+                            <h4 class="text-lg font-semibold mb-3 text-gray-800">Performance by Program</h4>
+                            <div class="relative h-64">
+                                <canvas id="programPerformanceChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Course Popularity Chart -->
+                        <div class="bg-white p-4 rounded-lg border border-gray-200">
+                            <h4 class="text-lg font-semibold mb-3 text-gray-800">Course Enrollment</h4>
+                            <div class="relative h-64">
+                                <canvas id="coursePopularityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Load dashboard data and render charts
+            await loadDashboardData();
+            
+            // Add refresh functionality
+            document.getElementById('refresh-dashboard').addEventListener('click', async () => {
+                const refreshBtn = document.getElementById('refresh-dashboard');
+                const refreshText = document.getElementById('refresh-text');
+                const refreshSpinner = document.getElementById('refresh-spinner');
+                
+                refreshBtn.disabled = true;
+                refreshText.textContent = 'Refreshing...';
+                refreshSpinner.classList.remove('hidden');
+                
+                try {
+                    // Clear cache and reload
+                    dashboardDataCache = null;
+                    dashboardChartsCache = {};
+                    await loadDashboardData(true);
+                } finally {
+                    refreshBtn.disabled = false;
+                    refreshText.textContent = 'Refresh Data';
+                    refreshSpinner.classList.add('hidden');
+                }
+            });
+        };
+
+        const loadDashboardData = async (forceRefresh = false) => {
+            try {
+                // Use cache if available and not forcing refresh
+                if (dashboardDataCache && !forceRefresh) {
+                    updateDashboardUI(dashboardDataCache);
+                    return;
+                }
+                
+                // Show loading states
+                showDashboardLoading();
+                
+                // Load key metrics
+                const [studentsResponse, coursesResponse, gradesResponse, gpaData, semestersResponse, insightsData] = await Promise.all([
+                    api.fetchData('/admin/students?limit=1'),
+                    api.fetchData('/admin/courses?limit=1'),
+                    api.fetchData('/admin/grades?limit=1'),
+                    api.fetchData('/admin/analytics/gpa-stats'),
+                    api.fetchData('/admin/semesters?limit=100'),
+                    api.fetchData('/admin/analytics/dashboard-insights')
+                ]);
+
+                // Cache the data
+                dashboardDataCache = {
+                    students: studentsResponse.data,
+                    courses: coursesResponse.data,
+                    grades: gradesResponse.data,
+                    gpaStats: gpaData.data,
+                    semesters: semestersResponse.data,
+                    insights: insightsData.data
+                };
+                
+                // Update UI
+                updateDashboardUI(dashboardDataCache);
+                
+                // Load chart data only if not cached or forcing refresh
+                if (Object.keys(dashboardChartsCache).length === 0 || forceRefresh) {
+                    await Promise.all([
+                        renderGradeDistributionChart(),
+                        renderGPATrendsChart(),
+                        renderProgramPerformanceChart(),
+                        renderCoursePopularityChart()
+                    ]);
+                }
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showDashboardError(error.message);
+            }
+        };
+        
+        const showDashboardLoading = () => {
+            const loadingElements = ['total-students', 'total-courses', 'total-grades', 'average-gpa', 'active-semesters'];
+            loadingElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.innerHTML = '<div class="animate-pulse bg-gray-300 h-6 w-16 rounded"></div>';
+            });
+            
+            const textElements = ['students-growth', 'courses-info', 'grades-info', 'gpa-range', 'top-program', 'recent-activity'];
+            textElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = 'Loading...';
+            });
+        };
+        
+        const updateDashboardUI = (data) => {
+            // Update metric cards
+            document.getElementById('total-students').textContent = data.students.total || 0;
+            document.getElementById('total-courses').textContent = data.courses.total || 0;
+            document.getElementById('total-grades').textContent = data.grades.total || 0;
+            document.getElementById('average-gpa').textContent = data.gpaStats.average_gpa?.toFixed(2) || 'N/A';
+            
+            // Update additional info with more insights
+            const avgGradesPerStudent = Math.round((data.grades.total || 0) / (data.students.total || 1));
+            document.getElementById('students-growth').textContent = `${data.students.total || 0} enrolled`;
+            document.getElementById('courses-info').textContent = `${data.courses.total || 0} active courses`;
+            document.getElementById('grades-info').textContent = `${avgGradesPerStudent} avg grades/student`;
+            document.getElementById('gpa-range').textContent = data.gpaStats.min_gpa && data.gpaStats.max_gpa ? 
+                `Range: ${data.gpaStats.min_gpa.toFixed(2)} - ${data.gpaStats.max_gpa.toFixed(2)}` : 'No range data';
+            document.getElementById('active-semesters').textContent = data.semesters.total || 0;
+            
+            // Update recent activity with actual data
+            if (data.insights && data.insights.recent_activities && data.insights.recent_activities.length > 0) {
+                const latest = data.insights.recent_activities[0];
+                const timeAgo = latest.created_at ? formatTimeAgo(latest.created_at) : 'recently';
+                document.getElementById('recent-activity').textContent = `Latest: ${latest.student_name} - ${latest.grade} in ${latest.course_name} (${timeAgo})`;
+            } else {
+                document.getElementById('recent-activity').textContent = 'No recent activity';
+            }
+            
+            // Update active semester info
+            if (data.insights && data.insights.active_semester) {
+                const activeSem = data.insights.active_semester;
+                document.getElementById('active-semesters').textContent = `${activeSem.semester_name} ${activeSem.academic_year}`;
+            }
+        };
+        
+        const formatTimeAgo = (dateString) => {
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                return `${diffDays}d ago`;
+            } catch {
+                return 'recently';
+            }
+        };
+        
+        const showDashboardError = (message) => {
+            ['total-students', 'total-courses', 'total-grades', 'average-gpa', 'active-semesters'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = 'Error';
+            });
+            
+            ['students-growth', 'courses-info', 'grades-info', 'gpa-range', 'top-program', 'recent-activity'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = `Error: ${message}`;
+            });
+        };
+
+        const renderGradeDistributionChart = async () => {
+            try {
+                if (dashboardChartsCache.gradeDistribution) {
+                    return; // Chart already rendered
+                }
+                
+                const response = await api.fetchData('/admin/analytics/grade-distribution');
+                const ctx = document.getElementById('gradeDistributionChart').getContext('2d');
+                
+                dashboardChartsCache.gradeDistribution = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: response.data.labels,
+                        datasets: [{
+                            data: response.data.values,
+                            backgroundColor: [
+                                '#10B981', // A
+                                '#3B82F6', // B
+                                '#F59E0B', // C
+                                '#EF4444', // D
+                                '#6B7280'  // F
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error rendering grade distribution chart:', error);
+            }
+        };
+
+        const renderGPATrendsChart = async () => {
+            try {
+                if (dashboardChartsCache.gpaTrends) {
+                    return; // Chart already rendered
+                }
+                
+                const response = await api.fetchData('/admin/analytics/gpa-trends');
+                const ctx = document.getElementById('gpaTrendsChart').getContext('2d');
+                
+                dashboardChartsCache.gpaTrends = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: response.data.semesters,
+                        datasets: [{
+                            label: 'Average GPA',
+                            data: response.data.gpa_values,
+                            borderColor: '#3B82F6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#3B82F6',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 4.0,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    font: { size: 11 }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    font: { size: 11 },
+                                    maxRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error rendering GPA trends chart:', error);
+            }
+        };
+
+        const renderProgramPerformanceChart = async () => {
+            try {
+                if (dashboardChartsCache.programPerformance) {
+                    return; // Chart already rendered
+                }
+                
+                const response = await api.fetchData('/admin/analytics/program-performance');
+                const ctx = document.getElementById('programPerformanceChart').getContext('2d');
+                
+                dashboardChartsCache.programPerformance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: response.data.programs,
+                        datasets: [{
+                            label: 'Average GPA',
+                            data: response.data.gpa_values,
+                            backgroundColor: 'rgba(168, 85, 247, 0.7)',
+                            borderColor: 'rgba(168, 85, 247, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 4.0,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    font: { size: 11 }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    font: { size: 10 },
+                                    maxRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error rendering program performance chart:', error);
+            }
+        };
+
+        const renderCoursePopularityChart = async () => {
+            try {
+                if (dashboardChartsCache.coursePopularity) {
+                    return; // Chart already rendered
+                }
+                
+                const [courseResponse, programResponse] = await Promise.all([
+                    api.fetchData('/admin/analytics/course-enrollment'),
+                    api.fetchData('/admin/analytics/program-performance')
+                ]);
+                
+                const ctx = document.getElementById('coursePopularityChart').getContext('2d');
+                
+                dashboardChartsCache.coursePopularity = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: courseResponse.data.courses,
+                        datasets: [{
+                            label: 'Enrollment Count',
+                            data: courseResponse.data.enrollment_counts,
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    font: { size: 11 }
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    font: { size: 10 }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Update top program info
+                if (programResponse.data.programs && programResponse.data.programs.length > 0) {
+                    document.getElementById('top-program').textContent = programResponse.data.programs[0];
+                }
+                
+            } catch (error) {
+                console.error('Error rendering course popularity chart:', error);
+                document.getElementById('top-program').textContent = 'Data unavailable';
             }
         };
 
@@ -7035,7 +7542,7 @@
                     
                     if (currentUser && currentUser.role === 'admin') {
                         console.log('Rendering admin dashboard'); // Debug log
-                        renderAdminDashboard();
+                        renderAdminView();
                     } else if (currentUser && currentUser.role === 'student') {
                         console.log('Rendering student dashboard'); // Debug log
                         renderStudentDashboard();
