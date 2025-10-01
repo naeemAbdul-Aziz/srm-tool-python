@@ -3000,10 +3000,47 @@
             let activeTab = sessionStorage.getItem('adminActiveTab') || 'dashboard';
 
             const adminHeaderHtml = `
-                <header class="bg-gray-800 text-white p-4 shadow-md flex flex-col sm:flex-row justify-between items-center">
-                    <h1 class="text-2xl font-bold mb-4 sm:mb-0">Admin Dashboard</h1>
-                    <nav class="w-full sm:w-auto">
-                        <ul class="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-4 overflow-x-auto pb-2">
+                <header class="bg-gray-800 text-white p-4 shadow-md">
+                    <div class="flex flex-col lg:flex-row justify-between items-center mb-4">
+                        <h1 class="text-2xl font-bold mb-4 lg:mb-0">Admin Dashboard</h1>
+                        
+                        <!-- Global Search -->
+                        <div class="relative w-full lg:w-96 mb-4 lg:mb-0">
+                            <div class="flex">
+                                <div class="relative flex-1">
+                                    <input 
+                                        type="text" 
+                                        id="global-search-input" 
+                                        placeholder="Search students, courses, grades..." 
+                                        class="w-full pl-10 pr-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        autocomplete="off"
+                                    >
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <button 
+                                    id="advanced-search-button" 
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-r-lg border border-blue-600 focus:ring-2 focus:ring-blue-500"
+                                    title="Advanced Search"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Search Results Dropdown -->
+                            <div id="search-results-dropdown" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto hidden">
+                                <div id="search-results-content" class="p-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <nav class="w-full">
+                        <ul class="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-4 overflow-x-auto pb-2">
                             <li><button data-tab="dashboard" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Dashboard</button></li>
                             <li><button data-tab="students" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Students</button></li>
                             <li><button data-tab="courses" class="tab-button px-3 py-1 rounded-md text-sm font-medium">Courses</button></li>
@@ -3017,6 +3054,27 @@
                         </ul>
                     </nav>
                 </header>
+                
+                <!-- Advanced Search Modal -->
+                <div id="advanced-search-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+                    <div class="flex items-center justify-center min-h-screen p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                            <div class="p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h2 class="text-2xl font-bold text-gray-900">Advanced Search & Filters</h2>
+                                    <button id="close-advanced-search" class="text-gray-400 hover:text-gray-600">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <div id="advanced-search-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <main class="p-4 sm:p-6 lg:p-8">
                     <div id="admin-content" class="bg-white p-6 rounded-lg shadow-sm">
                         </div>
@@ -3051,6 +3109,9 @@
                 setAuthUser(null);
                 sessionStorage.removeItem('adminActiveTab'); // Clear last active tab on logout
             });
+
+            // Setup global search functionality
+            setupGlobalSearch();
 
             // Initial render of the active tab content
             switchTab(activeTab);
@@ -3094,6 +3155,396 @@
                     adminContentDiv.innerHTML = `<p class="text-red-600 text-center py-6">Error loading ${tab} management: ${error.message}</p>`;
                 }
             }
+        };
+
+        // --- Global Search Functionality ---
+        const setupGlobalSearch = () => {
+            const searchInput = document.getElementById('global-search-input');
+            const searchResults = document.getElementById('search-results-dropdown');
+            const searchContent = document.getElementById('search-results-content');
+            const advancedSearchButton = document.getElementById('advanced-search-button');
+            const advancedSearchModal = document.getElementById('advanced-search-modal');
+            const closeAdvancedSearch = document.getElementById('close-advanced-search');
+            
+            let searchTimeout;
+            let searchHistory = JSON.parse(localStorage.getItem('adminSearchHistory') || '[]');
+            
+            // Global search input handler
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                
+                clearTimeout(searchTimeout);
+                
+                if (query.length < 2) {
+                    hideSearchResults();
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    performGlobalSearch(query);
+                }, 300);
+            });
+            
+            // Hide results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    hideSearchResults();
+                }
+            });
+            
+            // Advanced search modal handlers
+            advancedSearchButton.addEventListener('click', () => {
+                showAdvancedSearchModal();
+            });
+            
+            closeAdvancedSearch.addEventListener('click', () => {
+                hideAdvancedSearchModal();
+            });
+            
+            advancedSearchModal.addEventListener('click', (e) => {
+                if (e.target === advancedSearchModal) {
+                    hideAdvancedSearchModal();
+                }
+            });
+            
+            // Escape key handler
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    hideSearchResults();
+                    hideAdvancedSearchModal();
+                }
+            });
+        };
+        
+        const performGlobalSearch = async (query) => {
+            try {
+                const searchResults = document.getElementById('search-results-content');
+                searchResults.innerHTML = '<div class="p-4 text-center text-gray-500">Searching...</div>';
+                showSearchResults();
+                
+                // Search across multiple entities
+                const [studentsResponse, coursesResponse] = await Promise.all([
+                    api.fetchData(`/admin/search/students?q=${encodeURIComponent(query)}&limit=10`).catch(() => ({data: {results: []}})),
+                    api.fetchData(`/admin/search/courses?q=${encodeURIComponent(query)}&limit=10`).catch(() => ({data: {results: []}}))
+                ]);
+                
+                const students = studentsResponse.data.results || [];
+                const courses = coursesResponse.data.results || [];
+                
+                renderSearchResults(query, { students, courses });
+                
+                // Save to search history
+                saveSearchHistory(query);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                const searchResults = document.getElementById('search-results-content');
+                searchResults.innerHTML = '<div class="p-4 text-center text-red-500">Search failed. Please try again.</div>';
+            }
+        };
+        
+        const renderSearchResults = (query, results) => {
+            const searchContent = document.getElementById('search-results-content');
+            const { students, courses } = results;
+            
+            const totalResults = students.length + courses.length;
+            
+            if (totalResults === 0) {
+                searchContent.innerHTML = `
+                    <div class="p-4 text-center text-gray-500">
+                        No results found for "${query}"
+                        <div class="mt-2">
+                            <button onclick="showAdvancedSearchModal('${query}')" class="text-blue-600 hover:text-blue-800 text-sm">
+                                Try advanced search
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="p-2">
+                    <div class="text-sm text-gray-600 mb-3">${totalResults} result(s) found for "${query}"</div>
+            `;
+            
+            // Students section
+            if (students.length > 0) {
+                html += `
+                    <div class="mb-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                            Students (${students.length})
+                        </h4>
+                        <div class="space-y-1">
+                `;
+                
+                students.forEach(student => {
+                    html += `
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer border-l-2 border-blue-500" 
+                             onclick="navigateToStudent('${student.student_id}')">
+                            <div class="font-medium text-gray-900">${student.full_name}</div>
+                            <div class="text-sm text-gray-600">${student.index_number} • ${student.program || 'No program'}</div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div></div>';
+            }
+            
+            // Courses section
+            if (courses.length > 0) {
+                html += `
+                    <div class="mb-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                            Courses (${courses.length})
+                        </h4>
+                        <div class="space-y-1">
+                `;
+                
+                courses.forEach(course => {
+                    html += `
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer border-l-2 border-green-500" 
+                             onclick="navigateToCourse('${course.course_id}')">
+                            <div class="font-medium text-gray-900">${course.course_title}</div>
+                            <div class="text-sm text-gray-600">${course.course_code} • ${course.credits || 0} credits</div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div></div>';
+            }
+            
+            // View all results link
+            html += `
+                <div class="border-t pt-2 mt-2">
+                    <button onclick="showAdvancedSearchModal('${query}')" 
+                            class="w-full text-center py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded">
+                        View all results & advanced filters
+                    </button>
+                </div>
+            `;
+            
+            html += '</div>';
+            searchContent.innerHTML = html;
+        };
+        
+        const navigateToStudent = (studentId) => {
+            hideSearchResults();
+            switchTab('students');
+        };
+        
+        const navigateToCourse = (courseId) => {
+            hideSearchResults();
+            switchTab('courses');
+        };
+        
+        const showSearchResults = () => {
+            document.getElementById('search-results-dropdown').classList.remove('hidden');
+        };
+        
+        const hideSearchResults = () => {
+            document.getElementById('search-results-dropdown').classList.add('hidden');
+        };
+        
+        const showAdvancedSearchModal = (query = '') => {
+            const modal = document.getElementById('advanced-search-modal');
+            modal.classList.remove('hidden');
+            renderAdvancedSearchContent(query);
+        };
+        
+        const hideAdvancedSearchModal = () => {
+            document.getElementById('advanced-search-modal').classList.add('hidden');
+        };
+        
+        const renderAdvancedSearchContent = (initialQuery = '') => {
+            const content = document.getElementById('advanced-search-content');
+            content.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Search Query -->
+                    <div class="lg:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search Query</label>
+                        <input type="text" id="advanced-search-query" value="${initialQuery}" 
+                               placeholder="Enter keywords..." 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <!-- Student Filters -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Student Filters</label>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Program</label>
+                                <select id="filter-program" class="w-full p-2 border border-gray-300 rounded text-sm">
+                                    <option value="">All Programs</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Year of Study</label>
+                                <select id="filter-year" class="w-full p-2 border border-gray-300 rounded text-sm">
+                                    <option value="">All Years</option>
+                                    <option value="1">Year 1</option>
+                                    <option value="2">Year 2</option>
+                                    <option value="3">Year 3</option>
+                                    <option value="4">Year 4</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Course Filters -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Course Filters</label>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Department</label>
+                                <select id="filter-department" class="w-full p-2 border border-gray-300 rounded text-sm">
+                                    <option value="">All Departments</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Credits</label>
+                                <select id="filter-credits" class="w-full p-2 border border-gray-300 rounded text-sm">
+                                    <option value="">All Credits</option>
+                                    <option value="1">1 Credit</option>
+                                    <option value="2">2 Credits</option>
+                                    <option value="3">3 Credits</option>
+                                    <option value="4">4+ Credits</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Actions -->
+                    <div class="lg:col-span-2 flex justify-between items-center pt-4 border-t">
+                        <div>
+                            <button onclick="clearAdvancedFilters()" 
+                                    class="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm">
+                                Clear Filters
+                            </button>
+                        </div>
+                        <div class="space-x-3">
+                            <button onclick="hideAdvancedSearchModal()" 
+                                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button onclick="performAdvancedSearch()" 
+                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Results -->
+                    <div id="advanced-search-results" class="lg:col-span-2 mt-6">
+                        <!-- Results will be displayed here -->
+                    </div>
+                </div>
+            `;
+        };
+        
+        const performAdvancedSearch = async () => {
+            const query = document.getElementById('advanced-search-query').value.trim();
+            const resultsDiv = document.getElementById('advanced-search-results');
+            resultsDiv.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><div class="mt-2 text-gray-600">Searching...</div></div>';
+            
+            try {
+                const [studentsResponse, coursesResponse] = await Promise.all([
+                    api.fetchData(`/admin/search/students?q=${encodeURIComponent(query)}&limit=50`).catch(() => ({data: {results: []}})),
+                    api.fetchData(`/admin/search/courses?q=${encodeURIComponent(query)}&limit=50`).catch(() => ({data: {results: []}}))
+                ]);
+                
+                const students = studentsResponse.data.results || [];
+                const courses = coursesResponse.data.results || [];
+                
+                renderAdvancedSearchResults({ students, courses }, query);
+                
+            } catch (error) {
+                console.error('Advanced search error:', error);
+                resultsDiv.innerHTML = '<div class="text-center py-8 text-red-600">Search failed. Please try again.</div>';
+            }
+        };
+        
+        const renderAdvancedSearchResults = (results, query) => {
+            const { students, courses } = results;
+            const totalResults = students.length + courses.length;
+            const resultsDiv = document.getElementById('advanced-search-results');
+            
+            if (totalResults === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <p>No results found for "${query}"</p>
+                        <p class="text-sm mt-2">Try adjusting your search terms</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="border border-gray-200 rounded-lg">
+                    <div class="bg-gray-50 px-4 py-3 border-b">
+                        <h3 class="font-semibold text-gray-900">Search Results (${totalResults} found)</h3>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+            `;
+            
+            // Render all results in a unified list
+            const allResults = [
+                ...students.map(s => ({ ...s, type: 'student', icon: '👤' })),
+                ...courses.map(c => ({ ...c, type: 'course', icon: '📚' }))
+            ];
+            
+            allResults.forEach(item => {
+                html += `<div class="p-4 hover:bg-gray-50 cursor-pointer" onclick="navigate${item.type.charAt(0).toUpperCase() + item.type.slice(1)}('${item[item.type + '_id']}')">`;
+                
+                if (item.type === 'student') {
+                    html += `
+                        <div class="flex items-center">
+                            <span class="text-2xl mr-3">${item.icon}</span>
+                            <div>
+                                <div class="font-medium text-gray-900">${item.full_name}</div>
+                                <div class="text-sm text-gray-600">${item.index_number} • ${item.program || 'No program'}</div>
+                            </div>
+                        </div>
+                    `;
+                } else if (item.type === 'course') {
+                    html += `
+                        <div class="flex items-center">
+                            <span class="text-2xl mr-3">${item.icon}</span>
+                            <div>
+                                <div class="font-medium text-gray-900">${item.course_title}</div>
+                                <div class="text-sm text-gray-600">${item.course_code} • ${item.credits || 0} credits</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            });
+            
+            html += '</div></div>';
+            resultsDiv.innerHTML = html;
+        };
+        
+        const clearAdvancedFilters = () => {
+            document.getElementById('advanced-search-query').value = '';
+            document.getElementById('filter-program').value = '';
+            document.getElementById('filter-year').value = '';
+            document.getElementById('filter-department').value = '';
+            document.getElementById('filter-credits').value = '';
+            document.getElementById('advanced-search-results').innerHTML = '';
+        };
+        
+        const saveSearchHistory = (query) => {
+            let history = JSON.parse(localStorage.getItem('adminSearchHistory') || '[]');
+            history = history.filter(h => h !== query); // Remove if exists
+            history.unshift(query); // Add to beginning
+            history = history.slice(0, 10); // Keep only 10 items
+            localStorage.setItem('adminSearchHistory', JSON.stringify(history));
         };
 
         // --- Admin Dashboard ---

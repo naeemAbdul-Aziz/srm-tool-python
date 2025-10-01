@@ -999,6 +999,121 @@ async def search_students(
             detail=f"Student search failed: {str(e)}"
         )
 
+@app.get("/admin/search/students", response_model=APIResponse)
+async def global_search_students(
+    current_user: dict = Depends(require_admin_role),
+    q: str = Query(..., description="Search query"),
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of results")
+):
+    """Global search for students (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} performing global student search for: {q}")
+        
+        def operation(conn):
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # Search in multiple fields
+            query = """
+                SELECT student_id, index_number, full_name, program, year_of_study, contact_email
+                FROM student_profiles 
+                WHERE full_name ILIKE %s 
+                   OR index_number ILIKE %s 
+                   OR program ILIKE %s 
+                   OR contact_email ILIKE %s
+                ORDER BY 
+                    CASE 
+                        WHEN full_name ILIKE %s THEN 1
+                        WHEN index_number ILIKE %s THEN 2
+                        WHEN program ILIKE %s THEN 3
+                        ELSE 4
+                    END,
+                    full_name
+                LIMIT %s
+            """
+            
+            search_pattern = f"%{q}%"
+            exact_pattern = f"{q}%"
+            
+            cursor.execute(query, [
+                search_pattern, search_pattern, search_pattern, search_pattern,
+                exact_pattern, exact_pattern, exact_pattern,
+                limit
+            ])
+            
+            return cursor.fetchall()
+        
+        results = handle_db_operation(operation)
+        
+        return APIResponse(
+            success=True,
+            message=f"Found {len(results)} students matching '{q}'",
+            data={"results": results}
+        )
+        
+    except Exception as e:
+        logger.error(f"Global student search failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Global student search failed: {str(e)}"
+        )
+
+@app.get("/admin/search/courses", response_model=APIResponse)
+async def global_search_courses(
+    current_user: dict = Depends(require_admin_role),
+    q: str = Query(..., description="Search query"),
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of results")
+):
+    """Global search for courses (Admin only)"""
+    try:
+        logger.info(f"Admin {current_user.get('username')} performing global course search for: {q}")
+        
+        def operation(conn):
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # Search in multiple fields
+            query = """
+                SELECT course_id, course_code, course_title, credits, department
+                FROM courses 
+                WHERE course_title ILIKE %s 
+                   OR course_code ILIKE %s 
+                   OR department ILIKE %s
+                ORDER BY 
+                    CASE 
+                        WHEN course_title ILIKE %s THEN 1
+                        WHEN course_code ILIKE %s THEN 2
+                        WHEN department ILIKE %s THEN 3
+                        ELSE 4
+                    END,
+                    course_title
+                LIMIT %s
+            """
+            
+            search_pattern = f"%{q}%"
+            exact_pattern = f"{q}%"
+            
+            cursor.execute(query, [
+                search_pattern, search_pattern, search_pattern,
+                exact_pattern, exact_pattern, exact_pattern,
+                limit
+            ])
+            
+            return cursor.fetchall()
+        
+        results = handle_db_operation(operation)
+        
+        return APIResponse(
+            success=True,
+            message=f"Found {len(results)} courses matching '{q}'",
+            data={"results": results}
+        )
+        
+    except Exception as e:
+        logger.error(f"Global course search failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Global course search failed: {str(e)}"
+        )
+
 @app.get("/admin/students/{index_number}", response_model=APIResponse)
 async def get_student_by_index(
     index_number: str = Path(..., description="Student index number"),
