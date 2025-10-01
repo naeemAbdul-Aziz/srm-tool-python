@@ -5,141 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Result Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            background-color: #f9fafb; /* Light gray background */
-        }
-        *, *::before, *::after {
-            box-sizing: inherit;
-        }
-        /* Custom styles for modals to ensure they are on top */
-        .modal-overlay {
-            z-index: 999;
-        }
-        .modal-content {
-            z-index: 1000;
+        /* Enhanced Search Interface Styles */
+        .search-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
-        /* Toast notification styles */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            min-width: 300px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            z-index: 9999;
+        .search-input-group {
+            position: relative;
         }
         
-        .toast.show {
-            transform: translateX(0);
-        }
-        
-        .toast.success {
-            background-color: #059669;
-        }
-        
-        .toast.error {
-            background-color: #dc2626;
-        }
-        
-        .toast.info {
-            background-color: #2563eb;
-        }
-        
-        .toast.warning {
-            background-color: #d97706;
-        }
-        
-        /* Loading spinner */
-        .loading-spinner {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9998;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 8px;
-            display: none;
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Screen reader only content */
-        .sr-only {
+        .search-input-icon {
             position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            z-index: 10;
+        }
+        
+        .search-input-with-icon {
+            padding-left: 2.75rem;
+        }
+        
+        .search-spinner {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+        
+        .advanced-filters-toggle {
+            transition: all 0.3s ease;
+        }
+        
+        .advanced-filters-toggle:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        .filter-badge {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .search-results-summary {
+            border-left: 4px solid #10b981;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+        }
+        
+        /* Export button hover effect */
+        .export-btn {
+            position: relative;
             overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
         }
-
-        /* Focus styles for better accessibility */
-        .focus-visible:focus {
-            outline: 2px solid #3b82f6;
-            outline-offset: 2px;
+        
+        .export-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
         }
-
-        /* Enhanced hover and focus states */
-        .student-card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .student-card:focus-within {
-            outline: 2px solid #3b82f6;
-            outline-offset: 2px;
-        }
-
-        /* Loading states */
-        .pagination-loading {
-            pointer-events: none;
-            opacity: 0.7;
-        }
-
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-            .border-gray-300 {
-                border-color: #000;
-            }
-            .text-gray-600 {
-                color: #000;
-            }
-        }
-
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-            .animate-pulse, .animate-spin, .transition-colors, .transition-shadow {
-                animation: none;
-                transition: none;
-            }
+        
+        .export-btn:hover::before {
+            left: 100%;
         }
     </style>
 </head>
@@ -183,17 +122,20 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://127.0.0.1:8000'; // Ensure this matches your FastAPI backend URL
+        // Constants
+        const API_BASE_URL = 'http://127.0.0.1:8000';
         const appDiv = document.getElementById('app');
 
-        // --- Toast Notification System ---
+        // Toast Notification System
         const showToast = (message, type = 'info', duration = 4000) => {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; margin-left: 10px; cursor: pointer;">&times;</button>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="background: none; border: none; color: white; font-size: 18px; margin-left: 10px; cursor: pointer;"
+                            aria-label="Close notification">&times;</button>
                 </div>
             `;
             
@@ -209,28 +151,34 @@
             }, duration);
         };
 
-        // --- Loading Spinner ---
+        // Loading Spinner Management
         const showLoading = () => {
-            document.getElementById('loading-spinner').style.display = 'block';
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) spinner.style.display = 'block';
         };
 
         const hideLoading = () => {
-            document.getElementById('loading-spinner').style.display = 'none';
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) spinner.style.display = 'none';
         };
 
-        // --- Auth State Management ---
-        let currentUser = null; // Stores user data after successful login
+        // Authentication State Management
+        let currentUser = null;
 
         const setAuthUser = (user) => {
             currentUser = user;
             if (user) {
                 sessionStorage.setItem('srmsUser', JSON.stringify(user));
+                console.log('User authenticated:', user); // Debug log
             } else {
-                sessionStorage.removeItem('srmsUser');
-                sessionStorage.removeItem('srmsAuth'); // Clear credentials on logout
+                console.log('User logged out'); // Debug log
+                clearAuthData();
             }
             renderApp(); // Re-render the app based on new auth state
         };
+
+        const getAuthUser = () => currentUser;
+        const isAuthenticated = () => currentUser !== null;
 
         const getAuthHeader = () => {
             const storedAuth = sessionStorage.getItem('srmsAuth');
@@ -2192,16 +2140,143 @@
                         <p id="add-student-error" class="mt-3 text-center text-sm"></p>
                     </div>
 
-                    <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-                        <h4 class="text-lg font-semibold mb-3 text-gray-700">Search Students</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                            <input type="text" id="search-term" placeholder="Search by Name" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
-                            <input type="text" id="search-program" placeholder="Filter by Program" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
-                            <input type="number" id="search-year" placeholder="Filter by Year" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
-                            <input type="text" id="search-gender" placeholder="Filter by Gender" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
-                            <button id="search-students-button" class="col-span-full md:col-span-1 bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
-                                Search with Filters
+                    <div class="mb-6 bg-white p-6 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                Search & Filter Students
+                            </h4>
+                            <button id="toggle-advanced-filters" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                                <span id="toggle-text">Show Advanced Filters</span>
+                                <svg id="toggle-icon" class="w-4 h-4 ml-1 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
                             </button>
+                        </div>
+                        
+                        <!-- Quick Search Bar -->
+                        <div class="relative mb-4">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="search-term" 
+                                placeholder="Search students by name, index number, or email..." 
+                                class="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+                                autocomplete="off"
+                            />
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <div id="search-spinner" class="hidden">
+                                    <svg class="animate-spin h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                                <button id="clear-search" class="hidden text-gray-400 hover:text-gray-600 ml-2">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Filters (Initially Hidden) -->
+                        <div id="advanced-filters" class="hidden border-t pt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                <!-- Program Filter -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Program</label>
+                                    <select id="search-program" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                        <option value="">All Programs</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Information Technology">Information Technology</option>
+                                        <option value="Software Engineering">Software Engineering</option>
+                                        <option value="Data Science">Data Science</option>
+                                        <option value="Cybersecurity">Cybersecurity</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
+                                <!-- Year Filter -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Year of Study</label>
+                                    <select id="search-year" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                        <option value="">All Years</option>
+                                        <option value="1">Year 1</option>
+                                        <option value="2">Year 2</option>
+                                        <option value="3">Year 3</option>
+                                        <option value="4">Year 4</option>
+                                        <option value="5+">Year 5+</option>
+                                    </select>
+                                </div>
+
+                                <!-- Gender Filter -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                                    <select id="search-gender" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                        <option value="">All Genders</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                        <option value="Prefer not to say">Prefer not to say</option>
+                                    </select>
+                                </div>
+
+                                <!-- Sort By -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                                    <select id="sort-by" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                        <option value="name_asc">Name (A-Z)</option>
+                                        <option value="name_desc">Name (Z-A)</option>
+                                        <option value="index_asc">Index Number (Low to High)</option>
+                                        <option value="index_desc">Index Number (High to Low)</option>
+                                        <option value="program_asc">Program (A-Z)</option>
+                                        <option value="year_asc">Year (Low to High)</option>
+                                        <option value="year_desc">Year (High to Low)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Filter Actions -->
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex flex-wrap gap-2" id="active-filters">
+                                    <!-- Active filter badges will appear here -->
+                                </div>
+                                <div class="flex gap-2">
+                                    <button id="clear-all-filters" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                        Clear All
+                                    </button>
+                                    <button id="apply-filters" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707v4.586a1 1 0 01-1.447.894l-4-2A1 1 0 018 15.586V11.414a1 1 0 00-.293-.707L1.293 4.293A1 1 0 011 3.586V1a1 1 0 011-1z"></path>
+                                        </svg>
+                                        Apply Filters
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search Results Summary -->
+                        <div id="search-results-summary" class="hidden mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center text-sm text-blue-700">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span id="results-text">Found 0 students</span>
+                                </div>
+                                <button id="export-results" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Export
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -2364,19 +2439,46 @@
                         initializeStudentPagination();
                     }
 
-                    // Build filters from the old search inputs (for backward compatibility)
+                    // Build filters from enhanced search interface
                     const filters = {};
                     if (useFilters) {
-                        // Try new search interface first, then fall back to old inputs
-                        const searchTermInput = document.getElementById('search-term') || document.getElementById('search-term-input');
-                        const searchProgramInput = document.getElementById('program-filter') || document.getElementById('search-program-input');
-                        const searchYearInput = document.getElementById('year-filter') || document.getElementById('search-year-input');
-                        const searchGenderInput = document.getElementById('gender-filter') || document.getElementById('search-gender-input');
+                        // Get values from enhanced search interface
+                        const searchTermInput = document.getElementById('search-term');
+                        const searchProgramInput = document.getElementById('search-program');
+                        const searchYearInput = document.getElementById('search-year');
+                        const searchGenderInput = document.getElementById('search-gender');
+                        const sortByInput = document.getElementById('sort-by');
 
-                        if (searchTermInput?.value) filters.name = searchTermInput.value;
+                        if (searchTermInput?.value?.trim()) filters.name = searchTermInput.value.trim();
                         if (searchProgramInput?.value) filters.program = searchProgramInput.value;
                         if (searchYearInput?.value) filters.year_of_study = parseInt(searchYearInput.value);
                         if (searchGenderInput?.value) filters.gender = searchGenderInput.value;
+                        
+                        // Handle sorting
+                        if (sortByInput?.value) {
+                            const sortValue = sortByInput.value;
+                            if (sortValue === 'name_asc') {
+                                filters.order_by = 'full_name';
+                                filters.order_direction = 'asc';
+                            } else if (sortValue === 'name_desc') {
+                                filters.order_by = 'full_name';
+                                filters.order_direction = 'desc';
+                            } else if (sortValue === 'id_asc') {
+                                filters.order_by = 'id';
+                                filters.order_direction = 'asc';
+                            } else if (sortValue === 'id_desc') {
+                                filters.order_by = 'id';
+                                filters.order_direction = 'desc';
+                            }
+                        }
+                    }
+
+                    // Check if search is active (any filters applied)
+                    const isSearchActive = Object.keys(filters).length > 0;
+
+                    // Update search results summary
+                    if (window.updateSearchResultsSummary) {
+                        // We'll update this after getting the results
                     }
 
                     // Use the new pagination system
@@ -2387,6 +2489,10 @@
                     
                     if (data && data.records && data.records.length > 0) {
                         handleStudentDataUpdate(data);
+                        // Update search results summary
+                        if (window.updateSearchResultsSummary) {
+                            window.updateSearchResultsSummary(data.totalCount || data.records.length, isSearchActive);
+                        }
                     } else {
                         console.log('No data received, trying fallback API call'); // Debug log
                         // Fallback to old API call if pagination fails
@@ -2412,8 +2518,16 @@
                             }
                             
                             handleStudentDataUpdate(compatibleData);
+                            // Update search results summary for fallback
+                            if (window.updateSearchResultsSummary) {
+                                window.updateSearchResultsSummary(compatibleData.totalCount, isSearchActive);
+                            }
                         } else {
                             studentListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No students found.</p>`;
+                            // Update search results summary for no results
+                            if (window.updateSearchResultsSummary) {
+                                window.updateSearchResultsSummary(0, isSearchActive);
+                            }
                         }
                     }
                 } catch (error) {
@@ -2601,8 +2715,181 @@
                 }
             });
 
-            // Update legacy button handlers
-            searchStudentsButton.addEventListener('click', () => fetchAndRenderStudents(true));
+            // Update legacy button handlers (keeping for compatibility)
+            const legacySearchButton = document.getElementById('search-students-button');
+            if (legacySearchButton) {
+                legacySearchButton.addEventListener('click', () => fetchAndRenderStudents(true));
+            }
+
+            // Enhanced Search Interface Event Handlers
+            const setupEnhancedSearch = () => {
+                const searchTermInput = document.getElementById('search-term');
+                const toggleAdvancedFilters = document.getElementById('toggle-advanced-filters');
+                const advancedFilters = document.getElementById('advanced-filters');
+                const clearSearchBtn = document.getElementById('clear-search');
+                const clearAllFiltersBtn = document.getElementById('clear-all-filters');
+                const applyFiltersBtn = document.getElementById('apply-filters');
+                const searchSpinner = document.getElementById('search-spinner');
+                const activeFiltersContainer = document.getElementById('active-filters');
+                const searchResultsSummary = document.getElementById('search-results-summary');
+                const resultsText = document.getElementById('results-text');
+
+                let searchTimeout;
+
+                // Define functions first before using them
+                
+                // Perform search function
+                const performSearch = async () => {
+                    try {
+                        await fetchAndRenderStudents(true);
+                        updateActiveFilters();
+                    } catch (error) {
+                        console.error('Search error:', error);
+                        showToast('Search failed: ' + error.message, 'error');
+                    }
+                };
+
+                // Update active filter badges
+                const updateActiveFilters = () => {
+                    const filters = [];
+                    const searchTerm = searchTermInput.value.trim();
+                    const program = document.getElementById('search-program').value;
+                    const year = document.getElementById('search-year').value;
+                    const gender = document.getElementById('search-gender').value;
+
+                    if (searchTerm) filters.push({ label: `Search: "${searchTerm}"`, value: searchTerm, type: 'search' });
+                    if (program) filters.push({ label: `Program: ${program}`, value: program, type: 'program' });
+                    if (year) filters.push({ label: `Year: ${year}`, value: year, type: 'year' });
+                    if (gender) filters.push({ label: `Gender: ${gender}`, value: gender, type: 'gender' });
+
+                    activeFiltersContainer.innerHTML = filters.map(filter => `
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            ${filter.label}
+                            <button type="button" class="ml-1 text-blue-600 hover:text-blue-800" onclick="removeFilter('${filter.type}')">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </span>
+                    `).join('');
+                };
+
+                // Now set up event handlers
+
+                // Toggle advanced filters
+                toggleAdvancedFilters.addEventListener('click', () => {
+                    const isHidden = advancedFilters.classList.contains('hidden');
+                    if (isHidden) {
+                        advancedFilters.classList.remove('hidden');
+                        document.getElementById('toggle-text').textContent = 'Hide Advanced Filters';
+                        document.getElementById('toggle-icon').style.transform = 'rotate(180deg)';
+                    } else {
+                        advancedFilters.classList.add('hidden');
+                        document.getElementById('toggle-text').textContent = 'Show Advanced Filters';
+                        document.getElementById('toggle-icon').style.transform = 'rotate(0deg)';
+                    }
+                });
+
+                // Real-time search with debouncing
+                searchTermInput.addEventListener('input', (e) => {
+                    const value = e.target.value.trim();
+                    
+                    // Show/hide clear button
+                    if (value) {
+                        clearSearchBtn.classList.remove('hidden');
+                    } else {
+                        clearSearchBtn.classList.add('hidden');
+                    }
+
+                    // Show spinner during search
+                    searchSpinner.classList.remove('hidden');
+
+                    // Debounced search
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(async () => {
+                        try {
+                            await performSearch();
+                        } catch (error) {
+                            console.error('Search error:', error);
+                            showToast('Search failed: ' + error.message, 'error');
+                        } finally {
+                            searchSpinner.classList.add('hidden');
+                        }
+                    }, 300);
+                });
+
+                // Clear search
+                clearSearchBtn.addEventListener('click', () => {
+                    searchTermInput.value = '';
+                    clearSearchBtn.classList.add('hidden');
+                    performSearch();
+                });
+
+                // Apply filters
+                applyFiltersBtn.addEventListener('click', performSearch);
+
+                // Clear all filters
+                clearAllFiltersBtn.addEventListener('click', () => {
+                    // Clear all form inputs
+                    searchTermInput.value = '';
+                    document.getElementById('search-program').value = '';
+                    document.getElementById('search-year').value = '';
+                    document.getElementById('search-gender').value = '';
+                    document.getElementById('sort-by').value = 'name_asc';
+                    
+                    // Clear UI elements
+                    clearSearchBtn.classList.add('hidden');
+                    updateActiveFilters();
+                    performSearch();
+                });
+
+                // Monitor all filter changes
+                ['search-program', 'search-year', 'search-gender', 'sort-by'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.addEventListener('change', () => {
+                            updateActiveFilters();
+                            if (!advancedFilters.classList.contains('hidden')) {
+                                performSearch();
+                            }
+                        });
+                    }
+                });
+
+                // Global function to remove individual filters
+                window.removeFilter = (type) => {
+                    switch (type) {
+                        case 'search':
+                            searchTermInput.value = '';
+                            clearSearchBtn.classList.add('hidden');
+                            break;
+                        case 'program':
+                            document.getElementById('search-program').value = '';
+                            break;
+                        case 'year':
+                            document.getElementById('search-year').value = '';
+                            break;
+                        case 'gender':
+                            document.getElementById('search-gender').value = '';
+                            break;
+                    }
+                    updateActiveFilters();
+                    performSearch();
+                };
+
+                // Update search results summary
+                window.updateSearchResultsSummary = (count, isSearchActive) => {
+                    if (isSearchActive) {
+                        searchResultsSummary.classList.remove('hidden');
+                        resultsText.textContent = `Found ${count} student${count !== 1 ? 's' : ''}`;
+                    } else {
+                        searchResultsSummary.classList.add('hidden');
+                    }
+                };
+            };
+
+            // Initialize enhanced search
+            setupEnhancedSearch();
             
             // Enhanced Load All / Hide Students functionality
             loadAllStudentsButton.addEventListener('click', async () => {
@@ -3802,17 +4089,52 @@
 
         // --- Main App Logic ---
         const renderApp = () => {
+            console.log('renderApp called'); // Debug log
+            
+            // Clear any potentially corrupted session data on first load
             const storedUser = sessionStorage.getItem('srmsUser');
+            console.log('Stored user:', storedUser); // Debug log
+            
             if (storedUser) {
-                currentUser = JSON.parse(storedUser);
-                if (currentUser.role === 'admin') {
-                    renderAdminDashboard();
-                } else {
-                    renderStudentDashboard();
+                try {
+                    currentUser = JSON.parse(storedUser);
+                    console.log('Parsed user:', currentUser); // Debug log
+                    
+                    if (currentUser && currentUser.role === 'admin') {
+                        console.log('Rendering admin dashboard'); // Debug log
+                        renderAdminDashboard();
+                    } else if (currentUser && currentUser.role === 'student') {
+                        console.log('Rendering student dashboard'); // Debug log
+                        renderStudentDashboard();
+                    } else {
+                        console.log('Invalid user role, showing login'); // Debug log
+                        clearAuthData();
+                        renderLoginPage();
+                    }
+                } catch (error) {
+                    console.log('Error parsing stored user, showing login:', error); // Debug log
+                    clearAuthData();
+                    renderLoginPage();
                 }
             } else {
+                console.log('No stored user, showing login'); // Debug log
                 renderLoginPage();
             }
+        };
+
+        // Helper function to clear all authentication data
+        const clearAuthData = () => {
+            currentUser = null;
+            sessionStorage.removeItem('srmsUser');
+            sessionStorage.removeItem('srmsAuth');
+            sessionStorage.removeItem('adminActiveTab');
+        };
+
+        // Manual logout function for debugging (can be called from browser console)
+        window.forceLogout = () => {
+            console.log('Force logout called');
+            clearAuthData();
+            renderApp();
         };
 
         window.addEventListener('DOMContentLoaded', renderApp);

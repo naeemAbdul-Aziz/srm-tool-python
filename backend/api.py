@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, Query, Path
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 import os
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict, Any
@@ -46,6 +47,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
+
+# Mount static files (frontend)
+frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
+if os.path.exists(frontend_path):
+    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
 # HTTP Basic Authentication setup
 security = HTTPBasic()
@@ -563,6 +569,16 @@ async def root():
         message="Student Result Management System API is running",
         data={"version": "1.0.0", "status": "healthy"}
     )
+
+@app.get("/frontend")
+async def serve_frontend():
+    """Serve the frontend application"""
+    from fastapi.responses import FileResponse
+    frontend_file = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
+    if os.path.exists(frontend_file):
+        return FileResponse(frontend_file)
+    else:
+        raise HTTPException(status_code=404, detail="Frontend not found")
 
 @app.get("/health", response_model=APIResponse)
 async def health_check():
