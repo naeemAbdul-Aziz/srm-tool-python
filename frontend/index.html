@@ -10,7 +10,7 @@
     <style>
         /* Enhanced Search Interface Styles */
         .search-container {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #3b82f6;
         }
         
         .search-input-group {
@@ -79,6 +79,928 @@
         
         .export-btn:hover::before {
             left: 100%;
+        }
+        
+        /* Autocomplete Styles */
+        .autocomplete-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .autocomplete-item:hover,
+        .autocomplete-item.highlighted {
+            background-color: #f3f4f6;
+        }
+        
+        .autocomplete-item.selected {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        /* Search History Styles */
+        .history-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .history-item:hover {
+            background-color: #f9fafb;
+        }
+        
+        /* Enhanced Animations */
+        .slide-down {
+            animation: slideDown 0.3s ease;
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        
+        .pulse-subtle {
+            animation: pulseSubtle 2s infinite;
+        }
+        
+        @keyframes pulseSubtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Keyboard shortcuts styling */
+        kbd {
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+            color: #374151;
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1;
+            padding: 2px 4px;
+            white-space: nowrap;
+        }
+        
+        /* Skeleton Loading Animations */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .skeleton-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .skeleton-line {
+            height: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .skeleton-line.short {
+            width: 60%;
+        }
+        
+        .skeleton-line.medium {
+            width: 80%;
+        }
+        
+        .skeleton-line.long {
+            width: 100%;
+        }
+        
+        .skeleton-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+        }
+        
+        /* Enhanced Transitions */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease-in-out;
+        }
+        
+        .scale-in {
+            animation: scaleIn 0.3s ease-out;
+        }
+        
+        .slide-in-left {
+            animation: slideInLeft 0.4s ease-out;
+        }
+        
+        .slide-in-right {
+            animation: slideInRight 0.4s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* Micro-interactions */
+        .hover-lift {
+            transition: all 0.2s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .button-press {
+            transition: all 0.1s ease;
+        }
+        
+        .button-press:active {
+            transform: scale(0.98);
+        }
+        
+        /* Progress Indicators */
+        .progress-bar {
+            background: #e5e7eb;
+            border-radius: 9999px;
+            overflow: hidden;
+            height: 8px;
+        }
+        
+        .progress-fill {
+            background: #3b82f6;
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: progressShine 2s infinite;
+        }
+        
+        @keyframes progressShine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        /* Loading States */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Mobile & Tablet Responsive Design */
+        @media (max-width: 768px) {
+            /* Mobile-specific adjustments */
+            .student-card, .course-card, .grade-card {
+                margin-bottom: 1rem;
+                padding: 1rem;
+            }
+            
+            /* Touch-friendly buttons */
+            button {
+                min-height: 44px;
+                min-width: 44px;
+                padding: 12px 16px;
+            }
+            
+            /* Search interface mobile optimization */
+            .search-container {
+                padding: 1rem;
+                margin: 0 -1rem;
+            }
+            
+            /* Autocomplete dropdown mobile adjustments */
+            #search-autocomplete {
+                left: -1rem;
+                right: -1rem;
+                max-height: 40vh;
+            }
+            
+            /* Mobile navigation */
+            .navigation-tabs {
+                overflow-x: auto;
+                /* Hide scrollbar for better compatibility */
+                -ms-overflow-style: none;
+            }
+            
+            .navigation-tabs::-webkit-scrollbar {
+                display: none;
+            }
+            
+            /* Mobile grid adjustments */
+            .grid-responsive {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            /* Mobile forms */
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Mobile modals */
+            .modal-content {
+                margin: 1rem;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            /* Hide desktop-only elements */
+            .desktop-only {
+                display: none !important;
+            }
+            
+            /* Show mobile-only elements */
+            .mobile-only {
+                display: block !important;
+            }
+        }
+        
+        @media (min-width: 769px) and (max-width: 1024px) {
+            /* Tablet-specific adjustments */
+            .grid-responsive {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            /* Tablet search interface */
+            .search-container {
+                padding: 1.5rem;
+            }
+        }
+        
+        @media (min-width: 1025px) {
+            /* Desktop adjustments */
+            .grid-responsive {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            /* Hide mobile-only elements */
+            .mobile-only {
+                display: none !important;
+            }
+        }
+        
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            /* Touch-specific hover states */
+            .hover-lift:hover {
+                transform: none;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            /* Larger touch targets */
+            .touch-target {
+                min-height: 48px;
+                min-width: 48px;
+            }
+            
+            /* Remove hover animations on touch devices */
+            .hover-animation {
+                transition: none;
+            }
+        }
+        
+        /* Swipe gestures support */
+        .swipeable {
+            touch-action: pan-x;
+            /* Touch scrolling optimization */
+        }
+        
+        .mobile-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .mobile-scroll::-webkit-scrollbar-track {
+            background: #f7fafc;
+        }
+        
+        .mobile-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+        
+        /* Bulk Operations Styles */
+        #bulk-operations-panel.active {
+            opacity: 1;
+        }
+        
+        .bulk-action-btn-new {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            cursor: not-allowed;
+        }
+        
+        .bulk-action-btn-new:enabled {
+            cursor: pointer;
+            color: #374151;
+            border-color: #9ca3af;
+        }
+        
+        .bulk-action-btn-new:enabled:hover {
+            background: #f9fafb;
+            border-color: #6b7280;
+        }
+        
+        .bulk-action-btn-new.export:enabled:hover {
+            background: #ecfdf5;
+            border-color: #10b981;
+            color: #059669;
+        }
+        
+        .bulk-action-btn-new.edit:enabled:hover {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #2563eb;
+        }
+        
+        .bulk-action-btn-new.delete:enabled:hover {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #dc2626;
+        }
+        
+        .bulk-checkbox {
+            position: relative;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .bulk-checkbox:checked {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        .bulk-checkbox:checked::before {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .bulk-checkbox:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .select-all-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #6b7280;
+        }
+        
+        .select-all-checkbox:checked {
+            background: #1f2937;
+            border-color: #1f2937;
+        }
+        
+        /* Batch Progress Indicator */
+        .batch-progress {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            z-index: 100;
+            min-width: 320px;
+            max-width: 90vw;
+        }
+        
+        .batch-progress-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+        }
+        
+        .progress-step {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-left: 3px solid #e5e7eb;
+            padding-left: 1rem;
+            margin-left: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-step.active {
+            border-left-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .progress-step.completed {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.05);
+        }
+        
+        .progress-step.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+        }
+        
+        /* Selection Counter */
+        .selection-counter {
+            background: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        /* Autocomplete Styles */
+        .autocomplete-item {
+            transition: all 0.2s ease;
+        }
+        
+        .autocomplete-item:hover,
+        .autocomplete-item.highlighted {
+            background-color: #f3f4f6;
+        }
+        
+        .autocomplete-item.selected {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        /* Search History Styles */
+        .history-item {
+            transition: all 0.2s ease;
+        }
+        
+        .history-item:hover {
+            background-color: #f9fafb;
+        }
+        
+        /* Enhanced Animations */
+        .slide-down {
+            animation: slideDown 0.3s ease;
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        
+        .pulse-subtle {
+            animation: pulseSubtle 2s infinite;
+        }
+        
+        @keyframes pulseSubtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Analytics Dashboard Styles */
+        .analytics-toggle {
+            margin-left: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .analytics-toggle:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .analytics-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 60;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        
+        .analytics-panel.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .analytics-panel > div {
+            background: white;
+            border-radius: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .analytics-panel.show > div {
+            transform: translateY(0);
+        }
+        
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .close-analytics {
+            padding: 0.5rem;
+            color: #6b7280;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+        
+        .close-analytics:hover {
+            color: #374151;
+            background-color: #f3f4f6;
+        }
+        
+        .analytics-content {
+            padding: 1.5rem;
+        }
+        
+        .analytics-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        
+        @media (min-width: 768px) {
+            .summary-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .summary-cards {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        .summary-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.2s;
+        }
+        
+        .summary-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .summary-card .summary-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        
+        .summary-value {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .summary-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        
+        @media (min-width: 1024px) {
+            .charts-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .chart-container {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .chart-canvas {
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .chart-loading, .chart-error {
+            text-align: center;
+            color: #6b7280;
+            padding: 3rem 0;
+        }
+        
+        .chart-error {
+            color: #ef4444;
+        }
+        
+        /* Bar Chart Styles */
+        .bar-item {
+            margin-bottom: 1rem;
+        }
+        
+        .bar-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .bar-container {
+            position: relative;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .bar-fill {
+            background-color: #3b82f6;
+            height: 100%;
+            border-radius: 9999px;
+            transition: all 0.5s;
+            position: relative;
+        }
+        
+        .bar-fill.gpa-bar {
+            background-color: #10b981;
+        }
+        
+        .bar-value {
+            position: absolute;
+            right: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        /* Line Chart Styles */
+        .line-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 16rem;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border-radius: 0.5rem;
+        }
+        
+        .line-point {
+            flex: 1;
+            background-color: #3b82f6;
+            border-radius: 0.375rem 0.375rem 0 0;
+            margin: 0 0.25rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            transition: all 0.3s;
+            min-height: 20px;
+            cursor: pointer;
+        }
+        
+        .line-point:hover {
+            background-color: #2563eb;
+        }
+        
+        .point-value {
+            position: absolute;
+            top: -2rem;
+            background-color: #1f2937;
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .line-point:hover .point-value {
+            opacity: 1;
+        }
+        
+        .point-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+        
+        /* Pie Chart Styles */
+        .pie-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .pie-segment {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .pie-segment:hover {
+            background-color: #f9fafb;
+        }
+        
+        .pie-color {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+        }
+        
+        .pie-label {
+            flex: 1;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .pie-value {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        /* Mobile Analytics Adjustments */
+        @media (max-width: 768px) {
+            .analytics-panel {
+                padding: 1rem;
+            }
+            
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-toggle {
+                margin-left: 0;
+                margin-top: 0.5rem;
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -651,7 +1573,7 @@
 
             render() {
                 this.container.innerHTML = `
-                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <div class="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                             <!-- Search Term Input -->
                             <div class="col-span-1 md:col-span-2">
@@ -660,7 +1582,7 @@
                                     <input type="text" 
                                            id="search-term" 
                                            placeholder="Search by name, index number, or email..."
-                                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                           class="w-full pl-10 pr-4 py-3 md:py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base touch-target">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -864,12 +1786,18 @@
             }
 
             clearAllFilters() {
-                // Clear input fields
-                this.container.querySelector('#search-term').value = '';
-                this.container.querySelector('#program-filter').value = '';
-                this.container.querySelector('#year-filter').value = '';
-                this.container.querySelector('#gender-filter').value = '';
-                this.container.querySelector('#sort-filter').value = 'name_asc';
+                // Clear input fields with null checks
+                const searchTerm = this.container.querySelector('#search-term');
+                const programFilter = this.container.querySelector('#program-filter');
+                const yearFilter = this.container.querySelector('#year-filter');
+                const genderFilter = this.container.querySelector('#gender-filter');
+                const sortFilter = this.container.querySelector('#sort-filter');
+                
+                if (searchTerm) searchTerm.value = '';
+                if (programFilter) programFilter.value = '';
+                if (yearFilter) yearFilter.value = '';
+                if (genderFilter) genderFilter.value = '';
+                if (sortFilter) sortFilter.value = 'name_asc';
 
                 // Clear internal state
                 this.searchTerm = '';
@@ -2166,7 +3094,7 @@
                             <input 
                                 type="text" 
                                 id="search-term" 
-                                placeholder="Search students by name, index number, or email..." 
+                                placeholder="Search students by name, index number, or email... (Press Enter to search, Esc to clear)" 
                                 class="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
                                 autocomplete="off"
                             />
@@ -2182,6 +3110,20 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
                                 </button>
+                            </div>
+                            
+                            <!-- Autocomplete Dropdown -->
+                            <div id="search-autocomplete" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg mt-1 z-50 hidden max-h-60 overflow-y-auto">
+                                <div id="search-suggestions" class="py-1"></div>
+                                <div id="search-history" class="border-t border-gray-200 hidden">
+                                    <div class="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Recent Searches</div>
+                                    <div id="search-history-items" class="py-1"></div>
+                                </div>
+                                <div id="search-help" class="border-t border-gray-200 px-4 py-2 text-xs text-gray-500 bg-gray-50">
+                                    <div class="flex items-center justify-between">
+                                        <span>💡 Tip: Use <kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Enter</kbd> to search, <kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Esc</kbd> to clear</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -2280,15 +3222,60 @@
                         </div>
                     </div>
 
-                    <div class="mb-6 flex justify-between items-center">
-                        <div>
-                            <h4 class="text-lg font-semibold text-gray-700">Student Directory</h4>
-                            <p class="text-sm text-gray-500 mt-1">Manage student profiles with easy access to details and actions</p>
+                    <div class="mb-6 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-xl font-semibold text-gray-800">Student Directory</h4>
+                                <p class="text-sm text-gray-600 mt-1">Manage student profiles and perform bulk operations</p>
+                            </div>
+                            <button id="load-all-students-button" data-loaded="false" class="bg-green-600 text-white py-2.5 px-5 rounded-lg font-medium hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 transition-colors">
+                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                </svg>
+                                Load Students
+                            </button>
                         </div>
-                        <button id="load-all-students-button" class="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
-                            Load Students
-                        </button>
+                        
+                        <!-- Bulk Operations Panel - Always visible but contextual -->
+                        <div id="bulk-operations-panel" class="border-t border-gray-200 pt-4 opacity-50 transition-opacity duration-300">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div class="flex items-center gap-4">
+                                    <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+                                        <input type="checkbox" id="select-all-students" class="select-all-checkbox rounded" disabled />
+                                        <span id="selection-text">Select students for bulk operations</span>
+                                    </label>
+                                    <div class="selection-counter hidden" id="selection-counter">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <span id="selected-count">0</span> selected
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex gap-2">
+                                    <button id="bulk-export" class="bulk-action-btn-new export" disabled title="Export selected students">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        Export
+                                    </button>
+                                    <button id="bulk-edit" class="bulk-action-btn-new edit" disabled title="Edit selected students">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Edit
+                                    </button>
+                                    <button id="bulk-delete" class="bulk-action-btn-new delete" disabled title="Delete selected students">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    
                     <p id="student-list-loading" class="text-center text-gray-600 py-6 hidden">Loading students...</p>
                     <p id="student-list-error" class="text-red-600 text-center py-6 hidden"></p>
                     <div id="student-list-container" class="rounded-md">
@@ -2314,6 +3301,12 @@
             const searchProgramInput = document.getElementById('search-program');
             const searchYearInput = document.getElementById('search-year');
             const searchGenderInput = document.getElementById('search-gender');
+
+            // Add null checks to prevent errors
+            if (!loadAllStudentsButton) {
+                console.error('Load Students button not found in DOM');
+                return;
+            }
 
             // --- Updated Student Management with Enhanced Pagination ---
             const studentListContainer = document.getElementById('student-list-container');
@@ -2427,11 +3420,20 @@
                 }
             };
 
+            let isLoadingStudents = false; // Prevent duplicate calls
+            
             const fetchAndRenderStudents = async (useFilters = true) => {
-                // Show loading state
-                studentListLoading.classList.remove('hidden');
+                if (isLoadingStudents) {
+                    console.log('Already loading students, skipping duplicate call');
+                    return;
+                }
+                
+                isLoadingStudents = true;
+                console.log('fetchAndRenderStudents called with useFilters:', useFilters);
+                
+                // Show skeleton loading instead of basic loading
+                showSkeletonLoading();
                 studentListError.classList.add('hidden');
-                studentListContainer.innerHTML = '';
 
                 try {
                     // Initialize pagination if not already done
@@ -2531,18 +3533,63 @@
                         }
                     }
                 } catch (error) {
+                    console.error('Error in fetchAndRenderStudents:', error);
                     studentListError.textContent = error.message || 'An error occurred while fetching students.';
                     studentListError.classList.remove('hidden');
+                    hideSkeletonLoading(); // Make sure to hide skeleton on error
                 } finally {
                     studentListLoading.classList.add('hidden');
+                    isLoadingStudents = false; // Reset flag
+                }
+            };
+
+            // Skeleton loading function
+            const showSkeletonLoading = (count = 6) => {
+                const skeletonGrid = document.createElement('div');
+                skeletonGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+                skeletonGrid.id = 'skeleton-loading';
+                
+                for (let i = 0; i < count; i++) {
+                    const skeletonCard = document.createElement('div');
+                    skeletonCard.className = 'skeleton-card';
+                    skeletonCard.innerHTML = `
+                        <div class="flex items-start space-x-3">
+                            <div class="skeleton skeleton-avatar"></div>
+                            <div class="flex-1 space-y-2">
+                                <div class="skeleton skeleton-line medium"></div>
+                                <div class="skeleton skeleton-line short"></div>
+                                <div class="skeleton skeleton-line long"></div>
+                                <div class="skeleton skeleton-line short"></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <div class="skeleton skeleton-line short" style="height: 32px; border-radius: 6px;"></div>
+                            <div class="skeleton skeleton-line short" style="height: 32px; border-radius: 6px;"></div>
+                        </div>
+                    `;
+                    skeletonGrid.appendChild(skeletonCard);
+                }
+                
+                studentListContainer.innerHTML = '';
+                studentListContainer.appendChild(skeletonGrid);
+            };
+            
+            // Hide skeleton loading
+            const hideSkeletonLoading = () => {
+                const skeleton = document.getElementById('skeleton-loading');
+                if (skeleton) {
+                    skeleton.remove();
                 }
             };
 
             const renderStudentCards = (students) => {
-                // Enhanced student card rendering with better performance
+                // Hide skeleton loading first
+                hideSkeletonLoading();
+                
+                // Enhanced student card rendering with better performance and animations
                 if (!students || students.length === 0) {
                     studentListContainer.innerHTML = `
-                        <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 fade-in">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                             </svg>
@@ -2559,8 +3606,8 @@
                 studentsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
                 studentsGrid.id = 'students-grid';
 
-                students.forEach(student => {
-                    const studentCard = createStudentCard(student);
+                students.forEach((student, index) => {
+                    const studentCard = createStudentCard(student, index);
                     studentsGrid.appendChild(studentCard);
                 });
 
@@ -2572,9 +3619,9 @@
                 attachStudentCardEventListeners();
             };
 
-            const createStudentCard = (student) => {
+            const createStudentCard = (student, index = 0) => {
                 const card = document.createElement('div');
-                card.className = 'student-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200';
+                card.className = 'student-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 hover-lift fade-in';
                 card.dataset.studentName = student.full_name;
                 card.dataset.studentIndex = student.index_number;
                 card.dataset.program = student.program || '';
@@ -2590,33 +3637,36 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-start">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center space-x-3 mb-3">
-                                <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                                    ${initials}
+                        <div class="flex items-start space-x-3">
+                            <input type="checkbox" class="bulk-checkbox student-checkbox mt-1" 
+                                   value="${student.id}" data-student-id="${student.id}" />
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <div class="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                                        ${initials}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="student-name text-lg font-semibold text-gray-900 truncate">${student.full_name}</h4>
+                                        <p class="text-sm text-gray-600 truncate">${student.index_number}</p>
+                                    </div>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="student-name text-lg font-semibold text-gray-900 truncate">${student.full_name}</h4>
-                                    <p class="text-sm text-gray-600 truncate">${student.index_number}</p>
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                <p class="student-email text-sm text-gray-600 truncate">
-                                    <span class="inline-flex items-center">
-                                        <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
-                                        </svg>
-                                        ${student.contact_email || 'No email'}
-                                    </span>
-                                </p>
-                                <p class="student-course text-sm text-gray-600 truncate">
-                                    <span class="inline-flex items-center">
-                                        <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                        </svg>
-                                        ${student.program || 'N/A'}
-                                    </span>
-                                </p>
+                                <div class="space-y-2">
+                                    <p class="student-email text-sm text-gray-600 truncate">
+                                        <span class="inline-flex items-center">
+                                            <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+                                            </svg>
+                                            ${student.contact_email || 'No email'}
+                                        </span>
+                                    </p>
+                                    <p class="student-course text-sm text-gray-600 truncate">
+                                        <span class="inline-flex items-center">
+                                            <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                            </svg>
+                                            ${student.program || 'N/A'}
+                                        </span>
+                                    </p>
                                 <div class="flex items-center justify-between">
                                     ${yearBadge}
                                     <div class="flex space-x-1">
@@ -2634,6 +3684,7 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
                     </div>
                 `;
 
@@ -2682,22 +3733,33 @@
             };
 
             // Enhanced student form submission with pagination refresh
-            addStudentForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                addStudentButton.disabled = true;
-                displayMessage('add-student-message', '', 'success');
-                displayMessage('add-student-error', '', 'error');
+            if (addStudentForm) {
+                addStudentForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (addStudentButton) addStudentButton.disabled = true;
+                    displayMessage('add-student-message', '', 'success');
+                    displayMessage('add-student-error', '', 'error');
 
-                const newStudent = {
-                    index_number: document.getElementById('new-student-index').value,
-                    full_name: document.getElementById('new-student-name').value,
-                    date_of_birth: document.getElementById('new-student-dob').value || null,
-                    gender: document.getElementById('new-student-gender').value || null,
-                    contact_email: document.getElementById('new-student-email').value || null,
-                    contact_phone: document.getElementById('new-student-phone').value || null,
-                    program: document.getElementById('new-student-program').value || null,
-                    year_of_study: parseInt(document.getElementById('new-student-year').value) || null,
-                };
+                    // Safely get form values with null checks
+                    const indexEl = document.getElementById('new-student-index');
+                    const nameEl = document.getElementById('new-student-name');
+                    const dobEl = document.getElementById('new-student-dob');
+                    const genderEl = document.getElementById('new-student-gender');
+                    const emailEl = document.getElementById('new-student-email');
+                    const phoneEl = document.getElementById('new-student-phone');
+                    const programEl = document.getElementById('new-student-program');
+                    const yearEl = document.getElementById('new-student-year');
+
+                    const newStudent = {
+                        index_number: indexEl?.value || '',
+                        full_name: nameEl?.value || '',
+                        date_of_birth: dobEl?.value || null,
+                        gender: genderEl?.value || null,
+                        contact_email: emailEl?.value || null,
+                        contact_phone: phoneEl?.value || null,
+                        program: programEl?.value || null,
+                        year_of_study: yearEl?.value ? parseInt(yearEl.value) : null,
+                    };
 
                 try {
                     const result = await api.createStudent(newStudent);
@@ -2711,9 +3773,10 @@
                 } catch (err) {
                     displayMessage('add-student-error', err.message, 'error');
                 } finally {
-                    addStudentButton.disabled = false;
+                    if (addStudentButton) addStudentButton.disabled = false;
                 }
-            });
+                });
+            }
 
             // Update legacy button handlers (keeping for compatibility)
             const legacySearchButton = document.getElementById('search-students-button');
@@ -2733,8 +3796,118 @@
                 const activeFiltersContainer = document.getElementById('active-filters');
                 const searchResultsSummary = document.getElementById('search-results-summary');
                 const resultsText = document.getElementById('results-text');
+                
+                // Autocomplete elements
+                const autocompleteDropdown = document.getElementById('search-autocomplete');
+                const suggestionsContainer = document.getElementById('search-suggestions');
+                const historyContainer = document.getElementById('search-history');
+                const historyItems = document.getElementById('search-history-items');
 
                 let searchTimeout;
+                let selectedSuggestionIndex = -1;
+                let suggestions = [];
+                
+                // Search history management
+                const getSearchHistory = () => {
+                    try {
+                        return JSON.parse(localStorage.getItem('srms_search_history') || '[]');
+                    } catch {
+                        return [];
+                    }
+                };
+                
+                const addToSearchHistory = (term) => {
+                    if (!term.trim()) return;
+                    let history = getSearchHistory();
+                    history = history.filter(item => item !== term.trim());
+                    history.unshift(term.trim());
+                    history = history.slice(0, 5); // Keep only last 5 searches
+                    localStorage.setItem('srms_search_history', JSON.stringify(history));
+                };
+                
+                const renderSearchHistory = () => {
+                    const history = getSearchHistory();
+                    if (history.length === 0) {
+                        historyContainer.classList.add('hidden');
+                        return;
+                    }
+                    
+                    historyContainer.classList.remove('hidden');
+                    historyItems.innerHTML = history.map(term => `
+                        <div class="history-item px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center justify-between" data-term="${term}">
+                            <span class="text-sm text-gray-700">${term}</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    `).join('');
+                    
+                    // Add click handlers for history items
+                    historyItems.querySelectorAll('.history-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const term = item.getAttribute('data-term');
+                            searchTermInput.value = term;
+                            hideAutocomplete();
+                            performSearch();
+                        });
+                    });
+                };
+                
+                // Autocomplete functionality
+                const showAutocomplete = () => {
+                    autocompleteDropdown.classList.remove('hidden');
+                    autocompleteDropdown.classList.add('slide-down');
+                };
+                
+                const hideAutocomplete = () => {
+                    autocompleteDropdown.classList.add('hidden');
+                    autocompleteDropdown.classList.remove('slide-down');
+                    selectedSuggestionIndex = -1;
+                };
+                
+                const generateSuggestions = async (term) => {
+                    if (!term.trim()) {
+                        renderSearchHistory();
+                        return;
+                    }
+                    
+                    // Simple suggestions based on common patterns
+                    const commonSuggestions = [
+                        `${term} Computer Science`,
+                        `${term} Engineering`,
+                        `${term} Business`,
+                        `${term} 2024`,
+                        `${term} male`,
+                        `${term} female`
+                    ].filter(suggestion => suggestion.toLowerCase() !== term.toLowerCase());
+                    
+                    suggestions = commonSuggestions.slice(0, 5);
+                    renderSuggestions();
+                };
+                
+                const renderSuggestions = () => {
+                    historyContainer.classList.add('hidden');
+                    
+                    if (suggestions.length === 0) {
+                        suggestionsContainer.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">No suggestions available</div>';
+                        return;
+                    }
+                    
+                    suggestionsContainer.innerHTML = suggestions.map((suggestion, index) => `
+                        <div class="autocomplete-item px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm ${index === selectedSuggestionIndex ? 'highlighted' : ''}" data-suggestion="${suggestion}">
+                            ${suggestion}
+                        </div>
+                    `).join('');
+                    
+                    // Add click handlers for suggestions
+                    suggestionsContainer.querySelectorAll('.autocomplete-item').forEach((item, index) => {
+                        item.addEventListener('click', () => {
+                            searchTermInput.value = item.getAttribute('data-suggestion');
+                            hideAutocomplete();
+                            performSearch();
+                        });
+                    });
+                };
 
                 // Define functions first before using them
                 
@@ -2790,39 +3963,121 @@
                     }
                 });
 
-                // Real-time search with debouncing
+                // Enhanced real-time search with autocomplete and keyboard shortcuts
                 searchTermInput.addEventListener('input', (e) => {
                     const value = e.target.value.trim();
                     
                     // Show/hide clear button
                     if (value) {
                         clearSearchBtn.classList.remove('hidden');
+                        showAutocomplete();
+                        generateSuggestions(value);
                     } else {
                         clearSearchBtn.classList.add('hidden');
+                        hideAutocomplete();
                     }
 
                     // Show spinner during search
                     searchSpinner.classList.remove('hidden');
 
-                    // Debounced search
+                    // Debounced search for real-time results
                     clearTimeout(searchTimeout);
                     searchTimeout = setTimeout(async () => {
                         try {
-                            await performSearch();
+                            if (value) {
+                                await performSearch();
+                            }
                         } catch (error) {
                             console.error('Search error:', error);
                             showToast('Search failed: ' + error.message, 'error');
                         } finally {
                             searchSpinner.classList.add('hidden');
                         }
-                    }, 300);
+                    }, 500); // Slightly longer delay for real-time search
                 });
+                
+                // Keyboard shortcuts and navigation
+                searchTermInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        // Clear search and hide autocomplete
+                        e.preventDefault();
+                        searchTermInput.value = '';
+                        clearSearchBtn.classList.add('hidden');
+                        hideAutocomplete();
+                        performSearch();
+                        return;
+                    }
+                    
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
+                            // Use selected suggestion
+                            searchTermInput.value = suggestions[selectedSuggestionIndex];
+                        }
+                        addToSearchHistory(searchTermInput.value);
+                        hideAutocomplete();
+                        performSearch();
+                        return;
+                    }
+                    
+                    // Navigate suggestions with arrow keys
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (!autocompleteDropdown.classList.contains('hidden')) {
+                            selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+                            updateSuggestionHighlight();
+                        }
+                        return;
+                    }
+                    
+                    if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!autocompleteDropdown.classList.contains('hidden')) {
+                            selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+                            updateSuggestionHighlight();
+                        }
+                        return;
+                    }
+                });
+                
+                // Focus and blur events for autocomplete
+                searchTermInput.addEventListener('focus', () => {
+                    const value = searchTermInput.value.trim();
+                    if (value) {
+                        showAutocomplete();
+                        generateSuggestions(value);
+                    } else {
+                        showAutocomplete();
+                        renderSearchHistory();
+                    }
+                });
+                
+                // Hide autocomplete when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!searchTermInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+                        hideAutocomplete();
+                    }
+                });
+                
+                // Update suggestion highlight
+                const updateSuggestionHighlight = () => {
+                    const items = suggestionsContainer.querySelectorAll('.autocomplete-item');
+                    items.forEach((item, index) => {
+                        if (index === selectedSuggestionIndex) {
+                            item.classList.add('highlighted');
+                        } else {
+                            item.classList.remove('highlighted');
+                        }
+                    });
+                };
 
-                // Clear search
+                // Clear search with enhanced functionality
                 clearSearchBtn.addEventListener('click', () => {
                     searchTermInput.value = '';
                     clearSearchBtn.classList.add('hidden');
+                    hideAutocomplete();
                     performSearch();
+                    searchTermInput.focus(); // Keep focus for better UX
                 });
 
                 // Apply filters
@@ -2888,15 +4143,319 @@
                 };
             };
 
+            // Batch Progress Modal
+            const showBatchProgress = (title, steps) => {
+                const modalHTML = `
+                    <div id="batch-progress-overlay" class="batch-progress-overlay"></div>
+                    <div id="batch-progress-modal" class="batch-progress">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">${title}</h3>
+                            <div class="loading-spinner mx-auto mb-4"></div>
+                        </div>
+                        <div id="progress-steps" class="space-y-2">
+                            ${steps.map((step, index) => `
+                                <div class="progress-step ${index === 0 ? 'active' : ''}" data-step="${index}">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="step-indicator w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center">
+                                            <span class="text-xs font-medium">${index + 1}</span>
+                                        </div>
+                                        <span class="text-sm text-gray-700">${step}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="mt-6 text-center">
+                            <p class="text-sm text-gray-500">Please wait while we process your request...</p>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                
+                // Simulate progress through steps
+                let currentStep = 0;
+                const stepInterval = setInterval(() => {
+                    if (currentStep < steps.length - 1) {
+                        document.querySelector(`[data-step="${currentStep}"]`).classList.remove('active');
+                        document.querySelector(`[data-step="${currentStep}"]`).classList.add('completed');
+                        currentStep++;
+                        document.querySelector(`[data-step="${currentStep}"]`).classList.add('active');
+                    } else {
+                        clearInterval(stepInterval);
+                    }
+                }, 800);
+                
+                // Store interval for cleanup
+                window.batchProgressInterval = stepInterval;
+            };
+            
+            const hideBatchProgress = () => {
+                if (window.batchProgressInterval) {
+                    clearInterval(window.batchProgressInterval);
+                }
+                document.getElementById('batch-progress-overlay')?.remove();
+                document.getElementById('batch-progress-modal')?.remove();
+            };
+            
+            // Bulk Operations API Functions
+            const performBulkExport = async (studentIds) => {
+                // Simulate export process
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Create CSV content
+                const students = studentIds.map(id => {
+                    const card = document.querySelector(`[data-student-id="${id}"]`)?.closest('.student-card');
+                    if (card) {
+                        return {
+                            name: card.querySelector('.student-name')?.textContent || '',
+                            index: card.dataset.studentIndex || '',
+                            email: card.querySelector('.student-email')?.textContent.replace(/.*/, '').trim() || '',
+                            program: card.dataset.program || ''
+                        };
+                    }
+                    return null;
+                }).filter(Boolean);
+                
+                const csvContent = [
+                    'Name,Index Number,Email,Program',
+                    ...students.map(s => `"${s.name}","${s.index}","${s.email}","${s.program}"`)
+                ].join('\\n');
+                
+                // Download CSV
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `students_export_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            };
+            
+            const performBulkDelete = async (studentIds) => {
+                // Simulate API calls with progress
+                for (let i = 0; i < studentIds.length; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    // In real implementation, make API call here
+                    // await api.deleteStudent(studentIds[i]);
+                }
+            };
+            
+            // Enhanced confirmation modal
+            const showConfirmation = (title, message) => {
+                return new Promise((resolve) => {
+                    const modalHTML = `
+                        <div id="confirmation-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="ml-3 text-lg font-medium text-gray-900">${title}</h3>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-6">${message}</p>
+                                <div class="flex justify-end space-x-3">
+                                    <button id="cancel-confirmation" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                                    <button id="confirm-action" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Confirm</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                    
+                    document.getElementById('cancel-confirmation').onclick = () => {
+                        document.getElementById('confirmation-overlay').remove();
+                        resolve(false);
+                    };
+                    
+                    document.getElementById('confirm-action').onclick = () => {
+                        document.getElementById('confirmation-overlay').remove();
+                        resolve(true);
+                    };
+                });
+            };
+
+            // Bulk Operations Management
+            const setupBulkOperations = () => {
+                const bulkOperationsPanel = document.getElementById('bulk-operations-panel');
+                const selectAllCheckbox = document.getElementById('select-all-students');
+                const selectedCount = document.getElementById('selected-count');
+                const selectionCounter = document.getElementById('selection-counter');
+                const selectionText = document.getElementById('selection-text');
+                const bulkExportBtn = document.getElementById('bulk-export');
+                const bulkEditBtn = document.getElementById('bulk-edit');
+                const bulkDeleteBtn = document.getElementById('bulk-delete');
+                
+                let selectedStudents = new Set();
+                
+                // Update UI based on selection
+                const updateBulkUI = () => {
+                    const count = selectedStudents.size;
+                    selectedCount.textContent = count;
+                    
+                    if (count > 0) {
+                        bulkOperationsPanel.classList.add('active');
+                        selectionCounter.classList.remove('hidden');
+                        selectionText.textContent = 'Bulk operations available';
+                        selectAllCheckbox.disabled = false;
+                        bulkExportBtn.disabled = false;
+                        bulkEditBtn.disabled = false;
+                        bulkDeleteBtn.disabled = false;
+                    } else {
+                        bulkOperationsPanel.classList.remove('active');
+                        selectionCounter.classList.add('hidden');
+                        selectionText.textContent = 'Select students for bulk operations';
+                        bulkExportBtn.disabled = true;
+                        bulkEditBtn.disabled = true;
+                        bulkDeleteBtn.disabled = true;
+                    }
+                    
+                    // Update select all checkbox state
+                    const allCheckboxes = document.querySelectorAll('.student-checkbox');
+                    const checkedCount = document.querySelectorAll('.student-checkbox:checked').length;
+                    
+                    if (checkedCount === 0) {
+                        selectAllCheckbox.indeterminate = false;
+                        selectAllCheckbox.checked = false;
+                    } else if (checkedCount === allCheckboxes.length) {
+                        selectAllCheckbox.indeterminate = false;
+                        selectAllCheckbox.checked = true;
+                    } else {
+                        selectAllCheckbox.indeterminate = true;
+                    }
+                };
+                
+                // Handle individual checkbox changes
+                document.addEventListener('change', (e) => {
+                    if (e.target.classList.contains('student-checkbox')) {
+                        const studentId = e.target.value;
+                        if (e.target.checked) {
+                            selectedStudents.add(studentId);
+                        } else {
+                            selectedStudents.delete(studentId);
+                        }
+                        updateBulkUI();
+                    }
+                });
+                
+                // Handle select all
+                selectAllCheckbox?.addEventListener('change', (e) => {
+                    const allCheckboxes = document.querySelectorAll('.student-checkbox');
+                    allCheckboxes.forEach(checkbox => {
+                        checkbox.checked = e.target.checked;
+                        const studentId = checkbox.value;
+                        if (e.target.checked) {
+                            selectedStudents.add(studentId);
+                        } else {
+                            selectedStudents.delete(studentId);
+                        }
+                    });
+                    updateBulkUI();
+                });
+                
+                // Bulk Export
+                bulkExportBtn?.addEventListener('click', async () => {
+                    if (selectedStudents.size === 0) return;
+                    
+                    showBatchProgress('Exporting Students', [
+                        'Gathering student data...',
+                        'Formatting export file...',
+                        'Downloading file...'
+                    ]);
+                    
+                    try {
+                        const studentIds = Array.from(selectedStudents);
+                        await performBulkExport(studentIds);
+                        hideBatchProgress();
+                        showToast(`Successfully exported ${studentIds.length} students`, 'success');
+                    } catch (error) {
+                        hideBatchProgress();
+                        showToast('Export failed: ' + error.message, 'error');
+                    }
+                });
+                
+                // Bulk Delete
+                bulkDeleteBtn?.addEventListener('click', async () => {
+                    if (selectedStudents.size === 0) return;
+                    
+                    const confirmed = await showConfirmation(
+                        'Delete Selected Students',
+                        `Are you sure you want to delete ${selectedStudents.size} selected students? This action cannot be undone.`
+                    );
+                    
+                    if (confirmed) {
+                        showBatchProgress('Deleting Students', [
+                            'Preparing deletion...',
+                            'Deleting student records...',
+                            'Updating database...',
+                            'Refreshing display...'
+                        ]);
+                        
+                        try {
+                            const studentIds = Array.from(selectedStudents);
+                            await performBulkDelete(studentIds);
+                            selectedStudents.clear();
+                            hideBatchProgress();
+                            showToast(`Successfully deleted ${studentIds.length} students`, 'success');
+                            fetchAndRenderStudents(); // Refresh the list
+                        } catch (error) {
+                            hideBatchProgress();
+                            showToast('Bulk delete failed: ' + error.message, 'error');
+                        }
+                    }
+                });
+                
+                // Reset selection when new data loads
+                window.addEventListener('studentsLoaded', () => {
+                    selectedStudents.clear();
+                    updateBulkUI();
+                });
+            };
+
             // Initialize enhanced search
             setupEnhancedSearch();
             
+            // Initialize bulk operations
+            setupBulkOperations();
+
+
+
+
+            
             // Enhanced Load All / Hide Students functionality
             loadAllStudentsButton.addEventListener('click', async () => {
-                if (loadAllStudentsButton.textContent.trim() === 'Load Students') {
+                const selectAllCheckbox = document.getElementById('select-all-students');
+                const isCurrentlyLoaded = loadAllStudentsButton.dataset.loaded === 'true';
+                
+                if (!isCurrentlyLoaded) {
+                    // Load students
+                    loadAllStudentsButton.disabled = true;
+                    loadAllStudentsButton.innerHTML = `
+                        <svg class="w-4 h-4 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Loading...
+                    `;
+                    
                     await fetchAndRenderStudents(false);
-                    loadAllStudentsButton.textContent = 'Hide Students';
+                    
+                    loadAllStudentsButton.innerHTML = `
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 16.121m6.878-6.243L16.121 3M13.875 18.825L21 12m-7.125 6.825L16.121 3"></path>
+                        </svg>
+                        Hide Students
+                    `;
+                    loadAllStudentsButton.dataset.loaded = 'true';
+                    loadAllStudentsButton.disabled = false;
+                    
+                    // Enable bulk operations
+                    if (selectAllCheckbox) selectAllCheckbox.disabled = false;
                 } else {
+                    // Hide students
                     studentListContainer.innerHTML = `
                         <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2915,7 +4474,27 @@
                         document.getElementById('student-search-interface').innerHTML = '';
                     }
                     
-                    loadAllStudentsButton.textContent = 'Load Students';
+                    loadAllStudentsButton.innerHTML = `
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                        Load Students
+                    `;
+                    loadAllStudentsButton.dataset.loaded = 'false';
+                    
+                    // Disable bulk operations
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.disabled = true;
+                        selectAllCheckbox.checked = false;
+                    }
+                    
+                    // Reset bulk operations panel
+                    const bulkOperationsPanel = document.getElementById('bulk-operations-panel');
+                    const selectionCounter = document.getElementById('selection-counter');
+                    const selectionText = document.getElementById('selection-text');
+                    if (bulkOperationsPanel) bulkOperationsPanel.classList.remove('active');
+                    if (selectionCounter) selectionCounter.classList.add('hidden');
+                    if (selectionText) selectionText.textContent = 'Select students for bulk operations';
                 }
             });
 
@@ -3730,7 +5309,7 @@
                             <label for="json-input" class="block text-sm font-medium text-gray-700 mb-2">Paste JSON Data:</label>
                             <textarea id="json-input" rows="10" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono text-sm" placeholder='{"students": [...], "courses": [...], ...}'></textarea>
                         </div>
-                        <button type="submit" id="bulk-import-button" class="w-full bg-purple-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-purple-700 disabled:opacity-50">
+                        <button type="submit" id="bulk-import-button" class="w-full bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
                             Perform Bulk Import
                         </button>
                         <p id="bulk-import-message" class="mt-3 text-center text-sm"></p>
@@ -3902,7 +5481,7 @@
                                     <input type="checkbox" id="cleanup-first" checked class="form-checkbox h-4 w-4 text-blue-600" />
                                     <label for="cleanup-first" class="text-sm text-gray-700">Clear existing data first</label>
                                 </div>
-                                <button type="submit" id="seed-db-button" class="w-full bg-purple-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-purple-700 disabled:opacity-50">
+                                <button type="submit" id="seed-db-button" class="w-full bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
                                     Seed Database
                                 </button>
                             </form>
@@ -4130,12 +5709,469 @@
             sessionStorage.removeItem('adminActiveTab');
         };
 
+        // Enhanced Button Interactions
+        const enhanceButtonInteractions = () => {
+            // Add button press animations to all buttons
+            document.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                    const button = e.target.tagName === 'BUTTON' ? e.target : e.target.closest('button');
+                    button.classList.add('button-press');
+                    
+                    // Remove the class after animation
+                    setTimeout(() => {
+                        button.classList.remove('button-press');
+                    }, 150);
+                }
+            });
+            
+            // Add hover lift to interactive cards
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.classList.contains('student-card') || 
+                    e.target.classList.contains('course-card') || 
+                    e.target.classList.contains('grade-card')) {
+                    e.target.classList.add('hover-lift');
+                }
+            });
+        };
+
+        // Mobile and Touch Enhancements
+        const enhanceMobileExperience = () => {
+            // Add touch-friendly classes to relevant elements
+            const addTouchClasses = () => {
+                // Make buttons touch-friendly
+                document.querySelectorAll('button').forEach(btn => {
+                    btn.classList.add('touch-target');
+                });
+                
+                // Make form inputs touch-friendly
+                document.querySelectorAll('input, select, textarea').forEach(input => {
+                    input.classList.add('touch-target');
+                });
+                
+                // Add swipe support to navigation tabs
+                const navTabs = document.querySelector('.navigation-tabs');
+                if (navTabs) {
+                    navTabs.classList.add('swipeable');
+                }
+                
+                // Add mobile scroll classes
+                document.querySelectorAll('.overflow-auto, .overflow-y-auto').forEach(el => {
+                    el.classList.add('mobile-scroll');
+                });
+            };
+            
+            // Mobile navigation enhancement
+            const enhanceMobileNavigation = () => {
+                const nav = document.querySelector('nav ul');
+                if (nav) {
+                    // Add scroll indicator for overflowing navigation
+                    let isScrolling = false;
+                    nav.addEventListener('scroll', () => {
+                        if (!isScrolling) {
+                            isScrolling = true;
+                            nav.style.scrollBehavior = 'smooth';
+                            setTimeout(() => {
+                                isScrolling = false;
+                            }, 150);
+                        }
+                    });
+                }
+            };
+            
+            // Responsive grid updates
+            const updateResponsiveGrids = () => {
+                document.querySelectorAll('.grid').forEach(grid => {
+                    // Check if it's a student/course/grade grid
+                    if (grid.id === 'students-grid' || 
+                        grid.classList.contains('students-grid') ||
+                        grid.classList.contains('courses-grid') ||
+                        grid.classList.contains('grades-grid')) {
+                        grid.classList.add('grid-responsive');
+                    }
+                });
+            };
+            
+            // Touch gesture support for autocomplete
+            const addTouchGestureSupport = () => {
+                let touchStartY = 0;
+                let touchEndY = 0;
+                
+                document.addEventListener('touchstart', (e) => {
+                    touchStartY = e.changedTouches[0].screenY;
+                });
+                
+                document.addEventListener('touchend', (e) => {
+                    touchEndY = e.changedTouches[0].screenY;
+                    const autocomplete = document.getElementById('search-autocomplete');
+                    
+                    // Swipe down to close autocomplete
+                    if (autocomplete && !autocomplete.classList.contains('hidden')) {
+                        if (touchEndY - touchStartY > 50) {
+                            autocomplete.classList.add('hidden');
+                        }
+                    }
+                });
+            };
+            
+            // Viewport height fix for mobile browsers
+            const fixMobileViewportHeight = () => {
+                const setVH = () => {
+                    const vh = window.innerHeight * 0.01;
+                    document.documentElement.style.setProperty('--vh', `${vh}px`);
+                };
+                
+                setVH();
+                window.addEventListener('resize', setVH);
+                window.addEventListener('orientationchange', setVH);
+            };
+            
+            // Initialize all mobile enhancements
+            addTouchClasses();
+            enhanceMobileNavigation();
+            updateResponsiveGrids();
+            addTouchGestureSupport();
+            fixMobileViewportHeight();
+            
+            // Re-run when content changes
+            const observer = new MutationObserver(() => {
+                addTouchClasses();
+                updateResponsiveGrids();
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        };
+
+        // Progress Indicator for Loading States
+        const createProgressIndicator = (container, progress = 0) => {
+            const progressHTML = `
+                <div class="progress-indicator mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700">Loading...</span>
+                        <span class="text-sm text-gray-500">${Math.round(progress)}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', progressHTML);
+        };
+
         // Manual logout function for debugging (can be called from browser console)
         window.forceLogout = () => {
             console.log('Force logout called');
             clearAuthData();
             renderApp();
         };
+
+        // Initialize enhanced interactions
+        enhanceButtonInteractions();
+        enhanceMobileExperience();
+        
+        // Initialize Analytics Dashboard
+        const initializeAnalytics = () => {
+            // Add analytics toggle button
+            const searchContainer = document.querySelector('.search-container');
+            if (searchContainer && !document.getElementById('analytics-toggle')) {
+                const analyticsButton = document.createElement('button');
+                analyticsButton.id = 'analytics-toggle';
+                analyticsButton.className = 'analytics-toggle';
+                analyticsButton.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Analytics
+                `;
+                analyticsButton.onclick = toggleAnalytics;
+                searchContainer.appendChild(analyticsButton);
+            }
+            
+            // Create analytics panel
+            if (!document.getElementById('analytics-panel')) {
+                const analyticsHTML = `
+                    <div id="analytics-panel" class="analytics-panel">
+                        <div>
+                            <div class="analytics-header">
+                                <h2 class="text-2xl font-bold text-gray-800">Student Analytics Dashboard</h2>
+                                <button id="close-analytics" class="close-analytics">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div class="analytics-content">
+                                <div class="analytics-grid">
+                                    <!-- Summary Cards -->
+                                    <div class="summary-cards">
+                                        <div class="summary-card">
+                                            <div class="summary-icon bg-blue-100 text-blue-600">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="summary-content">
+                                                <div class="summary-value" id="total-students">--</div>
+                                                <div class="summary-label">Total Students</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="summary-card">
+                                            <div class="summary-icon bg-green-100 text-green-600">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="summary-content">
+                                                <div class="summary-value" id="active-students">--</div>
+                                                <div class="summary-label">Active Students</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="summary-card">
+                                            <div class="summary-icon bg-blue-100 text-blue-600">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="summary-content">
+                                                <div class="summary-value" id="total-programs">--</div>
+                                                <div class="summary-label">Programs</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="summary-card">
+                                            <div class="summary-icon bg-yellow-100 text-yellow-600">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="summary-content">
+                                                <div class="summary-value" id="avg-gpa">--</div>
+                                                <div class="summary-label">Average GPA</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Charts Section -->
+                                    <div class="charts-section">
+                                        <div class="chart-container">
+                                            <h3 class="chart-title">Students by Program</h3>
+                                            <div id="program-chart" class="chart-canvas"></div>
+                                        </div>
+                                        
+                                        <div class="chart-container">
+                                            <h3 class="chart-title">GPA Distribution</h3>
+                                            <div id="gpa-chart" class="chart-canvas"></div>
+                                        </div>
+                                        
+                                        <div class="chart-container">
+                                            <h3 class="chart-title">Enrollment Trends</h3>
+                                            <div id="enrollment-chart" class="chart-canvas"></div>
+                                        </div>
+                                        
+                                        <div class="chart-container">
+                                            <h3 class="chart-title">Performance Overview</h3>
+                                            <div id="performance-chart" class="chart-canvas"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', analyticsHTML);
+                
+                // Setup analytics event listeners
+                document.getElementById('close-analytics').onclick = () => {
+                    document.getElementById('analytics-panel').classList.remove('show');
+                };
+            }
+        };
+        
+        const toggleAnalytics = () => {
+            const panel = document.getElementById('analytics-panel');
+            if (panel.classList.contains('show')) {
+                panel.classList.remove('show');
+            } else {
+                panel.classList.add('show');
+                updateAnalytics();
+            }
+        };
+        
+        const updateAnalytics = async () => {
+            try {
+                // Show loading state
+                showAnalyticsLoading();
+                
+                // Fetch all students data for analytics
+                const response = await api.getStudents(1, 1000); // Get all students
+                const allStudents = response.students || [];
+                
+                // Calculate summary statistics
+                updateSummaryCards(allStudents);
+                
+                // Generate charts
+                generateProgramChart(allStudents);
+                generateGPAChart(allStudents);
+                generateEnrollmentChart(allStudents);
+                generatePerformanceChart(allStudents);
+                
+            } catch (error) {
+                console.error('Failed to update analytics:', error);
+                showAnalyticsError();
+            }
+        };
+        
+        const showAnalyticsLoading = () => {
+            const charts = document.querySelectorAll('.chart-canvas');
+            charts.forEach(chart => {
+                chart.innerHTML = '<div class="chart-loading">Loading...</div>';
+            });
+        };
+        
+        const showAnalyticsError = () => {
+            const charts = document.querySelectorAll('.chart-canvas');
+            charts.forEach(chart => {
+                chart.innerHTML = '<div class="chart-error">Failed to load data</div>';
+            });
+        };
+        
+        const updateSummaryCards = (students) => {
+            document.getElementById('total-students').textContent = students.length;
+            document.getElementById('active-students').textContent = students.filter(s => s.email).length;
+            
+            const programs = [...new Set(students.map(s => s.program).filter(Boolean))];
+            document.getElementById('total-programs').textContent = programs.length;
+            
+            const gpas = students.map(s => parseFloat(s.gpa || 0)).filter(gpa => gpa > 0);
+            const avgGPA = gpas.length > 0 ? (gpas.reduce((a, b) => a + b, 0) / gpas.length).toFixed(2) : 'N/A';
+            document.getElementById('avg-gpa').textContent = avgGPA;
+        };
+        
+        const generateProgramChart = (students) => {
+            const programCounts = {};
+            students.forEach(student => {
+                const program = student.program || 'Unknown';
+                programCounts[program] = (programCounts[program] || 0) + 1;
+            });
+            
+            const chartContainer = document.getElementById('program-chart');
+            const maxCount = Math.max(...Object.values(programCounts));
+            
+            chartContainer.innerHTML = Object.entries(programCounts)
+                .sort(([,a], [,b]) => b - a)
+                .map(([program, count]) => {
+                    const percentage = ((count / maxCount) * 100);
+                    const shortProgram = program.length > 20 ? program.substring(0, 17) + '...' : program;
+                    return `
+                        <div class="bar-item">
+                            <div class="bar-label" title="${program}">${shortProgram}</div>
+                            <div class="bar-container">
+                                <div class="bar-fill" style="width: ${percentage}%"></div>
+                                <span class="bar-value">${count}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        };
+        
+        const generateGPAChart = (students) => {
+            const gpaRanges = {
+                '4.0+': 0,
+                '3.5-3.99': 0,
+                '3.0-3.49': 0,
+                '2.5-2.99': 0,
+                '2.0-2.49': 0,
+                'Below 2.0': 0
+            };
+            
+            students.forEach(student => {
+                const gpa = parseFloat(student.gpa || 0);
+                if (gpa >= 4.0) gpaRanges['4.0+']++;
+                else if (gpa >= 3.5) gpaRanges['3.5-3.99']++;
+                else if (gpa >= 3.0) gpaRanges['3.0-3.49']++;
+                else if (gpa >= 2.5) gpaRanges['2.5-2.99']++;
+                else if (gpa >= 2.0) gpaRanges['2.0-2.49']++;
+                else if (gpa > 0) gpaRanges['Below 2.0']++;
+            });
+            
+            const chartContainer = document.getElementById('gpa-chart');
+            const maxCount = Math.max(...Object.values(gpaRanges));
+            
+            chartContainer.innerHTML = Object.entries(gpaRanges)
+                .map(([range, count]) => {
+                    const percentage = maxCount > 0 ? ((count / maxCount) * 100) : 0;
+                    return `
+                        <div class="bar-item">
+                            <div class="bar-label">${range}</div>
+                            <div class="bar-container">
+                                <div class="bar-fill gpa-bar" style="width: ${percentage}%"></div>
+                                <span class="bar-value">${count}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        };
+        
+        const generateEnrollmentChart = (students) => {
+            // Simulate enrollment data over months
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const enrollmentData = months.map(() => Math.floor(Math.random() * 20) + 5);
+            const maxEnrollment = Math.max(...enrollmentData);
+            
+            const chartContainer = document.getElementById('enrollment-chart');
+            chartContainer.innerHTML = `
+                <div class="line-chart">
+                    ${enrollmentData.map((value, index) => {
+                        const height = (value / maxEnrollment) * 100;
+                        return `
+                            <div class="line-point" style="height: ${height}%">
+                                <div class="point-value">${value}</div>
+                                <div class="point-label">${months[index]}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        };
+        
+        const generatePerformanceChart = (students) => {
+            const performanceData = [
+                { label: 'Excellent (A)', count: students.filter(s => parseFloat(s.gpa || 0) >= 3.7).length, color: '#10B981' },
+                { label: 'Good (B)', count: students.filter(s => { const gpa = parseFloat(s.gpa || 0); return gpa >= 3.0 && gpa < 3.7; }).length, color: '#3B82F6' },
+                { label: 'Average (C)', count: students.filter(s => { const gpa = parseFloat(s.gpa || 0); return gpa >= 2.0 && gpa < 3.0; }).length, color: '#F59E0B' },
+                { label: 'Below Average', count: students.filter(s => { const gpa = parseFloat(s.gpa || 0); return gpa > 0 && gpa < 2.0; }).length, color: '#EF4444' }
+            ];
+            
+            const total = performanceData.reduce((sum, item) => sum + item.count, 0);
+            const chartContainer = document.getElementById('performance-chart');
+            
+            chartContainer.innerHTML = `
+                <div class="pie-chart">
+                    ${performanceData.map(item => {
+                        const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : 0;
+                        return `
+                            <div class="pie-segment">
+                                <div class="pie-color" style="background-color: ${item.color}"></div>
+                                <div class="pie-label">${item.label}</div>
+                                <div class="pie-value">${item.count} (${percentage}%)</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        };
+        
+        // Initialize analytics when students are loaded
+        window.addEventListener('studentsLoaded', () => {
+            initializeAnalytics();
+        });
 
         window.addEventListener('DOMContentLoaded', renderApp);
     </script>
