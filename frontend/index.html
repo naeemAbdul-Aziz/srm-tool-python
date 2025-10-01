@@ -87,6 +87,60 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Screen reader only content */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus styles for better accessibility */
+        .focus-visible:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* Enhanced hover and focus states */
+        .student-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .student-card:focus-within {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* Loading states */
+        .pagination-loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .border-gray-300 {
+                border-color: #000;
+            }
+            .text-gray-600 {
+                color: #000;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            .animate-pulse, .animate-spin, .transition-colors, .transition-shadow {
+                animation: none;
+                transition: none;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -186,6 +240,1155 @@
             }
             return '';
         };
+
+        // --- Virtual Scrolling Component for Large Datasets ---
+        class VirtualScrollManager {
+            constructor(container, itemHeight = 120, bufferSize = 5) {
+                this.container = container;
+                this.itemHeight = itemHeight;
+                this.bufferSize = bufferSize;
+                this.totalItems = 0;
+                this.visibleItems = [];
+                this.startIndex = 0;
+                this.endIndex = 0;
+                this.containerHeight = 0;
+                this.scrollTop = 0;
+                
+                this.setupContainer();
+                this.attachScrollListener();
+            }
+
+            setupContainer() {
+                this.container.style.position = 'relative';
+                this.container.style.overflow = 'auto';
+                this.container.style.height = '600px'; // Default height
+                
+                this.viewport = document.createElement('div');
+                this.viewport.style.position = 'relative';
+                this.container.appendChild(this.viewport);
+                
+                this.updateContainerHeight();
+            }
+
+            updateContainerHeight() {
+                this.containerHeight = this.container.clientHeight;
+                this.visibleCount = Math.ceil(this.containerHeight / this.itemHeight) + (this.bufferSize * 2);
+            }
+
+            attachScrollListener() {
+                this.container.addEventListener('scroll', () => {
+                    this.scrollTop = this.container.scrollTop;
+                    this.updateVisibleRange();
+                });
+
+                // Handle resize
+                window.addEventListener('resize', () => {
+                    this.updateContainerHeight();
+                    this.updateVisibleRange();
+                });
+            }
+
+            setData(items) {
+                this.totalItems = items.length;
+                this.allItems = items;
+                this.viewport.style.height = `${this.totalItems * this.itemHeight}px`;
+                this.updateVisibleRange();
+            }
+
+            updateVisibleRange() {
+                const newStartIndex = Math.max(0, Math.floor(this.scrollTop / this.itemHeight) - this.bufferSize);
+                const newEndIndex = Math.min(this.totalItems - 1, newStartIndex + this.visibleCount - 1);
+
+                if (newStartIndex !== this.startIndex || newEndIndex !== this.endIndex) {
+                    this.startIndex = newStartIndex;
+                    this.endIndex = newEndIndex;
+                    this.renderVisibleItems();
+                }
+            }
+
+            renderVisibleItems() {
+                if (!this.allItems) return;
+
+                this.visibleItems = this.allItems.slice(this.startIndex, this.endIndex + 1);
+                
+                // Clear existing content
+                while (this.viewport.firstChild) {
+                    this.viewport.removeChild(this.viewport.firstChild);
+                }
+
+                // Create spacer for items above viewport
+                if (this.startIndex > 0) {
+                    const topSpacer = document.createElement('div');
+                    topSpacer.style.height = `${this.startIndex * this.itemHeight}px`;
+                    this.viewport.appendChild(topSpacer);
+                }
+
+                // Render visible items
+                const itemsContainer = document.createElement('div');
+                this.visibleItems.forEach((item, index) => {
+                    const actualIndex = this.startIndex + index;
+                    const itemElement = this.renderItem(item, actualIndex);
+                    itemsContainer.appendChild(itemElement);
+                });
+                this.viewport.appendChild(itemsContainer);
+
+                // Create spacer for items below viewport
+                const remainingItems = this.totalItems - this.endIndex - 1;
+                if (remainingItems > 0) {
+                    const bottomSpacer = document.createElement('div');
+                    bottomSpacer.style.height = `${remainingItems * this.itemHeight}px`;
+                    this.viewport.appendChild(bottomSpacer);
+                }
+            }
+
+            renderItem(item, index) {
+                // This should be overridden by the implementing class
+                const div = document.createElement('div');
+                div.style.height = `${this.itemHeight}px`;
+                div.style.display = 'flex';
+                div.style.alignItems = 'center';
+                div.textContent = `Item ${index}: ${JSON.stringify(item)}`;
+                return div;
+            }
+
+            scrollToIndex(index) {
+                const scrollTop = Math.max(0, (index - this.bufferSize) * this.itemHeight);
+                this.container.scrollTop = scrollTop;
+            }
+
+            destroy() {
+                this.container.removeEventListener('scroll', this.updateVisibleRange);
+                window.removeEventListener('resize', this.updateContainerHeight);
+            }
+        }
+
+        // --- Enhanced Student Virtual Scroll Implementation ---
+        class StudentVirtualScroll extends VirtualScrollManager {
+            constructor(container, onEdit, onDelete) {
+                super(container, 140, 3); // 140px height per student card
+                this.onEdit = onEdit;
+                this.onDelete = onDelete;
+            }
+
+            renderItem(student, index) {
+                const div = document.createElement('div');
+                div.className = 'student-card bg-white border border-gray-200 rounded-lg p-4 mb-2';
+                div.style.height = `${this.itemHeight - 8}px`; // Account for margin
+                div.dataset.studentName = student.full_name;
+                div.dataset.studentIndex = student.index_number;
+
+                const initials = student.full_name 
+                    ? student.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                    : student.index_number.substring(0, 2).toUpperCase();
+
+                div.innerHTML = `
+                    <div class="flex justify-between items-start h-full">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                                    ${initials}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="student-name text-lg font-medium text-gray-900 truncate">${student.full_name}</h4>
+                                    <p class="text-sm text-gray-600 truncate">${student.index_number}</p>
+                                </div>
+                            </div>
+                            <div class="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                <p class="student-email truncate">${student.contact_email || 'No email'}</p>
+                                <p class="student-course truncate">Course: ${student.program || 'N/A'}</p>
+                                <p class="student-semester">Year: ${student.year_of_study || 'N/A'}</p>
+                                <div class="flex space-x-1">
+                                    <button data-action="edit" data-index="${student.index_number}" 
+                                            class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
+                                        Edit
+                                    </button>
+                                    <button data-action="delete" data-index="${student.index_number}" 
+                                            class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Add click handlers
+                div.addEventListener('click', (e) => {
+                    const target = e.target;
+                    if (target.tagName === 'BUTTON' && target.dataset.action) {
+                        const indexNumber = target.dataset.index;
+                        if (target.dataset.action === 'edit') {
+                            this.onEdit(student, indexNumber);
+                        } else if (target.dataset.action === 'delete') {
+                            this.onDelete(student, indexNumber);
+                        }
+                    }
+                });
+
+                return div;
+            }
+        }
+
+        // --- Infinite Scroll Pagination (Alternative to traditional pagination) ---
+        class InfiniteScrollManager {
+            constructor(container, paginationManager, renderCallback) {
+                this.container = container;
+                this.paginationManager = paginationManager;
+                this.renderCallback = renderCallback;
+                this.loading = false;
+                this.allData = [];
+                this.observer = null;
+                
+                this.setupIntersectionObserver();
+            }
+
+            setupIntersectionObserver() {
+                const options = {
+                    root: this.container,
+                    rootMargin: '50px',
+                    threshold: 0.1
+                };
+
+                this.observer = new IntersectionObserver(async (entries) => {
+                    const entry = entries[0];
+                    if (entry.isIntersecting && !this.loading && this.paginationManager.hasNextPage) {
+                        await this.loadNextPage();
+                    }
+                }, options);
+            }
+
+            async loadNextPage() {
+                if (this.loading) return;
+                
+                this.loading = true;
+                this.showLoadingIndicator();
+                
+                try {
+                    const data = await this.paginationManager.nextPage();
+                    if (data && data.records) {
+                        this.allData.push(...data.records);
+                        this.renderCallback(this.allData, false); // false = don't replace, append
+                        this.updateLoadingTrigger();
+                    }
+                } catch (error) {
+                    showToast('Failed to load more data: ' + error.message, 'error');
+                } finally {
+                    this.loading = false;
+                    this.hideLoadingIndicator();
+                }
+            }
+
+            async reset() {
+                this.allData = [];
+                this.paginationManager.currentPage = 1;
+                
+                try {
+                    const data = await this.paginationManager.goToPage(1);
+                    if (data && data.records) {
+                        this.allData = [...data.records];
+                        this.renderCallback(this.allData, true); // true = replace existing
+                        this.updateLoadingTrigger();
+                    }
+                } catch (error) {
+                    showToast('Failed to load data: ' + error.message, 'error');
+                }
+            }
+
+            updateLoadingTrigger() {
+                // Remove existing trigger
+                const existingTrigger = this.container.querySelector('.infinite-scroll-trigger');
+                if (existingTrigger) {
+                    this.observer.unobserve(existingTrigger);
+                    existingTrigger.remove();
+                }
+
+                // Add new trigger if more pages available
+                if (this.paginationManager.hasNextPage) {
+                    const trigger = document.createElement('div');
+                    trigger.className = 'infinite-scroll-trigger h-10 flex items-center justify-center';
+                    trigger.innerHTML = '<div class="text-gray-500 text-sm">Loading more...</div>';
+                    this.container.appendChild(trigger);
+                    this.observer.observe(trigger);
+                }
+            }
+
+            showLoadingIndicator() {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'infinite-scroll-loading flex items-center justify-center py-4';
+                loadingDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <div class="spinner w-5 h-5"></div>
+                        <span class="text-gray-600">Loading more results...</span>
+                    </div>
+                `;
+                this.container.appendChild(loadingDiv);
+            }
+
+            hideLoadingIndicator() {
+                const loadingDiv = this.container.querySelector('.infinite-scroll-loading');
+                if (loadingDiv) {
+                    loadingDiv.remove();
+                }
+            }
+
+            destroy() {
+                if (this.observer) {
+                    this.observer.disconnect();
+                }
+            }
+        }
+
+        // --- Debounced Search Component ---
+        class DebouncedSearch {
+            constructor(searchCallback, debounceMs = 300) {
+                this.searchCallback = searchCallback;
+                this.debounceMs = debounceMs;
+                this.searchTimer = null;
+                this.lastSearchTerm = '';
+                this.isSearching = false;
+            }
+
+            search(searchTerm, filters = {}) {
+                // Don't search if the term hasn't changed
+                if (searchTerm === this.lastSearchTerm && !Object.keys(filters).length) {
+                    return;
+                }
+
+                clearTimeout(this.searchTimer);
+                
+                this.searchTimer = setTimeout(async () => {
+                    this.lastSearchTerm = searchTerm;
+                    this.isSearching = true;
+                    
+                    try {
+                        await this.searchCallback(searchTerm, filters);
+                    } catch (error) {
+                        console.error('Search failed:', error);
+                        showToast('Search failed: ' + error.message, 'error');
+                    } finally {
+                        this.isSearching = false;
+                    }
+                }, this.debounceMs);
+            }
+
+            clearSearch() {
+                clearTimeout(this.searchTimer);
+                this.lastSearchTerm = '';
+                this.isSearching = false;
+            }
+
+            destroy() {
+                this.clearSearch();
+            }
+        }
+
+        // --- Accessibility and Keyboard Navigation Enhancement ---
+        class AccessibilityManager {
+            constructor() {
+                this.focusableElements = [
+                    'button:not([disabled])',
+                    'input:not([disabled])',
+                    'select:not([disabled])',
+                    'textarea:not([disabled])',
+                    '[tabindex]:not([tabindex="-1"])',
+                    'a[href]'
+                ];
+                this.setupGlobalKeyboardHandlers();
+            }
+
+            setupGlobalKeyboardHandlers() {
+                document.addEventListener('keydown', (e) => {
+                    // Handle global keyboard shortcuts
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key) {
+                            case 'f':
+                                e.preventDefault();
+                                this.focusSearch();
+                                break;
+                            case 'n':
+                                if (e.shiftKey) {
+                                    e.preventDefault();
+                                    this.navigateToNextPage();
+                                }
+                                break;
+                            case 'p':
+                                if (e.shiftKey) {
+                                    e.preventDefault();
+                                    this.navigateToPrevPage();
+                                }
+                                break;
+                        }
+                    }
+
+                    // Handle escape key
+                    if (e.key === 'Escape') {
+                        this.closeModals();
+                    }
+                });
+            }
+
+            focusSearch() {
+                const searchInput = document.querySelector('#search-term');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+
+            navigateToNextPage() {
+                if (studentPaginationManager?.hasNextPage) {
+                    studentPaginationManager.nextPage();
+                }
+            }
+
+            navigateToPrevPage() {
+                if (studentPaginationManager?.hasPrevPage) {
+                    studentPaginationManager.prevPage();
+                }
+            }
+
+            closeModals() {
+                // Close any open modals
+                if (!modalOverlay.classList.contains('hidden')) {
+                    closeModal();
+                }
+                if (!confirmModalOverlay.classList.contains('hidden')) {
+                    closeConfirmationModal();
+                }
+            }
+
+            announceToScreenReader(message, priority = 'polite') {
+                const announcement = document.createElement('div');
+                announcement.setAttribute('aria-live', priority);
+                announcement.setAttribute('aria-atomic', 'true');
+                announcement.className = 'sr-only';
+                announcement.textContent = message;
+                
+                document.body.appendChild(announcement);
+                
+                setTimeout(() => {
+                    document.body.removeChild(announcement);
+                }, 1000);
+            }
+
+            updatePageInfo(currentPage, totalPages, totalRecords) {
+                const pageInfo = document.getElementById('pagination-page-info');
+                if (pageInfo) {
+                    pageInfo.setAttribute('aria-label', 
+                        `Page ${currentPage} of ${totalPages}, showing results from ${totalRecords} total records`
+                    );
+                }
+            }
+        }
+
+        // Initialize accessibility manager
+        const accessibilityManager = new AccessibilityManager();
+
+        // --- Enhanced Search Interface Component ---
+        class EnhancedSearchInterface {
+            constructor(container, paginationManager, onSearchChange) {
+                this.container = container;
+                this.paginationManager = paginationManager;
+                this.onSearchChange = onSearchChange;
+                this.debouncedSearch = new DebouncedSearch((term, filters) => {
+                    return this.performSearch(term, filters);
+                }, 300);
+                
+                this.filters = {};
+                this.searchTerm = '';
+                
+                this.render();
+                this.attachEventListeners();
+            }
+
+            render() {
+                this.container.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <!-- Search Term Input -->
+                            <div class="col-span-1 md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                                <div class="relative">
+                                    <input type="text" 
+                                           id="search-term" 
+                                           placeholder="Search by name, index number, or email..."
+                                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div id="search-loading" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden">
+                                        <div class="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Program Filter -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Program</label>
+                                <select id="program-filter" class="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">All Programs</option>
+                                </select>
+                            </div>
+
+                            <!-- Year Filter -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Year of Study</label>
+                                <select id="year-filter" class="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">All Years</option>
+                                    <option value="1">Year 1</option>
+                                    <option value="2">Year 2</option>
+                                    <option value="3">Year 3</option>
+                                    <option value="4">Year 4</option>
+                                    <option value="5">Year 5</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Gender Filter -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                                <select id="gender-filter" class="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">All Genders</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <!-- Sort Options -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                                <select id="sort-filter" class="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="name_asc">Name (A-Z)</option>
+                                    <option value="name_desc">Name (Z-A)</option>
+                                    <option value="index_asc">Index Number (A-Z)</option>
+                                    <option value="index_desc">Index Number (Z-A)</option>
+                                    <option value="program_asc">Program (A-Z)</option>
+                                    <option value="year_asc">Year (1-4)</option>
+                                </select>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex items-end space-x-2">
+                                <button id="clear-filters" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex-1">
+                                    Clear
+                                </button>
+                                <button id="advanced-search" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex-1">
+                                    Advanced
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Search Results Summary -->
+                        <div id="search-summary" class="mt-4 text-sm text-gray-600 hidden">
+                            <div class="flex items-center justify-between">
+                                <span id="search-results-text"></span>
+                                <div class="flex items-center space-x-2">
+                                    <span>View:</span>
+                                    <button id="view-grid" class="p-1 rounded text-blue-600 hover:bg-blue-50" title="Grid View">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                                        </svg>
+                                    </button>
+                                    <button id="view-table" class="p-1 rounded text-gray-400 hover:bg-gray-50" title="Table View">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            attachEventListeners() {
+                const searchInput = this.container.querySelector('#search-term');
+                const programFilter = this.container.querySelector('#program-filter');
+                const yearFilter = this.container.querySelector('#year-filter');
+                const genderFilter = this.container.querySelector('#gender-filter');
+                const sortFilter = this.container.querySelector('#sort-filter');
+                const clearButton = this.container.querySelector('#clear-filters');
+                const advancedButton = this.container.querySelector('#advanced-search');
+
+                // Search input with debouncing
+                searchInput.addEventListener('input', (e) => {
+                    this.searchTerm = e.target.value;
+                    this.showSearchLoading(true);
+                    this.debouncedSearch.search(this.searchTerm, this.filters);
+                });
+
+                // Filter changes
+                [programFilter, yearFilter, genderFilter, sortFilter].forEach(filter => {
+                    filter.addEventListener('change', (e) => {
+                        this.updateFilter(e.target.id.replace('-filter', ''), e.target.value);
+                        this.performSearch(this.searchTerm, this.filters);
+                    });
+                });
+
+                // Clear filters
+                clearButton.addEventListener('click', () => {
+                    this.clearAllFilters();
+                });
+
+                // Advanced search (could open a modal with more options)
+                advancedButton.addEventListener('click', () => {
+                    this.openAdvancedSearch();
+                });
+
+                // View toggles
+                this.container.querySelector('#view-grid').addEventListener('click', () => {
+                    this.toggleView('grid');
+                });
+
+                this.container.querySelector('#view-table').addEventListener('click', () => {
+                    this.toggleView('table');
+                });
+            }
+
+            updateFilter(filterName, value) {
+                if (value) {
+                    this.filters[filterName] = value;
+                } else {
+                    delete this.filters[filterName];
+                }
+            }
+
+            async performSearch(searchTerm, filters) {
+                try {
+                    // Build search filters object
+                    const searchFilters = { ...filters };
+                    if (searchTerm.trim()) {
+                        searchFilters.name = searchTerm.trim();
+                    }
+
+                    // Update pagination manager filters
+                    await this.paginationManager.search(searchFilters, 0); // No debounce since we already debounced
+                    const data = await this.paginationManager.goToPage(1);
+                    
+                    this.showSearchSummary(data.totalCount, searchTerm, filters);
+                    this.onSearchChange(data);
+                } catch (error) {
+                    console.error('Search failed:', error);
+                    throw error;
+                } finally {
+                    this.showSearchLoading(false);
+                }
+            }
+
+            showSearchLoading(show) {
+                const loadingIndicator = this.container.querySelector('#search-loading');
+                if (show) {
+                    loadingIndicator.classList.remove('hidden');
+                } else {
+                    loadingIndicator.classList.add('hidden');
+                }
+            }
+
+            showSearchSummary(totalCount, searchTerm, filters) {
+                const summary = this.container.querySelector('#search-summary');
+                const resultsText = this.container.querySelector('#search-results-text');
+                
+                let summaryText = `Found ${totalCount} result${totalCount !== 1 ? 's' : ''}`;
+                
+                if (searchTerm || Object.keys(filters).length > 0) {
+                    summaryText += ' for';
+                    if (searchTerm) {
+                        summaryText += ` "${searchTerm}"`;
+                    }
+                    if (Object.keys(filters).length > 0) {
+                        const filterDescriptions = [];
+                        if (filters.program) filterDescriptions.push(`Program: ${filters.program}`);
+                        if (filters.year) filterDescriptions.push(`Year: ${filters.year}`);
+                        if (filters.gender) filterDescriptions.push(`Gender: ${filters.gender}`);
+                        
+                        if (filterDescriptions.length > 0) {
+                            summaryText += ` (${filterDescriptions.join(', ')})`;
+                        }
+                    }
+                }
+                
+                resultsText.textContent = summaryText;
+                summary.classList.remove('hidden');
+            }
+
+            clearAllFilters() {
+                // Clear input fields
+                this.container.querySelector('#search-term').value = '';
+                this.container.querySelector('#program-filter').value = '';
+                this.container.querySelector('#year-filter').value = '';
+                this.container.querySelector('#gender-filter').value = '';
+                this.container.querySelector('#sort-filter').value = 'name_asc';
+
+                // Clear internal state
+                this.searchTerm = '';
+                this.filters = {};
+
+                // Perform empty search to show all results
+                this.performSearch('', {});
+            }
+
+            toggleView(viewType) {
+                const gridBtn = this.container.querySelector('#view-grid');
+                const tableBtn = this.container.querySelector('#view-table');
+                
+                if (viewType === 'grid') {
+                    gridBtn.classList.add('text-blue-600');
+                    gridBtn.classList.remove('text-gray-400');
+                    tableBtn.classList.add('text-gray-400');
+                    tableBtn.classList.remove('text-blue-600');
+                } else {
+                    tableBtn.classList.add('text-blue-600');
+                    tableBtn.classList.remove('text-gray-400');
+                    gridBtn.classList.add('text-gray-400');
+                    gridBtn.classList.remove('text-blue-600');
+                }
+                
+                // Notify parent component of view change
+                if (this.onViewChange) {
+                    this.onViewChange(viewType);
+                }
+            }
+
+            openAdvancedSearch() {
+                // This could open a modal with additional search options
+                openModal('Advanced Search', `
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                            <input type="email" id="advanced-email" class="w-full p-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+                            <input type="tel" id="advanced-phone" class="w-full p-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth Range</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="date" id="advanced-dob-from" class="w-full p-2 border border-gray-300 rounded-md">
+                                <input type="date" id="advanced-dob-to" class="w-full p-2 border border-gray-300 rounded-md">
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-2 pt-4">
+                            <button onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button onclick="applyAdvancedSearch()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                `);
+            }
+
+            updateProgramOptions(programs) {
+                const programSelect = this.container.querySelector('#program-filter');
+                const currentValue = programSelect.value;
+                
+                programSelect.innerHTML = '<option value="">All Programs</option>';
+                programs.forEach(program => {
+                    const option = document.createElement('option');
+                    option.value = program;
+                    option.textContent = program;
+                    if (program === currentValue) {
+                        option.selected = true;
+                    }
+                    programSelect.appendChild(option);
+                });
+            }
+
+            destroy() {
+                this.debouncedSearch.destroy();
+            }
+        }
+
+        // --- Skeleton Loading Component ---
+        const createSkeletonLoader = (count = 5, type = 'card') => {
+            const skeletons = [];
+            for (let i = 0; i < count; i++) {
+                if (type === 'card') {
+                    skeletons.push(`
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4 animate-pulse">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gray-300 rounded-full"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+                                    <div class="h-3 bg-gray-300 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                            <div class="mt-3 space-y-2">
+                                <div class="h-3 bg-gray-300 rounded w-full"></div>
+                                <div class="h-3 bg-gray-300 rounded w-2/3"></div>
+                            </div>
+                        </div>
+                    `);
+                } else if (type === 'table') {
+                    skeletons.push(`
+                        <tr class="animate-pulse">
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-300 rounded"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-300 rounded"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-300 rounded"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-300 rounded"></div></td>
+                        </tr>
+                    `);
+                }
+            }
+            return skeletons.join('');
+        };
+
+        // --- Pagination State Management ---
+        class PaginationManager {
+            constructor(apiEndpoint, defaultPageSize = 20) {
+                this.apiEndpoint = apiEndpoint;
+                this.currentPage = 1;
+                this.pageSize = defaultPageSize;
+                this.totalRecords = 0;
+                this.totalPages = 0;
+                this.loading = false;
+                this.error = null;
+                this.cache = new Map();
+                this.searchFilters = {};
+                this.searchDebounceTimer = null;
+                this.prefetchedPages = new Set();
+            }
+
+            get skip() {
+                return (this.currentPage - 1) * this.pageSize;
+            }
+
+            get hasNextPage() {
+                return this.currentPage < this.totalPages;
+            }
+
+            get hasPrevPage() {
+                return this.currentPage > 1;
+            }
+
+            setFilters(filters) {
+                this.searchFilters = { ...filters };
+                this.cache.clear();
+                this.prefetchedPages.clear();
+                this.currentPage = 1;
+            }
+
+            setPageSize(size) {
+                const prevSize = this.pageSize;
+                this.pageSize = size;
+                // Recalculate current page to maintain position
+                const currentRecord = (this.currentPage - 1) * prevSize;
+                this.currentPage = Math.floor(currentRecord / size) + 1;
+                this.cache.clear();
+                this.prefetchedPages.clear();
+            }
+
+            getCacheKey(page, filters = {}) {
+                return JSON.stringify({ page, filters, pageSize: this.pageSize });
+            }
+
+            async fetchPage(page, filters = null, useCache = true) {
+                const filtersToUse = filters || this.searchFilters;
+                const cacheKey = this.getCacheKey(page, filtersToUse);
+                
+                if (useCache && this.cache.has(cacheKey)) {
+                    return this.cache.get(cacheKey);
+                }
+
+                const skip = (page - 1) * this.pageSize;
+                const params = new URLSearchParams({
+                    skip: skip.toString(),
+                    limit: this.pageSize.toString(),
+                    ...filtersToUse
+                });
+
+                try {
+                    const response = await api.fetchData(`${this.apiEndpoint}?${params}`, 'GET', null, false);
+                    
+                    if (response.success) {
+                        const data = {
+                            records: response.data.students || response.data.courses || response.data.grades || response.data,
+                            totalCount: response.data.total_count || 0,
+                            pagination: response.data.pagination || { skip, limit: this.pageSize }
+                        };
+                        
+                        this.totalRecords = data.totalCount;
+                        this.totalPages = Math.ceil(this.totalRecords / this.pageSize);
+                        
+                        // Cache the result
+                        this.cache.set(cacheKey, data);
+                        
+                        // Prefetch adjacent pages
+                        this.prefetchAdjacentPages(page, filtersToUse);
+                        
+                        return data;
+                    } else {
+                        throw new Error(response.message || 'Failed to fetch data');
+                    }
+                } catch (error) {
+                    this.error = error.message;
+                    throw error;
+                }
+            }
+
+            async prefetchAdjacentPages(currentPage, filters) {
+                const pagesToPrefetch = [currentPage - 1, currentPage + 1];
+                
+                for (const page of pagesToPrefetch) {
+                    if (page > 0 && page <= this.totalPages && !this.prefetchedPages.has(page)) {
+                        this.prefetchedPages.add(page);
+                        // Prefetch in background without awaiting
+                        this.fetchPage(page, filters, true).catch(() => {
+                            // Ignore prefetch errors
+                            this.prefetchedPages.delete(page);
+                        });
+                    }
+                }
+            }
+
+            async goToPage(page) {
+                if (page < 1 || page > this.totalPages) return null;
+                this.currentPage = page;
+                this.loading = true;
+                try {
+                    const data = await this.fetchPage(page);
+                    this.error = null;
+                    return data;
+                } catch (error) {
+                    this.error = error.message;
+                    throw error;
+                } finally {
+                    this.loading = false;
+                }
+            }
+
+            async nextPage() {
+                if (this.hasNextPage) {
+                    return await this.goToPage(this.currentPage + 1);
+                }
+                return null;
+            }
+
+            async prevPage() {
+                if (this.hasPrevPage) {
+                    return await this.goToPage(this.currentPage - 1);
+                }
+                return null;
+            }
+
+            async search(filters, debounceMs = 300) {
+                return new Promise((resolve, reject) => {
+                    clearTimeout(this.searchDebounceTimer);
+                    this.searchDebounceTimer = setTimeout(async () => {
+                        try {
+                            this.setFilters(filters);
+                            const data = await this.goToPage(1);
+                            resolve(data);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    }, debounceMs);
+                });
+            }
+        }
+
+        // --- Pagination UI Component ---
+        class PaginationUI {
+            constructor(container, paginationManager, onPageChange) {
+                this.container = container;
+                this.manager = paginationManager;
+                this.onPageChange = onPageChange;
+                this.lastKnownRecordCount = 0; // Track records for fallback scenarios
+            }
+
+            render() {
+                const { currentPage, totalPages, totalRecords, pageSize, loading } = this.manager;
+                
+                // Debug logging for troubleshooting
+                console.log('PaginationUI render - currentPage:', currentPage, 'totalPages:', totalPages, 'totalRecords:', totalRecords, 'pageSize:', pageSize);
+                
+                // Don't show pagination if truly no records
+                if (totalRecords === 0 && currentPage === 1) {
+                    this.container.innerHTML = '';
+                    return;
+                }
+
+                // Handle cases where totalRecords might be undefined but we have data
+                const recordCount = totalRecords || this.lastKnownRecordCount || 0;
+                const pageCount = totalPages || Math.max(1, Math.ceil(recordCount / pageSize));
+                const currentPageNum = currentPage || 1;
+
+                const startRecord = ((currentPageNum - 1) * pageSize) + 1;
+                const endRecord = Math.min(currentPageNum * pageSize, recordCount);
+                
+                const paginationHTML = `
+                    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <button ${!this.manager.hasPrevPage || loading ? 'disabled' : ''} 
+                                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    data-action="prev">
+                                Previous
+                            </button>
+                            <button ${!this.manager.hasNextPage || loading ? 'disabled' : ''} 
+                                    class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    data-action="next">
+                                Next
+                            </button>
+                        </div>
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div class="flex items-center space-x-4">
+                                <p class="text-sm text-gray-700">
+                                    Showing <span class="font-medium">${startRecord}</span> to <span class="font-medium">${endRecord}</span> of <span class="font-medium">${recordCount}</span> results
+                                </p>
+                                <div class="flex items-center space-x-2">
+                                    <label class="text-sm text-gray-700">Per page:</label>
+                                    <select class="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500" 
+                                            data-action="pageSize">
+                                        <option value="10" ${pageSize === 10 ? 'selected' : ''}>10</option>
+                                        <option value="20" ${pageSize === 20 ? 'selected' : ''}>20</option>
+                                        <option value="50" ${pageSize === 50 ? 'selected' : ''}>50</option>
+                                        <option value="100" ${pageSize === 100 ? 'selected' : ''}>100</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                    ${this.renderPageButtons()}
+                                </nav>
+                            </div>
+                        </div>
+                        ${loading ? '<div class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center"><div class="spinner"></div></div>' : ''}
+                    </div>
+                `;
+                
+                this.container.innerHTML = paginationHTML;
+                this.lastKnownRecordCount = recordCount; // Store for future renders
+                this.attachEventListeners();
+            }
+
+            renderPageButtons() {
+                const { currentPage, totalPages } = this.manager;
+                const buttons = [];
+                
+                // Previous button
+                buttons.push(`
+                    <button ${!this.manager.hasPrevPage ? 'disabled' : ''} 
+                            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            data-action="prev">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `);
+
+                // Page number buttons
+                const { start, end } = this.calculatePageRange(currentPage, totalPages);
+                
+                if (start > 1) {
+                    buttons.push(this.createPageButton(1));
+                    if (start > 2) {
+                        buttons.push('<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>');
+                    }
+                }
+
+                for (let i = start; i <= end; i++) {
+                    buttons.push(this.createPageButton(i, i === currentPage));
+                }
+
+                if (end < totalPages) {
+                    if (end < totalPages - 1) {
+                        buttons.push('<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>');
+                    }
+                    buttons.push(this.createPageButton(totalPages));
+                }
+
+                // Next button
+                buttons.push(`
+                    <button ${!this.manager.hasNextPage ? 'disabled' : ''} 
+                            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            data-action="next">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `);
+
+                return buttons.join('');
+            }
+
+            calculatePageRange(currentPage, totalPages) {
+                const maxVisible = 7;
+                const half = Math.floor(maxVisible / 2);
+                
+                let start = Math.max(1, currentPage - half);
+                let end = Math.min(totalPages, start + maxVisible - 1);
+                
+                if (end - start + 1 < maxVisible) {
+                    start = Math.max(1, end - maxVisible + 1);
+                }
+                
+                return { start, end };
+            }
+
+            createPageButton(page, isActive = false) {
+                return `
+                    <button class="relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        isActive 
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    }" data-action="page" data-page="${page}">
+                        ${page}
+                    </button>
+                `;
+            }
+
+            attachEventListeners() {
+                this.container.addEventListener('click', async (e) => {
+                    const action = e.target.dataset.action;
+                    if (!action) return;
+
+                    e.preventDefault();
+                    
+                    try {
+                        let result = null;
+                        switch (action) {
+                            case 'prev':
+                                result = await this.manager.prevPage();
+                                break;
+                            case 'next':
+                                result = await this.manager.nextPage();
+                                break;
+                            case 'page':
+                                const page = parseInt(e.target.dataset.page);
+                                result = await this.manager.goToPage(page);
+                                break;
+                        }
+                        
+                        if (result) {
+                            this.render();
+                            this.onPageChange(result);
+                        }
+                    } catch (error) {
+                        showToast('Failed to load page: ' + error.message, 'error');
+                    }
+                });
+
+                this.container.addEventListener('change', async (e) => {
+                    if (e.target.dataset.action === 'pageSize') {
+                        const newSize = parseInt(e.target.value);
+                        this.manager.setPageSize(newSize);
+                        try {
+                            const result = await this.manager.goToPage(this.manager.currentPage);
+                            this.render();
+                            this.onPageChange(result);
+                        } catch (error) {
+                            showToast('Failed to update page size: ' + error.message, 'error');
+                        }
+                    }
+                });
+            }
+        }
 
         // --- API Utility ---
         const api = {
@@ -1037,34 +2240,181 @@
             const searchYearInput = document.getElementById('search-year');
             const searchGenderInput = document.getElementById('search-gender');
 
+            // --- Updated Student Management with Enhanced Pagination ---
             const studentListContainer = document.getElementById('student-list-container');
             const studentListLoading = document.getElementById('student-list-loading');
             const studentListError = document.getElementById('student-list-error');
 
+            // Initialize pagination manager for students
+            let studentPaginationManager = null;
+            let studentPaginationUI = null;
+            let studentSearchInterface = null;
+            let studentVirtualScroll = null;
+            let useVirtualScrolling = false; // Toggle for virtual scrolling vs traditional pagination
+
+            const initializeStudentPagination = () => {
+                // Create pagination manager
+                studentPaginationManager = new PaginationManager('/admin/students/search', 20);
+                
+                // Create search interface
+                const searchContainer = document.createElement('div');
+                searchContainer.id = 'student-search-interface';
+                studentListContainer.parentNode.insertBefore(searchContainer, studentListContainer);
+                
+                studentSearchInterface = new EnhancedSearchInterface(
+                    searchContainer,
+                    studentPaginationManager,
+                    (data) => handleStudentDataUpdate(data)
+                );
+
+                // Create pagination UI container
+                const paginationContainer = document.createElement('div');
+                paginationContainer.id = 'student-pagination';
+                studentListContainer.parentNode.insertBefore(paginationContainer, studentListContainer.nextSibling);
+                
+                studentPaginationUI = new PaginationUI(
+                    paginationContainer,
+                    studentPaginationManager,
+                    (data) => handleStudentDataUpdate(data)
+                );
+
+                // Initialize virtual scrolling for large datasets
+                if (useVirtualScrolling) {
+                    studentVirtualScroll = new StudentVirtualScroll(
+                        studentListContainer,
+                        handleStudentEdit,
+                        handleStudentDelete
+                    );
+                }
+            };
+
+            const handleStudentDataUpdate = (data) => {
+                console.log('handleStudentDataUpdate called with:', data); // Debug log
+                if (data && data.records) {
+                    console.log('Found', data.records.length, 'student records'); // Debug log
+                    if (useVirtualScrolling && studentVirtualScroll) {
+                        studentVirtualScroll.setData(data.records);
+                    } else {
+                        renderStudentCards(data.records);
+                    }
+                    
+                    // Only render pagination if it's initialized
+                    if (studentPaginationUI) {
+                        studentPaginationUI.render();
+                    }
+                    
+                    // Update program options in search interface
+                    if (studentSearchInterface) {
+                        const programs = [...new Set(data.records.map(s => s.program).filter(Boolean))];
+                        studentSearchInterface.updateProgramOptions(programs);
+                    }
+                } else {
+                    console.log('No data or no records found:', data); // Debug log
+                }
+            };
+
+            const handleStudentEdit = (student, indexNumber) => {
+                openStudentEditModal(
+                    indexNumber,
+                    student.full_name,
+                    student.contact_email || '',
+                    student.program || '',
+                    student.year_of_study || ''
+                );
+            };
+
+            const handleStudentDelete = (student, indexNumber) => {
+                openConfirmationModal(
+                    'Confirm Deletion',
+                    `Are you sure you want to delete student ${student.full_name} (${indexNumber})?`,
+                    async () => {
+                        try {
+                            const result = await api.deleteStudent(indexNumber);
+                            if (result.success) {
+                                showToast(result.message, 'success');
+                                await refreshStudentData();
+                            } else {
+                                showToast(result.message, 'error');
+                            }
+                        } catch (error) {
+                            showToast('Failed to delete student: ' + error.message, 'error');
+                        }
+                    }
+                );
+            };
+
+            const refreshStudentData = async () => {
+                try {
+                    const data = await studentPaginationManager.goToPage(studentPaginationManager.currentPage);
+                    handleStudentDataUpdate(data);
+                } catch (error) {
+                    showToast('Failed to refresh data: ' + error.message, 'error');
+                }
+            };
+
             const fetchAndRenderStudents = async (useFilters = true) => {
+                // Show loading state
                 studentListLoading.classList.remove('hidden');
                 studentListError.classList.add('hidden');
                 studentListContainer.innerHTML = '';
 
-                const filters = {};
-                if (useFilters) {
-                    if (searchTermInput.value) filters.name = searchTermInput.value;
-                    if (searchProgramInput.value) filters.program = searchProgramInput.value;
-                    if (searchYearInput.value) filters.year_of_study = parseInt(searchYearInput.value);
-                    if (searchGenderInput.value) filters.gender = searchGenderInput.value;
-                }
-
                 try {
-                    const data = await api.searchStudents(filters);
-                    if (data.success) {
-                        if (data.data.students.length === 0) {
-                            studentListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No students found.</p>`;
-                        } else {
-                            renderStudentCards(data.data.students);
-                        }
+                    // Initialize pagination if not already done
+                    if (!studentPaginationManager) {
+                        initializeStudentPagination();
+                    }
+
+                    // Build filters from the old search inputs (for backward compatibility)
+                    const filters = {};
+                    if (useFilters) {
+                        // Try new search interface first, then fall back to old inputs
+                        const searchTermInput = document.getElementById('search-term') || document.getElementById('search-term-input');
+                        const searchProgramInput = document.getElementById('program-filter') || document.getElementById('search-program-input');
+                        const searchYearInput = document.getElementById('year-filter') || document.getElementById('search-year-input');
+                        const searchGenderInput = document.getElementById('gender-filter') || document.getElementById('search-gender-input');
+
+                        if (searchTermInput?.value) filters.name = searchTermInput.value;
+                        if (searchProgramInput?.value) filters.program = searchProgramInput.value;
+                        if (searchYearInput?.value) filters.year_of_study = parseInt(searchYearInput.value);
+                        if (searchGenderInput?.value) filters.gender = searchGenderInput.value;
+                    }
+
+                    // Use the new pagination system
+                    console.log('Searching with filters:', filters); // Debug log
+                    await studentPaginationManager.search(filters, 0);
+                    const data = await studentPaginationManager.goToPage(1);
+                    console.log('Received data:', data); // Debug log
+                    
+                    if (data && data.records && data.records.length > 0) {
+                        handleStudentDataUpdate(data);
                     } else {
-                        studentListError.textContent = data.message || 'Failed to fetch students.';
-                        studentListError.classList.remove('hidden');
+                        console.log('No data received, trying fallback API call'); // Debug log
+                        // Fallback to old API call if pagination fails
+                        const fallbackData = await api.searchStudents(filters, 0, 20);
+                        console.log('Fallback API response:', fallbackData); // Debug log
+                        
+                        if (fallbackData.success && fallbackData.data.students) {
+                            // Create a data structure compatible with handleStudentDataUpdate
+                            const compatibleData = {
+                                records: fallbackData.data.students,
+                                totalCount: fallbackData.data.total_count || fallbackData.data.students.length,
+                                pagination: { skip: 0, limit: 20 }
+                            };
+                            
+                            console.log('Compatible data for fallback:', compatibleData); // Debug log
+                            
+                            // Update pagination manager state BEFORE calling handleStudentDataUpdate
+                            if (studentPaginationManager) {
+                                studentPaginationManager.totalRecords = compatibleData.totalCount;
+                                studentPaginationManager.totalPages = Math.ceil(compatibleData.totalCount / studentPaginationManager.pageSize);
+                                studentPaginationManager.currentPage = 1;
+                                console.log('Updated pagination manager - totalRecords:', studentPaginationManager.totalRecords, 'totalPages:', studentPaginationManager.totalPages); // Debug log
+                            }
+                            
+                            handleStudentDataUpdate(compatibleData);
+                        } else {
+                            studentListContainer.innerHTML = `<p class="text-gray-600 text-center py-6">No students found.</p>`;
+                        }
                     }
                 } catch (error) {
                     studentListError.textContent = error.message || 'An error occurred while fetching students.';
@@ -1075,100 +2425,149 @@
             };
 
             const renderStudentCards = (students) => {
-                // Add search bar for real-time filtering
-                let html = `
-                    <div class="mb-4">
-                        <input type="text" id="student-quick-search" placeholder="Search students by name or index..." 
-                               class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div id="students-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                `;
+                // Enhanced student card rendering with better performance
+                if (!students || students.length === 0) {
+                    studentListContainer.innerHTML = `
+                        <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No students found</h3>
+                            <p class="mt-1 text-sm text-gray-500">Try adjusting your search criteria or add some students to get started.</p>
+                        </div>
+                    `;
+                    return;
+                }
 
-                // Get unique programs for filter
-                const programs = [...new Set(students.map(s => s.program).filter(Boolean))];
-                const programFilter = `
-                    ${programs.map(program => `<option value="${program}">${program}</option>`).join('')}
-                `;
+                // Use document fragment for better performance
+                const fragment = document.createDocumentFragment();
+                const studentsGrid = document.createElement('div');
+                studentsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+                studentsGrid.id = 'students-grid';
 
                 students.forEach(student => {
-                    const initials = student.full_name 
-                        ? student.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-                        : student.index_number.substring(0, 2).toUpperCase();
-                    
-                    const yearBadge = student.year_of_study 
-                        ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Year ${student.year_of_study}</span>`
-                        : '';
+                    const studentCard = createStudentCard(student);
+                    studentsGrid.appendChild(studentCard);
+                });
 
-                    html += `
-                        <div class="student-card bg-white border border-gray-200 rounded-lg p-4" 
-                             data-student-name="${student.full_name}" data-student-index="${student.index_number}">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <h4 class="student-name text-lg font-medium text-gray-900">${student.full_name}</h4>
-                                    <p class="text-sm text-gray-600">${student.index_number}</p>
-                                    <p class="student-email text-sm text-gray-600">${student.contact_email || 'No email'}</p>
-                                    <p class="student-course text-sm text-gray-600">Course: ${student.program || 'N/A'}</p>
-                                    <p class="student-semester text-sm text-gray-600">Semester: ${student.year_of_study || 'N/A'}</p>
+                fragment.appendChild(studentsGrid);
+                studentListContainer.innerHTML = '';
+                studentListContainer.appendChild(fragment);
+
+                // Attach event listeners for the cards
+                attachStudentCardEventListeners();
+            };
+
+            const createStudentCard = (student) => {
+                const card = document.createElement('div');
+                card.className = 'student-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200';
+                card.dataset.studentName = student.full_name;
+                card.dataset.studentIndex = student.index_number;
+                card.dataset.program = student.program || '';
+                card.dataset.year = student.year_of_study || '';
+
+                const initials = student.full_name 
+                    ? student.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                    : student.index_number.substring(0, 2).toUpperCase();
+                
+                const yearBadge = student.year_of_study 
+                    ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Year ${student.year_of_study}</span>`
+                    : '';
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                                    ${initials}
                                 </div>
-                                <div class="flex space-x-2">
-                                    <button data-action="edit" data-index="${student.index_number}" 
-                                            class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
-                                        Edit
-                                    </button>
-                                    <button data-action="delete" data-index="${student.index_number}" 
-                                            class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
-                                        Delete
-                                    </button>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="student-name text-lg font-semibold text-gray-900 truncate">${student.full_name}</h4>
+                                    <p class="text-sm text-gray-600 truncate">${student.index_number}</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="student-email text-sm text-gray-600 truncate">
+                                    <span class="inline-flex items-center">
+                                        <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+                                        </svg>
+                                        ${student.contact_email || 'No email'}
+                                    </span>
+                                </p>
+                                <p class="student-course text-sm text-gray-600 truncate">
+                                    <span class="inline-flex items-center">
+                                        <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                        </svg>
+                                        ${student.program || 'N/A'}
+                                    </span>
+                                </p>
+                                <div class="flex items-center justify-between">
+                                    ${yearBadge}
+                                    <div class="flex space-x-1">
+                                        <button data-action="edit" data-index="${student.index_number}" 
+                                                class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                                title="Edit student">
+                                            Edit
+                                        </button>
+                                        <button data-action="delete" data-index="${student.index_number}" 
+                                                class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                                                title="Delete student">
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    `;
+                    </div>
+                `;
+
+                return card;
+            };
+
+            const attachStudentCardEventListeners = () => {
+                studentListContainer.addEventListener('click', async (e) => {
+                    const target = e.target;
+                    if (target.tagName === 'BUTTON' && target.dataset.action) {
+                        e.preventDefault();
+                        
+                        const indexNumber = target.dataset.index;
+                        const studentCard = target.closest('.student-card');
+                        
+                        if (target.dataset.action === 'edit') {
+                            const name = studentCard.querySelector('.student-name').textContent;
+                            const email = studentCard.querySelector('.student-email').textContent.replace(/.*/, '').trim();
+                            const course = studentCard.querySelector('.student-course').textContent.replace(/.*/, '').trim();
+                            const yearBadge = studentCard.querySelector('.bg-blue-100');
+                            const semester = yearBadge ? yearBadge.textContent.replace('Year ', '') : '';
+                            
+                            openStudentEditModal(indexNumber, name, email, course, semester);
+                        } else if (target.dataset.action === 'delete') {
+                            const name = studentCard.querySelector('.student-name').textContent;
+                            openConfirmationModal(
+                                'Confirm Deletion',
+                                `Are you sure you want to delete student ${name} (${indexNumber})?`,
+                                async () => {
+                                    try {
+                                        const result = await api.deleteStudent(indexNumber);
+                                        if (result.success) {
+                                            showToast(result.message, 'success');
+                                            await refreshStudentData();
+                                        } else {
+                                            showToast(result.message, 'error');
+                                        }
+                                    } catch (error) {
+                                        showToast('Failed to delete student: ' + error.message, 'error');
+                                    }
+                                }
+                            );
+                        }
+                    }
                 });
-
-                html += `</div>`;
-                studentListContainer.innerHTML = html;
-
-                // Update program filter options
-                const programFilterSelect = document.getElementById('program-filter');
-                if (programFilterSelect) {
-                    programFilterSelect.innerHTML = `<option value="">All Programs</option>${programFilter}`;
-                }
-
-                // Add event listeners for filtering
-                setupStudentFiltering();
             };
 
-            const setupStudentFiltering = () => {
-                const quickSearch = document.getElementById('student-quick-search');
-                const programFilter = document.getElementById('program-filter');
-                const yearFilter = document.getElementById('year-filter');
-
-                const filterStudents = () => {
-                    const searchTerm = quickSearch?.value.toLowerCase() || '';
-                    const selectedProgram = programFilter?.value || '';
-                    const selectedYear = yearFilter?.value || '';
-
-                    const studentCards = document.querySelectorAll('.student-card');
-                    
-                    studentCards.forEach(card => {
-                        const name = card.dataset.studentName.toLowerCase();
-                        const index = card.dataset.studentIndex.toLowerCase();
-                        const program = card.dataset.program || '';
-                        const year = card.dataset.year || '';
-
-                        const matchesSearch = name.includes(searchTerm) || index.includes(searchTerm);
-                        const matchesProgram = !selectedProgram || program === selectedProgram;
-                        const matchesYear = !selectedYear || year === selectedYear;
-
-                        card.style.display = (matchesSearch && matchesProgram && matchesYear) ? 'block' : 'none';
-                    });
-                };
-
-                if (quickSearch) quickSearch.addEventListener('input', filterStudents);
-                if (programFilter) programFilter.addEventListener('change', filterStudents);
-                if (yearFilter) yearFilter.addEventListener('change', filterStudents);
-            };
-
+            // Enhanced student form submission with pagination refresh
             addStudentForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 addStudentButton.disabled = true;
@@ -1191,7 +2590,7 @@
                     if (result.success) {
                         displayMessage('add-student-message', result.message, 'success');
                         addStudentForm.reset();
-                        fetchAndRenderStudents();
+                        await refreshStudentData(); // Use the new pagination refresh
                     } else {
                         displayMessage('add-student-error', result.message, 'error');
                     }
@@ -1202,12 +2601,13 @@
                 }
             });
 
+            // Update legacy button handlers
             searchStudentsButton.addEventListener('click', () => fetchAndRenderStudents(true));
             
-            // Toggle functionality for Load All / Hide Students
-            loadAllStudentsButton.addEventListener('click', () => {
+            // Enhanced Load All / Hide Students functionality
+            loadAllStudentsButton.addEventListener('click', async () => {
                 if (loadAllStudentsButton.textContent.trim() === 'Load Students') {
-                    fetchAndRenderStudents(false);
+                    await fetchAndRenderStudents(false);
                     loadAllStudentsButton.textContent = 'Hide Students';
                 } else {
                     studentListContainer.innerHTML = `
@@ -1219,41 +2619,16 @@
                             <p class="mt-1 text-sm text-gray-500">Click "Load Students" to view all students or use search filters to find specific students.</p>
                         </div>
                     `;
-                    loadAllStudentsButton.textContent = 'Load Students';
-                }
-            });
-
-            studentListContainer.addEventListener('click', async (e) => {
-                const target = e.target;
-                if (target.tagName === 'BUTTON' && target.dataset.action) {
-                    const indexNumber = target.dataset.index;
-                    if (target.dataset.action === 'edit') {
-                        const studentCard = target.closest('.student-card');
-                        const name = studentCard.querySelector('.student-name').textContent;
-                        const email = studentCard.querySelector('.student-email').textContent;
-                        const course = studentCard.querySelector('.student-course').textContent.replace('Course: ', '');
-                        const semester = studentCard.querySelector('.student-semester').textContent.replace('Semester: ', '');
-                        
-                        openStudentEditModal(indexNumber, name, email, course, semester);
-                    } else if (target.dataset.action === 'delete') {
-                        openConfirmationModal(
-                            'Confirm Deletion',
-                            `Are you sure you want to delete student with index number ${indexNumber}?`,
-                            async () => {
-                                try {
-                                    const result = await api.deleteStudent(indexNumber);
-                                    if (result.success) {
-                                        displayMessage('student-list-message', result.message, 'success');
-                                        fetchAndRenderStudents();
-                                    } else {
-                                        displayMessage('student-list-error', result.message, 'error');
-                                    }
-                                } catch (err) {
-                                    displayMessage('student-list-error', err.message, 'error');
-                                }
-                            }
-                        );
+                    
+                    // Hide pagination components
+                    if (studentPaginationUI && document.getElementById('student-pagination')) {
+                        document.getElementById('student-pagination').innerHTML = '';
                     }
+                    if (studentSearchInterface && document.getElementById('student-search-interface')) {
+                        document.getElementById('student-search-interface').innerHTML = '';
+                    }
+                    
+                    loadAllStudentsButton.textContent = 'Load Students';
                 }
             });
 
