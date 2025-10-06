@@ -1,28 +1,295 @@
+# Student Result Management System (SRMS) – Backend
 
-# Student Result Management System - Backend
+Robust academic records and reporting backend built with FastAPI, PostgreSQL, and Python. Provides APIs, CLI tools, notification delivery (with real‑time Server‑Sent Events), comprehensive report generation (TXT / CSV / Excel / PDF), and deterministic seeding utilities.
 
-A comprehensive R## Quick Start Guide
+## ✨ Key Features
 
-This guide will get you up and running with the Student Result Management System in under 10 minutes.
+- Dual interfaces: FastAPI REST API & interactive CLI (`main.py` / `menu.py`).
+- Student & course management with semesters and grades.
+- GPA & grade utilities (deterministic mapping A–F).
+- Reports:
+  - Summary reports: TXT, CSV, Excel, PDF.
+  - Personal academic report (per student) PDF / TXT.
+  - Academic transcript: Excel & PDF (official format) with corrected GPA logic.
+- Notification system:
+  - Admin publishing, unread tracking, pagination (cursor via `before_id`).
+  - Real‑time streaming via Server‑Sent Events (`/notifications/stream`).
+  - Fallback friendly to polling.
+- Seeding:
+  - Baseline deterministic seed for tests (fixtures).
+  - Comprehensive realistic dataset (`comprehensive_seed.py`).
+  - Modular constants (`seed_constants.py`) & idempotent helpers (`seed_helpers.py`).
+- Authentication: HTTP Basic (bcrypt hashed passwords) + session tracking.
+- Export resilience: in‑memory generation with correct headers (Excel/CSV/PDF) tested.
+- Test suite (pytest) covering exports, notifications, transcripts.
+- Optimized UX: unified global loading spinner (eliminated duplicate overlay) with reference-counted show/hide logic.
+- Simplified role model: only `admin` and `student` (legacy registrar/dean optional via env var).
 
-### Prerequisites Check
-Before starting, ensure you have:
-- Python 3.9 or higher (`python --version`)
-- PostgreSQL 12 or higher (`psql --version`)## Proje**********Need Help?** Check the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+## 🧱 Architecture Overview
 
-## Installation & Setup
+```
+backend/
+├── api.py                # FastAPI application (reports, notifications, students, grades)
+├── main.py               # CLI entry point
+├── menu.py               # CLI interactive menu
+├── auth.py               # Basic auth + password hashing
+├── db.py                 # DB connection helpers & query utilities
+├── course_management.py  # Course & semester operations
+├── grade_util.py         # Grade & GPA utilities
+├── report_utils.py       # All report & transcript export logic
+├── comprehensive_seed.py # Comprehensive dataset seeding orchestrator
+├── seed_constants.py     # Static datasets (names, courses, calendar fragments)
+├── seed_helpers.py       # Idempotent ensure_* helpers & generation logic
+├── bulk_importer.py      # CSV import routines
+├── session.py            # Session/user context management
+├── logger.py             # Structured logging setup
+├── tests/                # pytest test suite
+└── requirements.txt      # Dependencies
+```
+
+## 🔐 Authentication
+
+The system uses HTTP Basic Auth (no JWT). Passwords are stored hashed (bcrypt).
+
+Roles (intentionally minimal):
+- `admin` – full access (management, reports, notifications publishing, seeding)
+- `student` – personal profile, grades, personal reports
+
+Seeded credentials (comprehensive seed):
+```
+Admin: admin / admin123
+Students: password = last 4 digits of index_number + "2024"
+Example: index ug10127 -> password 01272024
+```
+
+Optional legacy demo admins (registrar / dean) can be added by setting `SEED_EXTRA_ADMINS=true` before running `comprehensive_seed.py`. They use:
+```
+registrar / registrar123
+dean      / dean123
+```
+All admin-like accounts share the same `admin` role value.
+
+## 🧮 Grading & GPA
+
+Current grade scale (as implemented in `grade_util.py`):
+
+| Score | Grade | Points (4.0 scale) |
+|-------|-------|-------------------|
+| 80–100 | A | 4.0 |
+| 70–79  | B | 3.0 |
+| 60–69  | C | 2.0 |
+| 50–59  | D | 1.0 |
+| 0–49   | F | 0.0 |
+
+GPA formula: `Σ(grade_point * credit_hours) / Σ(credit_hours)`.
+
+Transcript exports (Excel + PDF) now use `get_grade_point(score)` directly (previous misuse of `calculate_gpa([score])` removed).
+
+## 🚀 Quick Start
 
 ### Prerequisites
+- Python 3.9+
+- PostgreSQL 12+
+- (Optional) Git
 
-- Python 3.9+ Setupeck the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+### 1. Clone & Environment
+```bash
+git clone https://github.com/naeemAbdul-Aziz/srm-tool-python.git
+cd srm-tool-python/backend
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
-## Installation & Setupeck the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+### 2. Configure Database
+Create PostgreSQL database (adapt user/password as needed):
+```bash
+createdb srms-db
+```
+Create a `.env` file:
+```env
+DB_NAME=srms-db
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+APP_DEBUG=True
+LOG_LEVEL=INFO
+SECRET_KEY=change_me_in_production
+SESSION_TIMEOUT=3600
+```
 
-## Installation & Setupeck the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+### 3. Initialize
+CLI (interactive):
+```bash
+python main.py
+```
+API server (dev):
+```bash
+uvicorn api:app --reload
+```
+Visit: http://localhost:8000/docs
 
-## Installation & Setupeck the [Troubleshooting](#troubleshooting) section or review the logs in `app.log`.
+### 4. Seed Data
+Comprehensive dataset:
+```bash
+python comprehensive_seed.py
+```
+Test baseline seeding occurs automatically in pytest fixtures (for deterministic tests).
 
-## Installation & Setup
+## 📡 Notifications System
+
+Endpoints (admin create, user consumption):
+- `GET /notifications` – list (supports pagination with `before_id`)
+- `POST /notifications` – create (admin)
+- `POST /notifications/{id}/read` – mark one read
+- `POST /notifications/read-all` – mark all read
+- `GET /notifications/stream` – SSE real‑time stream
+
+Client can open an `EventSource` to receive push notifications; fallback polling still works.
+
+## 🧪 Assessments API
+Track structured evaluation components (e.g., Quiz, Midterm, Final) with weights for future weighted grade aggregation.
+
+Endpoints:
+- `GET /assessments` – list all assessments (optionally filter by `course_code`)
+- `POST /assessments` (admin) – create or upsert assessment
+- `PUT /assessments/{assessment_id}` (admin) – update name / max_score / weight
+- `DELETE /assessments/{assessment_id}` (admin) – remove assessment
+
+Sample create payload:
+```json
+{
+  "course_code": "UGCS101",
+  "assessment_name": "Quiz 1",
+  "max_score": 20,
+  "weight": 10
+}
+```
+
+Notes:
+- `weight` is a percentage placeholder; aggregation into final grades pending a future phase.
+- Idempotent create via (course_code, assessment_name) uniqueness enforced by upsert logic.
+
+## 📑 Reports & Transcripts
+
+Summary reports (multi-format, Excel multi-sheet):
+`GET /admin/reports/summary?format=txt|csv|excel|pdf`
+
+Personal academic report (admin – any student):
+`GET /admin/reports/personal/{student_index}?format=txt|pdf`
+
+Personal academic report (student self-service):
+`GET /student/report/pdf` and `GET /student/report/txt`
+
+Transcript (official academic record):
+`GET /admin/reports/transcript/{student_index}?format=excel|pdf`
+
+Reliability features: size validation, unified headers (`Content-Disposition`, `Content-Length`), temporary file cleanup, deterministic seeding for test fixtures. Automated coverage in `tests/test_exports.py`.
+
+## 🧪 Testing
+
+Run all tests:
+```bash
+pytest -q
+```
+
+Exports & transcript tests rely on the deterministic seed fixture creating `STUD001` with at least one course & grade.
+
+## 🧬 Seeding Modes
+
+| Mode | Description |
+|------|-------------|
+| Baseline | Fast minimal dataset (≤10 students, 1 admin set, core semesters, few or no grades) |
+| Comprehensive | Standard full dataset (default): distributed students, all courses & semesters, full grade generation |
+| Exhaustive | Comprehensive + assessments, program coverage enforcement, partial students, curated GPA edge cases, notifications, current semester, read/unread state |
+
+Refactor highlights:
+- Constants extracted to `seed_constants.py`.
+- Idempotent ensure/create helpers in `seed_helpers.py`.
+- Reduced duplication in `comprehensive_seed.py`.
+### Deterministic & Silent Seeding
+
+The comprehensive seeder supports reproducible runs and optional notification suppression.
+
+Environment variables:
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `SEED_RANDOM_SEED` | Default deterministic seed (overridden by `--seed`) | `SEED_RANDOM_SEED=12345` |
+| `SUPPRESS_SEED_NOTIFICATIONS` | Skip creating notifications during seeding | `SUPPRESS_SEED_NOTIFICATIONS=1` |
+
+CLI flags (view all with `python comprehensive_seed.py --help`):
+
+| Flag | Description |
+|------|-------------|
+| `--num-students N` | Number of students (default 100) |
+| `--no-clean` | Do not wipe existing data first |
+| `--seed SEED` | Deterministic seed (int or string) |
+| `--suppress-notifications` | Suppress notifications (also via env) |
+| `--baseline` | Use baseline mode (minimal quick seed) |
+| `--exhaustive` | Enable exhaustive mode features |
+| `--assessments-sample N` | Limit number of courses for which assessments are created |
+| `--full-reset` | Wipe all data including admin users & notifications before seeding |
+| `-y / --yes` | Auto-confirm (non-interactive) |
+
+Examples:
+
+Deterministic (seed via env):
+```bash
+SEED_RANDOM_SEED=42 python comprehensive_seed.py -y
+```
+
+Explicit seed overrides env:
+```bash
+python comprehensive_seed.py --seed 9999 -y
+```
+
+Silent bulk run:
+```bash
+python comprehensive_seed.py --num-students 250 --suppress-notifications -y
+```
+
+Programmatic API:
+```python
+from comprehensive_seed import seed_comprehensive_database
+seed_comprehensive_database(num_students=50, random_seed=123, suppress_notifications=True)
+```
+
+Precedence: CLI `--seed` > env `SEED_RANDOM_SEED` > nondeterministic.
+
+Suppression is enforced within `db.insert_notification` (guarding all higher-level creators).
+
+## 🧾 Logging
+Logs go to `app.log` plus console. Configure via `LOG_LEVEL` env var. Use DEBUG for detailed seeding diagnostics.
+
+## 🔧 Troubleshooting (Quick)
+
+| Symptom | Fix |
+|---------|-----|
+| Cannot connect DB | Verify `.env`, ensure PostgreSQL running, test with `psql` |
+| Auth fails | Confirm Basic Auth header (browser or API client) & seeded credentials |
+| Empty reports | Ensure grades exist; run seeding script |
+| SSE not receiving | Check browser console & ensure endpoint `/notifications/stream` reachable |
+| GPA seems off | Confirm credit hours present and transcript regenerated (post-fix) |
+
+## 🗺️ Roadmap
+- Extended PDF styling & optional watermarking.
+- Analytics / assessment expansion (more derived metrics & dashboards).
+- Additional test coverage: notification suppression & deterministic integrity snapshot.
+- Optional user-facing feature flags (AppConfig style) for experimental exports.
+
+## 📄 License
+See `LICENSE` file.
+
+## 🙋 Support
+Open an issue or inspect `app.log` for detailed tracebacks. Contributions and refinements welcome.
+
+---
+This README reflects current feature set (notifications SSE, transcript PDF/Excel parity, GPA fix, seeding refactor) and removes outdated JWT / duplicated sections.
 
 ```
 backend/

@@ -3,6 +3,10 @@
 import hashlib
 import bcrypt
 import getpass
+# psycopg2 not directly needed here after idempotent ON CONFLICT approach
+# (left commented for future specific exception handling if desired)
+# import psycopg2
+# from psycopg2 import errors
 from db import connect_to_db, fetch_student_by_index_number # fetch_student_by_index_number now handles its own connection
 from logger import get_logger
 from session import session_manager, set_user # Assuming session.py exists and works as expected
@@ -35,25 +39,43 @@ def verify_password(password, hashed_password):
         return False
 
 def create_user(username, password, role):
+    """Create a user if it does not already exist.
+
+    Returns True if inserted, False if already exists or on error.
+    Duplicate username now treated as a benign condition (idempotent).
+    """
     conn = connect_to_db()
     if conn is None:
         logger.error("Error: Could not connect to database for user creation.")
         return False
     try:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO users (username, password, role)
                 VALUES (%s, %s, %s)
-            """, (username, hash_password(password), role))
+                ON CONFLICT (username) DO NOTHING
+                RETURNING user_id
+                """,
+                (username, hash_password(password), role)
+            )
+            inserted = cur.fetchone()
             conn.commit()
-        logger.info(f"User '{username}' created successfully with role '{role}'.")
-        return True
+            if inserted:
+                logger.info(f"User '{username}' created successfully with role '{role}'.")
+                return True
+            else:
+                logger.debug(f"User '{username}' already exists; skipping creation.")
+                return False
     except Exception as e:
+    # Generic exception; ON CONFLICT DO NOTHING prevents IntegrityError bubbling
         logger.error(f"Error creating user '{username}': {e}")
-        conn.rollback()
+        if conn:
+            conn.rollback()
         return False
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 def fetch_user_data(conn, username):
     """Fetch user data from the database."""

@@ -1082,9 +1082,9 @@
         </div>
     </div>
 
-    <!-- Loading Spinner -->
-    <div id="loading-spinner" class="loading-spinner">
-        <div class="spinner"></div>
+    <!-- Global Loading Spinner (singleton) -->
+    <div id="loading-spinner" class="loading-spinner" aria-hidden="true" role="status">
+        <div class="spinner" aria-label="Loading"></div>
     </div>
 
     <script>
@@ -2471,7 +2471,232 @@
                 document.body.removeChild(a);
             },
 
+            downloadSummaryReportExcel: async (filters = {}) => {
+                const query = new URLSearchParams(filters).toString();
+                const headers = { 'Authorization': getAuthHeader() };
+                
+                console.log('Calling Excel download API:', `${API_BASE_URL}/admin/reports/summary/excel?${query}`);
+                console.log('Headers being sent:', headers);
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/reports/summary/excel?${query}`, { 
+                        headers,
+                        method: 'GET'
+                    });
+                    
+                    console.log('Excel API response status:', response.status);
+                    console.log('Excel API response headers:', [...response.headers.entries()]);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Excel API error response:', errorText);
+                        
+                        // If it's a 401 error, suggest re-login
+                        if (response.status === 401) {
+                            throw new Error(`Authentication failed. Please log out and log back in. Error: ${response.status} - ${errorText}`);
+                        }
+                        
+                        throw new Error(`Failed to download Excel report: ${response.status} - ${errorText}`);
+                    }
+                    
+                    // Check if response has content
+                    const contentLength = response.headers.get('content-length');
+                    console.log('Excel response content-length:', contentLength);
+                    
+                    const contentType = response.headers.get('content-type');
+                    console.log('Excel response content-type:', contentType);
+                    
+                    const contentDisposition = response.headers.get('content-disposition');
+                    console.log('Excel response content-disposition:', contentDisposition);
+                    
+                    // Convert response to blob
+                    const blob = await response.blob();
+                    console.log('Excel blob size:', blob.size);
+                    console.log('Excel blob type:', blob.type);
+                    
+                    if (blob.size === 0) {
+                        throw new Error('Downloaded Excel file is empty. Please check server logs.');
+                    }
+                    
+                    // Create download link with improved handling
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    
+                    // Extract filename from Content-Disposition header or use default
+                    let filename = 'summary_report.xlsx';
+                    if (contentDisposition) {
+                        const match = contentDisposition.match(/filename[^;=\\n]*=((['\"]*)(.*?)\\2|[^;\\n]*)/);
+                        if (match && match[3]) {
+                            filename = match[3];
+                        }
+                    }
+                    a.download = filename;
+                    
+                    // Force download with user interaction protection
+                    document.body.appendChild(a);
+                    console.log('Triggering download for file:', filename, 'with size:', blob.size);
+                    
+                    // Use a small delay to ensure element is fully attached
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                    try {
+                        a.click();
+                    } catch(clickErr) {
+                        console.warn('Primary click() failed, attempting fallback open', clickErr);
+                        try {
+                            window.open(url);
+                        } catch(openErr) {
+                            console.warn('window.open fallback failed', openErr);
+                        }
+                    }
+
+                    // IE / Edge (legacy) fallback
+                    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+                        try {
+                            window.navigator.msSaveOrOpenBlob(blob, filename);
+                            console.log('Used msSaveOrOpenBlob fallback');
+                        } catch(msErr) {
+                            console.warn('msSaveOrOpenBlob failed', msErr);
+                        }
+                    }
+                    
+                    // Clean up with a longer delay to ensure download starts
+                    setTimeout(() => {
+                        window.URL.revokeObjectURL(url);
+                        if (document.body.contains(a)) {
+                            document.body.removeChild(a);
+                        }
+                        console.log('Download cleanup completed');
+                    }, 500);
+                    
+                    console.log('Excel download initiated successfully');
+
+                    // Provide a manual link area in case user needs it
+                    const existingManual = document.getElementById('manual-excel-link');
+                    if (existingManual) existingManual.remove();
+                    const manualDiv = document.createElement('div');
+                    manualDiv.id = 'manual-excel-link';
+                    manualDiv.className = 'mt-2 text-xs text-gray-500 text-center';
+                    manualDiv.innerHTML = `If the download did not start <a href="${url}" download="${filename}">click here to download manually</a>.`;
+                    document.body.appendChild(manualDiv);
+                    
+                } catch (fetchError) {
+                    console.error('Fetch error during Excel download:', fetchError);
+                    throw fetchError;
+                }
+            },
+
+            downloadSummaryReportCsv: async (filters = {}) => {
+                const query = new URLSearchParams(filters).toString();
+                const headers = { 'Authorization': getAuthHeader() };
+                
+                console.log('Calling CSV download API:', `${API_BASE_URL}/admin/reports/summary/csv?${query}`);
+                console.log('Headers being sent:', headers);
+                
+                const response = await fetch(`${API_BASE_URL}/admin/reports/summary/csv?${query}`, { headers });
+                
+                console.log('CSV API response status:', response.status);
+                console.log('CSV API response headers:', [...response.headers.entries()]);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('CSV API error response:', errorText);
+                    
+                    // If it's a 401 error, suggest re-login
+                    if (response.status === 401) {
+                        throw new Error(`Authentication failed. Please log out and log back in. Error: ${response.status} - ${errorText}`);
+                    }
+                    
+                    throw new Error(`Failed to download CSV report: ${response.status} - ${errorText}`);
+                }
+                
+                const blob = await response.blob();
+                console.log('CSV blob size:', blob.size);
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'summary_report.csv';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                console.log('CSV download initiated successfully');
+            },
+
+            downloadAcademicTranscript: async (studentIndex) => {
+                const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+                const response = await fetch(`${API_BASE_URL}/admin/reports/transcript/${encodeURIComponent(studentIndex)}?format=excel`, { headers });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to download academic transcript');
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `transcript_${studentIndex}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            },
+
             getAdminDashboardAnalytics: async () => api.fetchData('/admin/analytics/dashboard'),
+            
+            // =============================
+            // Notification API Helpers
+            // =============================
+            fetchNotifications: async ({ unreadOnly = false, limit = 20, beforeId = null } = {}) => {
+                const params = new URLSearchParams();
+                if (unreadOnly) params.append('unread_only', 'true');
+                if (limit) params.append('limit', limit);
+                if (beforeId) params.append('before_id', beforeId);
+                const headers = { 'Authorization': getAuthHeader() };
+                const url = `${API_BASE_URL}/notifications?${params.toString()}`;
+                console.log('[Notifications] Fetch list:', url);
+                const resp = await fetch(url, { headers });
+                if (!resp.ok) {
+                    const t = await resp.text();
+                    throw new Error(`Failed to fetch notifications: ${resp.status} ${t}`);
+                }
+                return resp.json();
+            },
+            fetchUnreadCount: async () => {
+                const headers = { 'Authorization': getAuthHeader() };
+                const url = `${API_BASE_URL}/notifications/unread-count`;
+                const resp = await fetch(url, { headers });
+                if (!resp.ok) throw new Error('Failed to fetch unread count');
+                return resp.json();
+            },
+            markNotificationRead: async (userNotificationId) => {
+                const headers = { 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' };
+                const url = `${API_BASE_URL}/notifications/${userNotificationId}/read`;
+                const resp = await fetch(url, { method: 'POST', headers });
+                if (!resp.ok) throw new Error('Failed to mark notification read');
+                return resp.json();
+            },
+            markAllNotificationsRead: async () => {
+                const headers = { 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' };
+                const url = `${API_BASE_URL}/notifications/read-all`;
+                const resp = await fetch(url, { method: 'POST', headers });
+                if (!resp.ok) throw new Error('Failed to mark all notifications read');
+                return resp.json();
+            },
+            createAdminNotification: async (payload) => {
+                const headers = { 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' };
+                const resp = await fetch(`${API_BASE_URL}/admin/notifications`, { method: 'POST', headers, body: JSON.stringify(payload) });
+                if (!resp.ok) {
+                    const t = await resp.text();
+                    throw new Error(`Failed to create notification: ${resp.status} ${t}`);
+                }
+                return resp.json();
+            },
             getEnrollmentStatistics: async (academicYear = null) => {
                 const query = academicYear ? `academic_year=${encodeURIComponent(academicYear)}` : '';
                 return api.fetchData(`/admin/statistics/enrollment?${query}`);
@@ -3745,20 +3970,27 @@
         };
         
         const updateDashboardUI = (data) => {
-            // Update metric cards
-            document.getElementById('total-students').textContent = data.students.total || 0;
-            document.getElementById('total-courses').textContent = data.courses.total || 0;
-            document.getElementById('total-grades').textContent = data.grades.total || 0;
+            // Update metric cards with correct field names
+            document.getElementById('total-students').textContent = data.students.total_count || 0;
+            document.getElementById('total-courses').textContent = data.courses.total_count || 0;
+            document.getElementById('total-grades').textContent = data.grades.total_count || 0;
             document.getElementById('average-gpa').textContent = data.gpaStats.average_gpa?.toFixed(2) || 'N/A';
             
             // Update additional info with more insights
-            const avgGradesPerStudent = Math.round((data.grades.total || 0) / (data.students.total || 1));
-            document.getElementById('students-growth').textContent = `${data.students.total || 0} enrolled`;
-            document.getElementById('courses-info').textContent = `${data.courses.total || 0} active courses`;
+            const totalStudents = data.students.total_count || 0;
+            const totalCourses = data.courses.total_count || 0;
+            const totalGrades = data.grades.total_count || 0;
+            const avgGradesPerStudent = totalStudents > 0 ? Math.round(totalGrades / totalStudents) : 0;
+            
+            document.getElementById('students-growth').textContent = `${totalStudents} enrolled`;
+            document.getElementById('courses-info').textContent = `${totalCourses} active courses`;
             document.getElementById('grades-info').textContent = `${avgGradesPerStudent} avg grades/student`;
             document.getElementById('gpa-range').textContent = data.gpaStats.min_gpa && data.gpaStats.max_gpa ? 
                 `Range: ${data.gpaStats.min_gpa.toFixed(2)} - ${data.gpaStats.max_gpa.toFixed(2)}` : 'No range data';
-            document.getElementById('active-semesters').textContent = data.semesters.total || 0;
+            
+            // Update semester count from semesters data
+            const totalSemesters = data.semesters.total_count || (data.semesters.semesters ? data.semesters.semesters.length : 0);
+            document.getElementById('active-semesters').textContent = totalSemesters;
             
             // Update recent activity with actual data
             if (data.insights && data.insights.recent_activities && data.insights.recent_activities.length > 0) {
@@ -5487,7 +5719,7 @@
                     <div id="batch-progress-modal" class="batch-progress">
                         <div class="text-center mb-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">${title}</h3>
-                            <div class="loading-spinner mx-auto mb-4"></div>
+                            <div class="local-spinner mx-auto mb-4" aria-hidden="true"></div>
                         </div>
                         <div id="progress-steps" class="space-y-2">
                             ${steps.map((step, index) => `
@@ -7664,11 +7896,19 @@
                             </button>
                         </div>
                         <div class="flex flex-col md:flex-row gap-4 mb-4">
-                            <button id="download-summary-report-pdf-button" class="w-full bg-green-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50">
-                                Download Summary Report (PDF)
+                            <button id="download-summary-report-pdf-button" class="w-full bg-red-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-red-700 disabled:opacity-50">
+                                Download PDF
                             </button>
                             <button id="download-summary-report-txt-button" class="w-full bg-blue-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">
-                                Download Summary Report (TXT)
+                                Download TXT
+                            </button>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 mb-4">
+                            <button id="download-summary-report-excel-button" class="w-full bg-green-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50">
+                                Download Excel (XLSX)
+                            </button>
+                            <button id="download-summary-report-csv-button" class="w-full bg-orange-600 text-white py-2 px-3 rounded-md font-semibold hover:bg-orange-700 disabled:opacity-50">
+                                Download CSV
                             </button>
                         </div>
                         <p id="report-message" class="mt-3 text-center text-sm"></p>
@@ -7682,6 +7922,8 @@
             const generateReportButton = document.getElementById('generate-summary-report-button');
             const downloadPdfButton = document.getElementById('download-summary-report-pdf-button');
             const downloadTxtButton = document.getElementById('download-summary-report-txt-button');
+            const downloadExcelButton = document.getElementById('download-summary-report-excel-button');
+            const downloadCsvButton = document.getElementById('download-summary-report-csv-button');
             const reportMessage = document.getElementById('report-message');
             const reportPreview = document.getElementById('report-preview');
 
@@ -7724,7 +7966,7 @@
                 reportMessage.textContent = 'Preparing PDF for download...';
                 reportMessage.className = 'mt-3 text-center text-sm text-blue-600';
                 downloadPdfButton.disabled = true;
-                downloadTxtButton.disabled = true;
+                downloadPdfButton.textContent = 'Downloading PDF...';
 
                 const academicYear = document.getElementById('report-academic-year').value;
                 const filters = academicYear ? { academic_year: parseInt(academicYear) } : {};
@@ -7738,7 +7980,7 @@
                     reportMessage.className = 'mt-3 text-center text-sm text-red-600';
                 } finally {
                     downloadPdfButton.disabled = false;
-                    downloadTxtButton.disabled = false;
+                    downloadPdfButton.textContent = 'Download PDF';
                 }
             });
             
@@ -7746,8 +7988,8 @@
             downloadTxtButton.addEventListener('click', async () => {
                 reportMessage.textContent = 'Preparing text report for download...';
                 reportMessage.className = 'mt-3 text-center text-sm text-blue-600';
-                downloadPdfButton.disabled = true;
                 downloadTxtButton.disabled = true;
+                downloadTxtButton.textContent = 'Downloading TXT...';
 
                 const academicYear = document.getElementById('report-academic-year').value;
                 const filters = academicYear ? { academic_year: parseInt(academicYear) } : {};
@@ -7760,8 +8002,54 @@
                     reportMessage.textContent = `Error downloading text report: ${error.message}`;
                     reportMessage.className = 'mt-3 text-center text-sm text-red-600';
                 } finally {
-                    downloadPdfButton.disabled = false;
                     downloadTxtButton.disabled = false;
+                    downloadTxtButton.textContent = 'Download TXT';
+                }
+            });
+
+            // Event listener for the Excel download button
+            downloadExcelButton.addEventListener('click', async () => {
+                reportMessage.textContent = 'Preparing Excel report for download...';
+                reportMessage.className = 'mt-3 text-center text-sm text-blue-600';
+                downloadExcelButton.disabled = true;
+                downloadExcelButton.textContent = 'Downloading Excel...';
+
+                const academicYear = document.getElementById('report-academic-year').value;
+                const filters = academicYear ? { academic_year: parseInt(academicYear) } : {};
+
+                try {
+                    await api.downloadSummaryReportExcel(filters);
+                    reportMessage.textContent = 'Excel report download started. Check your browser downloads.';
+                    reportMessage.className = 'mt-3 text-center text-sm text-green-600';
+                } catch (error) {
+                    reportMessage.textContent = `Error downloading Excel report: ${error.message}`;
+                    reportMessage.className = 'mt-3 text-center text-sm text-red-600';
+                } finally {
+                    downloadExcelButton.disabled = false;
+                    downloadExcelButton.textContent = 'Download Excel';
+                }
+            });
+
+            // Event listener for the CSV download button
+            downloadCsvButton.addEventListener('click', async () => {
+                reportMessage.textContent = 'Preparing CSV report for download...';
+                reportMessage.className = 'mt-3 text-center text-sm text-blue-600';
+                downloadCsvButton.disabled = true;
+                downloadCsvButton.textContent = 'Downloading CSV...';
+
+                const academicYear = document.getElementById('report-academic-year').value;
+                const filters = academicYear ? { academic_year: parseInt(academicYear) } : {};
+
+                try {
+                    await api.downloadSummaryReportCsv(filters);
+                    reportMessage.textContent = 'CSV report download started. Check your browser downloads.';
+                    reportMessage.className = 'mt-3 text-center text-sm text-green-600';
+                } catch (error) {
+                    reportMessage.textContent = `Error downloading CSV report: ${error.message}`;
+                    reportMessage.className = 'mt-3 text-center text-sm text-red-600';
+                } finally {
+                    downloadCsvButton.disabled = false;
+                    downloadCsvButton.textContent = 'Download CSV';
                 }
             });
 
@@ -8486,6 +8774,347 @@
         });
 
         window.addEventListener('DOMContentLoaded', renderApp);
+
+                // =============================
+                // Notification Center (UI + Pagination)
+                // =============================
+                (function(){
+                        // Inject bell + dropdown + composer modal near top of body once DOM ready (defer until DOMContentLoaded)
+                        function injectNotificationShell(){
+                                if(document.getElementById('srms-notification-bell')) return; // already added
+                                const shell = document.createElement('div');
+                                shell.innerHTML = `
+<div id="notification-root" class="fixed top-3 right-4 z-40 flex items-center gap-2">
+    <button id="open-notification-composer" class="hidden px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700" title="Create notification">New</button>
+    <button id="srms-notification-bell" class="relative p-2 rounded-full bg-white shadow border border-gray-200 hover:bg-gray-50" aria-haspopup="true" aria-expanded="false" title="Notifications">
+        <span class="sr-only">Notifications</span>
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <span id="notification-unread-badge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] leading-none px-1.5 py-0.5 rounded-full font-semibold"></span>
+    </button>
+    <div id="notification-dropdown" class="hidden absolute mt-2 right-0 w-96 max-h-[480px] flex flex-col bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
+        <div class="flex items-center justify-between px-3 py-2 border-b bg-gray-50">
+            <h4 class="text-sm font-semibold text-gray-700">Notifications</h4>
+            <div class="flex items-center gap-2">
+                <button id="mark-all-notifications" class="text-xs text-blue-600 hover:underline">Mark all read</button>
+                <button id="close-notifications" class="text-gray-500 hover:text-gray-700" title="Close">✕</button>
+            </div>
+        </div>
+        <div id="notification-list" class="flex-1 overflow-y-auto divide-y divide-gray-100 bg-white">
+            <div class="p-3 text-xs text-gray-400" id="notifications-empty">Loading...</div>
+        </div>
+        <div class="p-2 border-t bg-gray-50 flex items-center justify-between">
+            <button id="load-more-notifications" class="hidden text-xs px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">Load more</button>
+            <span id="notifications-status" class="text-[11px] text-gray-500"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Composer Modal -->
+<div id="notification-composer-overlay" class="hidden fixed inset-0 bg-black/40 z-50 items-center justify-center">
+    <div class="bg-white w-full max-w-lg rounded-lg shadow-lg border border-gray-200 overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="notification-composer-title">
+        <div class="px-4 py-3 border-b flex items-center justify-between bg-gray-50">
+            <h3 id="notification-composer-title" class="font-semibold text-gray-800">Create Notification</h3>
+            <button id="close-notification-composer" class="p-2 hover:bg-gray-200 rounded" aria-label="Close">✕</button>
+        </div>
+        <form id="notification-composer-form" class="p-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                    <input name="type" required placeholder="system" class="w-full border rounded px-2 py-1 text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Severity</label>
+                    <select name="severity" class="w-full border rounded px-2 py-1 text-sm">
+                        <option value="info">info</option>
+                        <option value="success">success</option>
+                        <option value="warning">warning</option>
+                        <option value="error">error</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                <input name="title" required maxlength="120" class="w-full border rounded px-2 py-1 text-sm" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Message</label>
+                <textarea name="message" required rows="3" maxlength="500" class="w-full border rounded px-2 py-1 text-sm resize-y"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Audience</label>
+                    <select name="audience" class="w-full border rounded px-2 py-1 text-sm">
+                        <option value="all">all</option>
+                        <option value="admins">admins</option>
+                        <option value="students">students</option>
+                        <option value="user">specific user</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Target User ID (optional)</label>
+                    <input name="target_user_id" type="number" min="1" class="w-full border rounded px-2 py-1 text-sm" />
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2 border-t">
+                <button type="button" id="cancel-notification-composer" class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded">Cancel</button>
+                <button type="submit" id="submit-notification-composer" class="px-4 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">Create</button>
+            </div>
+            <p id="notification-composer-feedback" class="text-xs mt-2 text-gray-500"></p>
+        </form>
+    </div>
+</div>`;
+                                document.body.appendChild(shell);
+                        }
+
+                        const state = {
+                                items: [],
+                                loading: false,
+                                hasMore: true,
+                                pageSize: 20,
+                                lastMinId: null,
+                                unread: 0
+                        };
+
+                        function fmtDate(d){
+                                if(!d) return '';
+                                const dt = new Date(d);
+                                if(isNaN(dt)) return d;
+                                return dt.toLocaleString();
+                        }
+                        function severityColor(sev){
+                                switch(sev){
+                                        case 'success': return 'bg-green-100 text-green-700 border-green-300';
+                                        case 'warning': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+                                        case 'error': return 'bg-red-100 text-red-700 border-red-300';
+                                        default: return 'bg-blue-100 text-blue-700 border-blue-300';
+                                }
+                        }
+                        function renderList(){
+                                const listEl = document.getElementById('notification-list');
+                                const emptyEl = document.getElementById('notifications-empty');
+                                if(!listEl) return;
+                                listEl.innerHTML = '';
+                                if(state.items.length === 0){
+                                        emptyEl.classList.remove('hidden');
+                                        emptyEl.textContent = 'No notifications';
+                                } else {
+                                        emptyEl.classList.add('hidden');
+                                }
+                                state.items.forEach(n => {
+                                        const div = document.createElement('div');
+                                        div.className = `p-3 text-sm flex gap-3 hover:bg-gray-50 ${!n.read_at ? 'bg-white' : 'bg-gray-50'}`;
+                                        div.innerHTML = `
+ <div class="flex-1">
+     <div class="flex items-start justify-between gap-2">
+         <div class="font-medium text-gray-800 flex items-center gap-2">
+             <span class="inline-block px-1.5 py-0.5 text-[10px] border rounded ${severityColor(n.severity)}">${n.severity || 'info'}</span>
+             <span>${n.title || '(No title)'}</span>
+             ${!n.read_at ? '<span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse" title="Unread"></span>' : ''}
+         </div>
+         <button data-id="${n.user_notification_id || n.id}" class="text-xs text-blue-600 hover:underline mark-one-btn" ${n.read_at ? 'disabled' : ''}>Mark read</button>
+     </div>
+     <div class="mt-1 text-gray-700 leading-snug whitespace-pre-wrap">${(n.message||'').slice(0,1000)}</div>
+     <div class="mt-1 text-[11px] text-gray-500 flex items-center gap-2">
+         <span>${fmtDate(n.created_at)}</span>
+         ${n.read_at ? `<span class="text-green-600">Read</span>` : ''}
+     </div>
+ </div>`;
+                                        listEl.appendChild(div);
+                                });
+                                const loadMoreBtn = document.getElementById('load-more-notifications');
+                                if(loadMoreBtn){
+                                        loadMoreBtn.classList.toggle('hidden', !state.hasMore);
+                                        loadMoreBtn.disabled = state.loading;
+                                }
+                                document.getElementById('notifications-status').textContent = state.loading ? 'Loading...' : (state.hasMore ? '' : 'End of list');
+                        }
+
+                        async function fetchUnread(){
+                                try {
+                                        const data = await api.fetchUnreadCount();
+                                        state.unread = data.unread || 0;
+                                } catch(e){ console.warn('Unread fetch failed', e); }
+                                updateBadge();
+                        }
+                        function updateBadge(){
+                                const badge = document.getElementById('notification-unread-badge');
+                                if(!badge) return;
+                                if(state.unread > 0){
+                                        badge.textContent = state.unread > 99 ? '99+' : state.unread;
+                                        badge.classList.remove('hidden');
+                                } else {
+                                        badge.classList.add('hidden');
+                                }
+                        }
+
+                        async function loadBatch(initial=false){
+                                if(state.loading) return;
+                                state.loading = true; renderList();
+                                try {
+                                        const batch = await api.fetchNotifications({ limit: state.pageSize, beforeId: initial ? null : state.lastMinId });
+                                        if(initial){
+                                                state.items = batch;
+                                        } else {
+                                                state.items = state.items.concat(batch);
+                                        }
+                                        if(batch.length === state.pageSize){
+                                                // more might exist
+                                                const ids = batch.map(b=> b.user_notification_id || b.id);
+                                                const minId = Math.min(...ids);
+                                                state.lastMinId = state.lastMinId == null ? minId : Math.min(state.lastMinId, minId);
+                                                state.hasMore = true;
+                                        } else {
+                                                state.hasMore = false;
+                                        }
+                                } catch(e){
+                                        console.error('Failed to load notifications', e);
+                                } finally {
+                                        state.loading = false; renderList();
+                                }
+                        }
+
+                        async function markAll(){
+                                try { await api.markAllNotificationsRead(); state.items = state.items.map(n => ({...n, read_at: n.read_at || new Date().toISOString()})); state.unread = 0; updateBadge(); renderList(); } catch(e){ console.error(e);} }
+
+                        function wireEvents(){
+                                const bell = document.getElementById('srms-notification-bell');
+                                const dropdown = document.getElementById('notification-dropdown');
+                                bell.addEventListener('click', async ()=>{
+                                        const open = !dropdown.classList.contains('hidden');
+                                        document.querySelectorAll('#notification-dropdown').forEach(el=> el.classList.add('hidden'));
+                                        if(open){ return; }
+                                        dropdown.classList.remove('hidden');
+                                        if(state.items.length === 0) await loadBatch(true);
+                                });
+                                document.getElementById('close-notifications').addEventListener('click', ()=> dropdown.classList.add('hidden'));
+                                document.getElementById('mark-all-notifications').addEventListener('click', markAll);
+                                document.getElementById('load-more-notifications').addEventListener('click', ()=> loadBatch(false));
+                                document.addEventListener('click', (e)=>{
+                                        if(!dropdown.contains(e.target) && !bell.contains(e.target)) dropdown.classList.add('hidden');
+                                });
+                                document.getElementById('notification-list').addEventListener('click', async (e)=>{
+                                        const btn = e.target.closest('.mark-one-btn');
+                                        if(!btn) return;
+                                        const id = btn.getAttribute('data-id');
+                                        try {
+                                                await api.markNotificationRead(id);
+                                                const idx = state.items.findIndex(n => (n.user_notification_id||n.id) == id);
+                                                if(idx>=0 && !state.items[idx].read_at){ state.items[idx].read_at = new Date().toISOString(); state.unread = Math.max(0, state.unread -1); updateBadge(); renderList(); }
+                                        } catch(err){ console.error(err); }
+                                });
+                        }
+
+                        // Composer wiring
+                        function initComposer(){
+                                const openBtn = document.getElementById('open-notification-composer');
+                                const overlay = document.getElementById('notification-composer-overlay');
+                                const cancelBtn = document.getElementById('cancel-notification-composer');
+                                const closeBtn = document.getElementById('close-notification-composer');
+                                const form = document.getElementById('notification-composer-form');
+                                const feedback = document.getElementById('notification-composer-feedback');
+                                function show(){ overlay.classList.remove('hidden'); overlay.classList.add('flex'); feedback.textContent=''; }
+                                function hide(){ overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
+                                if(openBtn){ openBtn.addEventListener('click', show); }
+                                [cancelBtn, closeBtn].forEach(b=> b && b.addEventListener('click', hide));
+                                overlay.addEventListener('click', (e)=>{ if(e.target === overlay) hide(); });
+                                form.addEventListener('submit', async (e)=>{
+                                        e.preventDefault();
+                                        feedback.textContent='Creating...';
+                                        const submitBtn = document.getElementById('submit-notification-composer');
+                                        submitBtn.disabled = true;
+                                        const fd = new FormData(form);
+                                        const payload = {
+                                                type: fd.get('type')||'system',
+                                                title: fd.get('title')||'',
+                                                message: fd.get('message')||'',
+                                                severity: fd.get('severity')||'info',
+                                                audience: fd.get('audience')||'all'
+                                        };
+                                        if(payload.audience==='user' && fd.get('target_user_id')) payload.target_user_id = Number(fd.get('target_user_id'));
+                                        try {
+                                                const resp = await api.createAdminNotification(payload);
+                                                // For optimistic display we need the full notification; backend returns id only, so we refetch first page
+                                                feedback.textContent='Created';
+                                                await loadBatch(true);
+                                                await fetchUnread();
+                                                setTimeout(()=> hide(), 400);
+                                        } catch(err){
+                                                feedback.textContent = 'Error: ' + (err.message||'failed');
+                                                feedback.className = 'text-xs mt-2 text-red-600';
+                                        } finally { submitBtn.disabled = false; }
+                                });
+                        }
+
+                        function detectAdmin(){
+                                const authHeader = localStorage.getItem('authHeader');
+                                if(!authHeader) return;
+                                try {
+                                        const decoded = atob(authHeader.replace('Basic ', ''));
+                                        const username = decoded.split(':')[0];
+                                        if(username && username.toLowerCase().startsWith('admin')){
+                                                const btn = document.getElementById('open-notification-composer');
+                                                if(btn) btn.classList.remove('hidden');
+                                        }
+                                } catch(_e){ }
+                        }
+
+                        let evtSource = null;
+
+                        function initSSE(){
+                            if(evtSource){ evtSource.close(); evtSource = null; }
+                            try {
+                                evtSource = new EventSource('/notifications/stream');
+                                evtSource.addEventListener('message', (e)=>{ /* generic */ });
+                                evtSource.addEventListener('error', (e)=>{
+                                    console.warn('SSE error, will retry in 10s', e);
+                                    if(evtSource){ evtSource.close(); }
+                                    setTimeout(initSSE, 10000);
+                                });
+                                evtSource.addEventListener('open', ()=> console.log('[SSE] connected'));
+                                evtSource.onmessage = (e)=>{
+                                    // Each event data: {event, data, ts}
+                                    try {
+                                        const parsed = JSON.parse(e.data);
+                                        const ev = parsed.event; const payload = parsed.data;
+                                        if(ev === 'notification.new'){
+                                            // Increase unread count & optionally refetch first page if dropdown open
+                                            state.unread += 1; updateBadge();
+                                            const dropdown = document.getElementById('notification-dropdown');
+                                            if(dropdown && !dropdown.classList.contains('hidden')){
+                                                // refresh first page for freshness
+                                                loadBatch(true);
+                                            }
+                                        } else if(ev === 'notification.read'){
+                                            const id = payload.user_notification_id;
+                                            // optional client-side sync (will rely on polling otherwise)
+                                        } else if(ev === 'notification.read_all'){
+                                            // If user matches current placeholder assumption we can set unread to 0
+                                            state.unread = 0; updateBadge();
+                                        }
+                                    } catch(err){ console.warn('SSE parse failed', err); }
+                                };
+                            } catch(err){
+                                console.warn('Failed to init SSE', err);
+                            }
+                        }
+
+                        async function init(){
+                                injectNotificationShell();
+                                wireEvents();
+                                initComposer();
+                                detectAdmin();
+                                await fetchUnread();
+                                // Poll unread count every 60s
+                                setInterval(fetchUnread, 60000);
+                            // Start SSE (best effort)
+                            initSSE();
+                        }
+                        window.addEventListener('DOMContentLoaded', init);
+                })();
+
     </script>
+    <!-- New modular component scripts (ESM) -->
+    <script type="module" src="js/components/notifications.js"></script>
+    <script type="module" src="js/components/assessments.js"></script>
 </body>
 </html>

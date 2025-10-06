@@ -38,17 +38,51 @@ export const showToast = (message, type = TOAST_TYPES.INFO, duration = DEFAULT_T
 /**
  * Loading Spinner Management
  */
+// Global loading spinner (reference counted to avoid flicker & duplicates)
+let _loadingCount = 0;
+let _spinnerEl = null;
+
+const ensureSpinnerElement = () => {
+    if (!_spinnerEl) {
+        _spinnerEl = document.getElementById('loading-spinner');
+        if (!_spinnerEl) {
+            _spinnerEl = document.createElement('div');
+            _spinnerEl.id = 'loading-spinner';
+            _spinnerEl.className = 'loading-spinner';
+            _spinnerEl.style.display = 'none';
+            document.body.appendChild(_spinnerEl);
+        }
+    }
+    return _spinnerEl;
+};
+
 export const showLoading = () => {
-    const spinner = document.getElementById('loading-spinner');
-    if (spinner) {
-        spinner.style.display = 'block';
+    const el = ensureSpinnerElement();
+    _loadingCount++;
+    // Only actually show when transitioning from 0 -> 1
+    if (_loadingCount === 1) {
+        el.style.display = 'block';
     }
 };
 
 export const hideLoading = () => {
-    const spinner = document.getElementById('loading-spinner');
-    if (spinner) {
-        spinner.style.display = 'none';
+    if (_loadingCount > 0) {
+        _loadingCount--;
+    }
+    if (_loadingCount === 0 && _spinnerEl) {
+        _spinnerEl.style.display = 'none';
+    }
+};
+
+export const withGlobalLoading = async (fn, { rethrow = false } = {}) => {
+    showLoading();
+    try {
+        return await fn();
+    } catch (e) {
+        if (rethrow) throw e; else console.error(e);
+        return null;
+    } finally {
+        hideLoading();
     }
 };
 
@@ -95,6 +129,9 @@ export const getAuthHeader = () => {
     }
     return '';
 };
+
+// Re-export for convenience in component modules
+export { getAuthHeader as authHeader };
 
 /**
  * Debounce function for limiting function calls

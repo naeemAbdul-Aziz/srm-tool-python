@@ -41,6 +41,17 @@ Try these credentials:
 - **Admin**: username=`admin`, password=`admin123`
 - **Student**: username=`student1`, password=`pass123`
 
+### 7. Verify Notifications (New Feature)
+While logged in as admin:
+1. Add a course or insert a grade (these trigger notifications)
+2. Click the bell icon in the header; unread count badge should appear
+3. Open panel – new notification shows with NEW tag
+4. Click a notification (or its Mark read) – badge decrements
+5. Use "Mark all read" to clear remaining
+
+Excel streaming summary report endpoint: `GET /admin/reports/summary/excel` (multi-sheet workbook).
+Other formats: `/admin/reports/summary/pdf|txt|csv`.
+
 ## Debugging Steps
 
 ### If Login Fails:
@@ -78,6 +89,7 @@ Try these credentials:
 ✅ Frontend loads without console errors
 ✅ Login redirects to dashboard based on role
 ✅ Admin sees sidebar with Students, Courses, etc.
+✅ Notification bell visible (with or without badge)
 ✅ Student sees profile dashboard
 
 ### Next Steps After Login Works:
@@ -101,7 +113,47 @@ backend/
   └── auth.py          # Authentication
 
 frontend/
-  ├── index.html       # Open this in browser
-  ├── styles.css       # UI styling
-  └── script.js        # Frontend logic
+   ├── index.html       # Open this in browser (all JS inline)
+   ├── styles.css       # UI styling (if present)
+   └── (legacy script.js consolidated into index.html)
+
+## Notifications Feature Notes
+
+### Event Triggers Implemented
+- Course creation
+- Semester creation / setting current semester
+- Grade insertion / update
+
+### Severity Levels
+- info (default)
+- success
+- warning
+- error
+
+### API Endpoints
+```
+GET /notifications
+GET /notifications/unread-count
+POST /notifications/{user_notification_id}/read
+POST /notifications/read-all
+POST /admin/notifications
+```
+
+### Create Custom Notification (Admin)
+Example body:
+```json
+{
+   "type": "system",
+   "title": "Maintenance Window",
+   "message": "System maintenance at 02:00 UTC.",
+   "severity": "warning",
+   "audience": "all"
+}
+```
+
+### Roadmap
+- WebSocket/SSE real-time push
+- Toast popups for new notifications
+- Pagination UI (Load More) refinements
+- Admin composer form in UI
 ```

@@ -1,652 +1,240 @@
 #!/usr/bin/env python3
-"""
-comprehensive_seed.py - Comprehensive University of Ghana Database Seeding
-==========================================================================
+"""Comprehensive University of Ghana database seeding (refactored).
 
-This script creates a complete, realistic dataset for the Student Result Management System
-with authentic University of Ghana data including:
-- Multiple academic years and semesters
-- Diverse student profiles across different programs
-- Comprehensive course catalog with proper UG course codes
-- Realistic grade distributions and academic progression
-- Complete user accounts with proper authentication
+This module now delegates static data & generation helpers to:
+ - seed_constants.py (names, schools, courses, calendar)
+ - seed_helpers.py   (ensure_* + generation utilities)
 
-Usage: python comprehensive_seed.py
+Goal: reduce duplication & make incremental maintenance simpler.
+
+Public entrypoint kept: seed_comprehensive_database(num_students=100, cleanup_first=True)
+so existing API endpoints remain compatible.
 """
 
+import os
 import random
-from datetime import datetime, date, timedelta
+import sys
+import argparse
+from datetime import date
 from db import (
-    connect_to_db, create_tables_if_not_exist, insert_student_profile, 
-    insert_course, insert_semester, insert_grade, fetch_semester_by_name,
+    connect_to_db, create_tables_if_not_exist, fetch_semester_by_name,
     fetch_course_by_code, fetch_student_by_index_number
 )
-from auth import create_student_account, create_user
+from auth import create_user
 from logger import get_logger
+from seed_constants import (
+    GHANAIAN_MALE_NAMES, GHANAIAN_FEMALE_NAMES, GHANAIAN_SURNAMES,
+    UG_SCHOOLS_AND_PROGRAMS, UG_COMPREHENSIVE_COURSES, UG_ACADEMIC_CALENDAR
+)
+from seed_helpers import (
+    generate_index, generate_email, generate_phone, generate_birth_date,
+    pick_program, select_courses, generate_score,
+    ensure_course, ensure_semester, ensure_student, add_grade_if_missing
+)
+from db import ensure_assessment, insert_notification, _expand_audience_user_ids, create_user_notification_links
+from psycopg2.extras import RealDictCursor
 
 logger = get_logger(__name__)
 
 # ========================================
-# UNIVERSITY OF GHANA DATA CONSTANTS
-# ========================================
-
-# Authentic Ghanaian Names
-GHANAIAN_MALE_NAMES = [
-    "Kwame", "Kofi", "Kwaku", "Yaw", "Kwadwo", "Kwabena", "Kwesi", "Akwasi",
-    "Nana", "Kojo", "Fiifi", "Ato", "Ebo", "Kodwo", "Paa", "Ekow",
-    "Nii", "Tetteh", "Lartey", "Adjei", "Richmond", "Emmanuel", "Samuel",
-    "Daniel", "Michael", "David", "Joseph", "Francis", "Prince", "Felix",
-    "Eric", "Justice", "Bright", "Isaac", "Abraham", "Moses", "John",
-    "Godfred", "Benjamin", "Stephen", "Mark", "Paul", "James", "Peter"
-]
-
-GHANAIAN_FEMALE_NAMES = [
-    "Ama", "Efua", "Akua", "Yaa", "Adwoa", "Abena", "Esi", "Akosua",
-    "Adjoa", "Afua", "Afia", "Akoto", "Nana", "Akorfa", "Dzidzor", "Edem",
-    "Vivian", "Grace", "Patience", "Mercy", "Comfort", "Charity", "Faith",
-    "Joyce", "Linda", "Sandra", "Patricia", "Gifty", "Vida", "Faustina",
-    "Joana", "Priscilla", "Gloria", "Eunice", "Rose", "Mary", "Elizabeth",
-    "Portia", "Hannah", "Ruth", "Esther", "Deborah", "Sarah", "Rebecca"
-]
-
-GHANAIAN_SURNAMES = [
-    "Asante", "Mensah", "Osei", "Boateng", "Owusu", "Agyei", "Adjei", "Frimpong",
-    "Opoku", "Gyasi", "Nkrumah", "Danso", "Amponsah", "Bediako", "Ofori",
-    "Acheampong", "Antwi", "Darko", "Amoah", "Akoto", "Preko", "Sarfo",
-    "Tetteh", "Lartey", "Nii", "Okine", "Quartey", "Addo", "Lamptey",
-    "Koomson", "Quaye", "Bruce", "Ankrah", "Tagoe", "Nortey", "Ashong",
-    "Ablakwa", "Agbodza", "Amankwah", "Appiah", "Kusi", "Yeboah", "Kyei",
-    "Ntim", "Okyere", "Kwarteng", "Donkor", "Asamoah", "Akufo", "Addai",
-    "Bonsu", "Duah", "Wiredu", "Ampofo", "Baah", "Nyong", "Obeng"
-]
-
-# University of Ghana Schools and Programs
-UG_SCHOOLS_AND_PROGRAMS = {
-    "College of Basic and Applied Sciences": [
-        "Computer Science", "Information Technology", "Statistics", "Mathematics",
-        "Physics", "Chemistry", "Biology", "Biochemistry", "Biotechnology",
-        "Food Science and Nutrition", "Agricultural Science", "Animal Science"
-    ],
-    "College of Health Sciences": [
-        "Medicine", "Nursing", "Pharmacy", "Dentistry", "Public Health",
-        "Medical Laboratory Sciences", "Physiotherapy", "Radiography"
-    ],
-    "College of Humanities": [
-        "English Language", "Linguistics", "French", "Philosophy", "Music",
-        "Theatre Arts", "Fine Arts", "Dance Studies", "Religious Studies",
-        "Arabic and Islamic Studies", "Modern Languages"
-    ],
-    "College of Education": [
-        "Educational Administration", "Educational Psychology", "Curriculum Studies",
-        "Educational Foundations", "Science Education", "Mathematics Education",
-        "ICT Education", "Technical Education"
-    ],
-    "Legon Business School": [
-        "Business Administration", "Accounting", "Finance", "Marketing",
-        "Human Resource Management", "Supply Chain Management", "Entrepreneurship"
-    ],
-    "School of Law": [
-        "Law"
-    ],
-    "School of Social Sciences": [
-        "Economics", "Political Science", "Sociology", "Geography", "History",
-        "Psychology", "Social Work", "International Affairs", "African Studies"
-    ]
-}
-
-# Comprehensive University of Ghana Course Catalog
-UG_COMPREHENSIVE_COURSES = [
-    # Computer Science & IT (UGCS/UGIT)
-    ("UGCS101", "Introduction to Computing", 3),
-    ("UGCS102", "Programming Fundamentals", 3),
-    ("UGCS201", "Data Structures and Algorithms", 3),
-    ("UGCS202", "Computer Architecture", 3),
-    ("UGCS301", "Database Systems", 3),
-    ("UGCS302", "Software Engineering", 3),
-    ("UGCS303", "Operating Systems", 3),
-    ("UGCS401", "Computer Networks", 3),
-    ("UGCS402", "Artificial Intelligence", 3),
-    ("UGCS403", "Machine Learning", 3),
-    ("UGIT201", "Web Development", 3),
-    ("UGIT301", "Mobile App Development", 3),
-    ("UGIT302", "Systems Analysis and Design", 3),
-    ("UGIT401", "IT Project Management", 3),
-    
-    # Mathematics & Statistics (UGMA/UGST)
-    ("UGMA101", "Calculus I", 3),
-    ("UGMA102", "Algebra and Trigonometry", 3),
-    ("UGMA201", "Linear Algebra", 3),
-    ("UGMA202", "Calculus II", 3),
-    ("UGMA301", "Real Analysis", 3),
-    ("UGMA302", "Abstract Algebra", 3),
-    ("UGMA401", "Complex Analysis", 3),
-    ("UGST201", "Statistical Methods", 3),
-    ("UGST202", "Probability Theory", 3),
-    ("UGST301", "Applied Statistics", 3),
-    ("UGST302", "Statistical Inference", 3),
-    ("UGST401", "Multivariate Statistics", 3),
-    
-    # Sciences (UGPH/UGCH/UGBI)
-    ("UGPH101", "General Physics I", 3),
-    ("UGPH102", "General Physics II", 3),
-    ("UGPH201", "Classical Mechanics", 3),
-    ("UGPH202", "Electromagnetism", 3),
-    ("UGPH301", "Quantum Physics", 3),
-    ("UGPH302", "Thermodynamics", 3),
-    ("UGCH101", "General Chemistry I", 3),
-    ("UGCH102", "General Chemistry II", 3),
-    ("UGCH201", "Organic Chemistry I", 3),
-    ("UGCH202", "Organic Chemistry II", 3),
-    ("UGCH301", "Physical Chemistry", 3),
-    ("UGCH302", "Analytical Chemistry", 3),
-    ("UGBI101", "General Biology", 3),
-    ("UGBI201", "Cell Biology", 3),
-    ("UGBI202", "Genetics", 3),
-    ("UGBI301", "Ecology", 3),
-    ("UGBI302", "Molecular Biology", 3),
-    ("UGBI401", "Biotechnology", 3),
-    
-    # Business & Economics (UGBA/UGEC)
-    ("UGEC101", "Principles of Economics", 3),
-    ("UGEC102", "Introduction to Business", 3),
-    ("UGEC201", "Microeconomics", 3),
-    ("UGEC202", "Macroeconomics", 3),
-    ("UGEC301", "International Economics", 3),
-    ("UGEC302", "Development Economics", 3),
-    ("UGEC401", "Econometrics", 3),
-    ("UGBA201", "Financial Accounting", 3),
-    ("UGBA202", "Management Accounting", 3),
-    ("UGBA301", "Corporate Finance", 3),
-    ("UGBA302", "Marketing Management", 3),
-    ("UGBA401", "Strategic Management", 3),
-    ("UGBA402", "Operations Management", 3),
-    
-    # Social Sciences (UGPS/UGSO/UGHI/UGPY)
-    ("UGPS101", "Introduction to Political Science", 3),
-    ("UGPS201", "Comparative Politics", 3),
-    ("UGPS202", "International Relations", 3),
-    ("UGPS301", "Public Administration", 3),
-    ("UGPS302", "Political Theory", 3),
-    ("UGPS401", "African Politics", 3),
-    ("UGSO201", "Social Research Methods", 3),
-    ("UGSO202", "Social Theory", 3),
-    ("UGSO301", "Development Sociology", 3),
-    ("UGSO302", "Urban Sociology", 3),
-    ("UGSO401", "Gender Studies", 3),
-    ("UGHI201", "History of Ghana", 3),
-    ("UGHI202", "World History", 3),
-    ("UGHI301", "African History", 3),
-    ("UGHI302", "Colonial History", 3),
-    ("UGHI401", "Historiography", 3),
-    ("UGPY201", "General Psychology", 3),
-    ("UGPY202", "Developmental Psychology", 3),
-    ("UGPY301", "Social Psychology", 3),
-    ("UGPY302", "Cognitive Psychology", 3),
-    
-    # Languages & Literature (UGEN/UGFR/UGMU)
-    ("UGEN101", "Academic Writing", 3),
-    ("UGEN102", "Literature in English", 3),
-    ("UGEN201", "African Literature", 3),
-    ("UGEN202", "Creative Writing", 3),
-    ("UGEN301", "Linguistics", 3),
-    ("UGEN302", "Language and Society", 3),
-    ("UGFR101", "Elementary French", 3),
-    ("UGFR102", "French Grammar", 3),
-    ("UGFR201", "Intermediate French", 3),
-    ("UGFR202", "French Literature", 3),
-    ("UGMU201", "Music Theory", 3),
-    ("UGMU202", "African Music", 3),
-    ("UGMU301", "Music Composition", 3),
-    
-    # General/Core Courses (UGCO)
-    ("UGCO101", "Critical Thinking", 2),
-    ("UGCO102", "Communication Skills", 2),
-    ("UGCO103", "Introduction to University Studies", 1),
-    ("UGCO201", "African Studies", 2),
-    ("UGCO202", "Philosophy and Logic", 2),
-    ("UGCO203", "Environmental Studies", 2),
-    ("UGCO301", "Research Methods", 3),
-    ("UGCO302", "Ethics and Values", 2),
-    ("UGCO401", "Project Work", 6),
-    ("UGCO402", "Entrepreneurship", 2),
-    
-    # Health Sciences (UGMD/UGNU/UGPH)
-    ("UGMD101", "Medical Terminology", 2),
-    ("UGMD201", "Human Anatomy", 4),
-    ("UGMD202", "Human Physiology", 4),
-    ("UGMD301", "Pathology", 4),
-    ("UGMD302", "Pharmacology", 3),
-    ("UGMD401", "Clinical Medicine", 6),
-    ("UGNU201", "Fundamentals of Nursing", 3),
-    ("UGNU202", "Health Assessment", 3),
-    ("UGNU301", "Medical-Surgical Nursing", 4),
-    ("UGNU302", "Community Health Nursing", 3),
-    ("UGPH301", "Clinical Pharmacy", 4),
-    ("UGPH302", "Pharmaceutical Chemistry", 3),
-    
-    # Law (UGLAW)
-    ("UGLAW101", "Introduction to Law", 3),
-    ("UGLAW201", "Constitutional Law", 3),
-    ("UGLAW202", "Contract Law", 3),
-    ("UGLAW301", "Criminal Law", 3),
-    ("UGLAW302", "Property Law", 3),
-    ("UGLAW401", "International Law", 3),
-    
-    # Engineering (UGCE/UGEE/UGME)
-    ("UGCE101", "Engineering Mathematics I", 3),
-    ("UGCE102", "Engineering Drawing", 2),
-    ("UGCE201", "Engineering Mathematics II", 3),
-    ("UGCE202", "Mechanics of Materials", 3),
-    ("UGCE301", "Structural Analysis", 3),
-    ("UGCE302", "Concrete Technology", 3),
-    ("UGEE201", "Circuit Analysis", 3),
-    ("UGEE202", "Electronics", 3),
-    ("UGEE301", "Power Systems", 3),
-    ("UGEE302", "Control Systems", 3),
-    ("UGME201", "Thermodynamics", 3),
-    ("UGME202", "Fluid Mechanics", 3),
-    ("UGME301", "Machine Design", 3),
-    ("UGME302", "Manufacturing Processes", 3)
-]
-
-# Academic Semesters for University of Ghana
-UG_ACADEMIC_CALENDAR = [
-    ("1st Semester 2021/2022", "2021/2022", date(2021, 8, 16), date(2021, 12, 17)),
-    ("2nd Semester 2021/2022", "2021/2022", date(2022, 1, 17), date(2022, 5, 20)),
-    ("1st Semester 2022/2023", "2022/2023", date(2022, 8, 15), date(2022, 12, 16)),
-    ("2nd Semester 2022/2023", "2022/2023", date(2023, 1, 16), date(2023, 5, 19)),
-    ("1st Semester 2023/2024", "2023/2024", date(2023, 8, 14), date(2023, 12, 15)),
-    ("2nd Semester 2023/2024", "2023/2024", date(2024, 1, 15), date(2024, 5, 17)),
-    ("1st Semester 2024/2025", "2024/2025", date(2024, 8, 12), date(2024, 12, 13)),
-    ("2nd Semester 2024/2025", "2024/2025", date(2025, 1, 13), date(2025, 5, 16))
-]
+# (Constants moved to seed_constants)
 
 # ========================================
 # HELPER FUNCTIONS
 # ========================================
 
-def generate_ug_index(student_number):
-    """Generate UG index number: ug + 5 digits"""
-    return f"ug{str(student_number).zfill(5)}"
-
-def generate_ug_email(first_name, last_name, index_number):
-    """Generate UG email address"""
-    if random.choice([True, False]):
-        return f"{first_name.lower()}.{last_name.lower()}@st.ug.edu.gh"
-    else:
-        return f"{index_number}@st.ug.edu.gh"
-
-def generate_ghana_phone():
-    """Generate Ghanaian mobile number"""
-    networks = ["24", "26", "27", "28", "50", "54", "55", "59"]  # Major networks
-    network = random.choice(networks)
-    number = random.randint(1000000, 9999999)
-    return f"+233{network}{number}"
-
-def get_realistic_birth_date(year_of_study, current_year=2025):
-    """Generate realistic birth date for university student"""
-    typical_age = 18 + (year_of_study - 1) + random.randint(0, 2)  # 18-25 range
-    birth_year = current_year - typical_age
-    birth_month = random.randint(1, 12)
-    birth_day = random.randint(1, 28)
-    return date(birth_year, birth_month, birth_day)
-
-def get_program_for_school(school):
-    """Get random program from specified school"""
-    return random.choice(UG_SCHOOLS_AND_PROGRAMS[school])
-
-def get_courses_for_program_and_year(program, year_of_study):
-    """Get appropriate courses for program and year"""
-    courses = []
-    
-    # Core courses for all students
-    if year_of_study == 1:
-        core_1st = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith("UGCO1")]
-        courses.extend(random.sample(core_1st, min(3, len(core_1st))))
-    elif year_of_study == 2:
-        core_2nd = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith("UGCO2")]
-        courses.extend(random.sample(core_2nd, min(2, len(core_2nd))))
-    elif year_of_study >= 3:
-        core_upper = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith("UGCO3") or c[0].startswith("UGCO4")]
-        courses.extend(random.sample(core_upper, min(2, len(core_upper))))
-    
-    # Program-specific courses
-    program_courses = []
-    year_level = str(year_of_study)
-    
-    if "Computer Science" in program or "Information Technology" in program:
-        program_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith(("UGCS", "UGIT", "UGMA")) and year_level in c[0]]
-    elif "Business" in program or "Economics" in program or "Accounting" in program or "Finance" in program:
-        program_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith(("UGBA", "UGEC")) and year_level in c[0]]
-    elif "Mathematics" in program or "Statistics" in program:
-        program_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith(("UGMA", "UGST")) and year_level in c[0]]
-    elif "Medicine" in program or "Nursing" in program or "Pharmacy" in program:
-        program_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith(("UGMD", "UGNU", "UGPH")) and year_level in c[0]]
-    elif "Physics" in program or "Chemistry" in program or "Biology" in program:
-        program_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith(("UGPH", "UGCH", "UGBI")) and year_level in c[0]]
-    elif "Law" in program:
-        program_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith("UGLAW") and year_level in c[0]]
-    elif "Engineering" in program:
-        program_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith(("UGCE", "UGEE", "UGME")) and year_level in c[0]]
-    else:  # Social Sciences, Humanities
-        program_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith(("UGPS", "UGSO", "UGHI", "UGEN", "UGPY")) and year_level in c[0]]
-    
-    # Add 4-6 program courses
-    if program_courses:
-        courses.extend(random.sample(program_courses, min(random.randint(4, 6), len(program_courses))))
-    
-    # Add some general/elective courses
-    general_courses = [c for c in UG_COMPREHENSIVE_COURSES if c[0].startswith(("UGEN", "UGFR")) and year_level in c[0]]
-    if general_courses and len(courses) < 8:
-        courses.extend(random.sample(general_courses, min(2, len(general_courses))))
-    
-    return courses[:8]  # Limit to 8 courses per semester
-
-def generate_realistic_grade(year_of_study, course_code, student_ability="average"):
-    """Generate realistic grades based on year, course difficulty, and student ability"""
-    # Base performance by year (students generally improve over time)
-    year_bonus = {1: 0, 2: 3, 3: 5, 4: 7}
-    base_score = 60 + year_bonus.get(year_of_study, 0)
-    
-    # Course difficulty adjustment
-    if any(level in course_code for level in ["401", "402", "403", "404"]):  # Final year courses
-        base_score -= 8
-    elif any(level in course_code for level in ["301", "302", "303"]):  # Third year
-        base_score -= 4
-    elif any(level in course_code for level in ["101", "102", "103"]):  # First year
-        base_score += 5
-    
-    # Student ability adjustment
-    ability_modifier = {"weak": -10, "average": 0, "strong": 10, "excellent": 15}
-    base_score += ability_modifier.get(student_ability, 0)
-    
-    # Add random variation (normal distribution)
-    final_score = random.normalvariate(base_score, 12)
-    
-    # Ensure realistic bounds
-    return max(30, min(100, round(final_score, 1)))
+# (Helpers moved to seed_helpers)
 
 # ========================================
 # MAIN SEEDING FUNCTIONS
 # ========================================
 
 def seed_comprehensive_courses(conn):
-    """Seed all University of Ghana courses"""
+    """Seed all University of Ghana courses (idempotent)."""
     logger.info("COURSES: Seeding comprehensive UG course catalog...")
-    success_count = 0
-    
-    for course_code, course_title, credit_hours in UG_COMPREHENSIVE_COURSES:
+    success = 0
+    for code, title, credits in UG_COMPREHENSIVE_COURSES:
         try:
-            if insert_course(conn, course_code, course_title, credit_hours):
-                success_count += 1
-                logger.debug(f"Added course: {course_code} - {course_title}")
+            if ensure_course(conn, code, title, credits):
+                success += 1
         except Exception as e:
-            logger.warning(f"Course {course_code} may already exist: {e}")
-    
-    logger.info(f"SUCCESS: Successfully seeded {success_count}/{len(UG_COMPREHENSIVE_COURSES)} courses")
-    return success_count
+            logger.debug(f"Course {code} exists or failed: {e}")
+    logger.info(f"SUCCESS: Ensured {success}/{len(UG_COMPREHENSIVE_COURSES)} courses")
+    return success
 
 def seed_academic_calendar(conn):
-    """Seed University of Ghana academic calendar"""
     logger.info("CALENDAR: Seeding UG academic calendar...")
-    semester_ids = {}
-    success_count = 0
-    
-    for semester_name, academic_year, start_date, end_date in UG_ACADEMIC_CALENDAR:
+    ids = {}
+    for name, year, start, end in UG_ACADEMIC_CALENDAR:
         try:
-            # Fix parameter order: semester_name, start_date, end_date, academic_year
-            semester_id = insert_semester(conn, semester_name, start_date, end_date, academic_year)
-            if semester_id:
-                semester_ids[semester_name] = semester_id
-                success_count += 1
-                logger.debug(f"Added semester: {semester_name}")
+            sem_id = ensure_semester(conn, name, start, end, year)
+            if sem_id:
+                ids[name] = sem_id
         except Exception as e:
-            logger.warning(f"Semester {semester_name} may already exist: {e}")
-    
-    logger.info(f"SUCCESS: Successfully seeded {success_count}/{len(UG_ACADEMIC_CALENDAR)} semesters")
-    return semester_ids
+            logger.debug(f"Semester {name} exists or failed: {e}")
+    logger.info(f"SUCCESS: Ensured {len(ids)}/{len(UG_ACADEMIC_CALENDAR)} semesters")
+    return ids
 
 def seed_diverse_students(conn, num_students=100):
-    """Seed diverse student population across all UG schools"""
     logger.info(f"STUDENTS: Seeding {num_students} diverse UG students...")
-    
-    students_data = []
+    distribution = [
+        ("College of Basic and Applied Sciences", 0.25),
+        ("College of Health Sciences", 0.15),
+        ("College of Humanities", 0.15),
+        ("College of Education", 0.10),
+        ("Legon Business School", 0.20),
+        ("School of Law", 0.05),
+        ("School of Social Sciences", 0.10)
+    ]
     student_ids = {}
-    
-    # Distribute students across schools proportionally
-    school_distribution = {
-        "College of Basic and Applied Sciences": 0.25,
-        "College of Health Sciences": 0.15,
-        "College of Humanities": 0.15,
-        "College of Education": 0.10,
-        "Legon Business School": 0.20,
-        "School of Law": 0.05,
-        "School of Social Sciences": 0.10
-    }
-    
-    student_counter = 1
-    
-    for school, proportion in school_distribution.items():
-        school_student_count = int(num_students * proportion)
-        
-        for i in range(school_student_count):
-            # Generate student demographics
+    counter = 1
+    for school, prop in distribution:
+        target = int(num_students * prop)
+        for _ in range(target):
             gender = random.choice(["Male", "Female"])
-            first_name = random.choice(GHANAIAN_MALE_NAMES if gender == "Male" else GHANAIAN_FEMALE_NAMES)
-            last_name = random.choice(GHANAIAN_SURNAMES)
-            full_name = f"{first_name} {last_name}"
-            
-            # Academic details
-            year_of_study = random.randint(1, 4)
-            program = get_program_for_school(school)
-            index_number = generate_ug_index(10000 + student_counter)
-            
-            # Personal details
-            birth_date = get_realistic_birth_date(year_of_study)
-            email = generate_ug_email(first_name, last_name, index_number)
-            phone = generate_ghana_phone()
-            
-            # Student ability level (affects grades)
-            ability = random.choices(
-                ["weak", "average", "strong", "excellent"],
-                weights=[15, 50, 25, 10]  # Realistic distribution
-            )[0]
-            
-            student_data = {
-                "index_number": index_number,
-                "full_name": full_name,
-                "first_name": first_name,
-                "birth_date": birth_date,
-                "gender": gender,
-                "email": email,
-                "phone": phone,
-                "program": program,
-                "school": school,
-                "year_of_study": year_of_study,
-                "ability": ability
-            }
-            
-            students_data.append(student_data)
-            student_counter += 1
-    
-    # Insert students into database
-    success_count = 0
-    for student in students_data:
-        try:
-            student_id = insert_student_profile(
-                conn,
-                student["index_number"],
-                student["full_name"],
-                student["birth_date"],
-                student["gender"],
-                student["email"],
-                student["phone"],
-                student["program"],
-                student["year_of_study"]
-            )
-            
-            if student_id:
-                student_ids[student["index_number"]] = {
-                    "student_id": student_id,
-                    "data": student
-                }
-                success_count += 1
-                logger.debug(f"Added student: {student['full_name']} ({student['index_number']})")
-                
-                # Create user account (since student profile already exists, create user account directly)
+            first = random.choice(GHANAIAN_MALE_NAMES if gender == "Male" else GHANAIAN_FEMALE_NAMES)
+            last = random.choice(GHANAIAN_SURNAMES)
+            full_name = f"{first} {last}"
+            year = random.randint(1,4)
+            program = pick_program(school)
+            index = generate_index(10000 + counter)
+            counter += 1
+            birth = generate_birth_date(year)
+            email = generate_email(first, last, index)
+            phone = generate_phone()
+            ability = random.choices(["weak","average","strong","excellent"], weights=[15,50,25,10])[0]
+            sid = ensure_student(conn, index, full_name, birth, gender, email, phone, program, year)
+            if sid:
+                student_ids[index] = {"student_id": sid, "data": {
+                    "index_number": index, "full_name": full_name, "first_name": first,
+                    "birth_date": birth, "gender": gender, "email": email, "phone": phone,
+                    "program": program, "school": school, "year_of_study": year, "ability": ability
+                }}
+                # Ensure user account
                 try:
-                    index_number = student["index_number"]
-                    # Generate default password: last 4 digits + "2024"
-                    password = index_number[-4:] + "2024"
-                    
-                    # Create user account directly using create_user
-                    if create_user(index_number, password, 'student'):
-                        logger.debug(f"Created user account for {index_number}: {password}")
-                    else:
-                        logger.warning(f"Failed to create user account for {index_number}")
+                    password = index[-4:] + "2024"
+                    create_user(index, password, 'student')
                 except Exception as e:
-                    logger.warning(f"Failed to create user account for {student['index_number']}: {e}")
-                    
-        except Exception as e:
-            logger.warning(f"Failed to insert student {student['index_number']}: {e}")
-    
-    logger.info(f"SUCCESS: Successfully seeded {success_count}/{len(students_data)} students")
+                    logger.debug(f"User create skip {index}: {e}")
+    logger.info(f"SUCCESS: Ensured {len(student_ids)} students")
     return student_ids
 
 def seed_comprehensive_grades(conn, student_ids, semester_ids):
-    """Seed comprehensive grades for all students across multiple semesters"""
     logger.info("GRADES: Seeding comprehensive grade records...")
-    
-    grade_count = 0
-    semester_list = list(UG_ACADEMIC_CALENDAR)
-    
-    for index_number, student_info in student_ids.items():
-        student_id = student_info["student_id"]
-        student_data = student_info["data"]
-        year_of_study = student_data["year_of_study"]
-        program = student_data["program"]
-        ability = student_data["ability"]
-        
-        # Determine which semesters this student should have grades
-        # Students have grades for all previous years plus current year
-        semesters_to_grade = []
-        
-        # Add semesters based on year of study
-        if year_of_study >= 1:
-            semesters_to_grade.extend(["1st Semester 2021/2022", "2nd Semester 2021/2022"])
-        if year_of_study >= 2:
-            semesters_to_grade.extend(["1st Semester 2022/2023", "2nd Semester 2022/2023"])
-        if year_of_study >= 3:
-            semesters_to_grade.extend(["1st Semester 2023/2024", "2nd Semester 2023/2024"])
-        if year_of_study >= 4:
-            semesters_to_grade.extend(["1st Semester 2024/2025"])
-        
-        # Current semester for all students
-        if "2nd Semester 2024/2025" not in semesters_to_grade:
-            semesters_to_grade.append("2nd Semester 2024/2025")
-        
-        # Grade student for each semester
-        for semester_name in semesters_to_grade:
-            if semester_name not in semester_ids:
+    count = 0
+    for index, info in student_ids.items():
+        sid = info["student_id"]
+        data = info["data"]
+        yos = data["year_of_study"]
+        ability = data["ability"]
+        # Derive semesters to grade (simplified mapping like original)
+        mapping = [
+            (1, ["1st Semester 2021/2022", "2nd Semester 2021/2022"]),
+            (2, ["1st Semester 2022/2023", "2nd Semester 2022/2023"]),
+            (3, ["1st Semester 2023/2024", "2nd Semester 2023/2024"]),
+            (4, ["1st Semester 2024/2025"])
+        ]
+        semesters = []
+        for level, sems in mapping:
+            if yos >= level:
+                semesters.extend(sems)
+        if "2nd Semester 2024/2025" not in semesters:
+            semesters.append("2nd Semester 2024/2025")
+        for sem_name in semesters:
+            sem_id = semester_ids.get(sem_name)
+            if not sem_id:
                 continue
-                
-            semester_id = semester_ids[semester_name]
-            academic_year = semester_name.split()[-1]
-            
-            # Determine what year level courses to take
-            semester_year_level = year_of_study
-            if "2021/2022" in semester_name:
-                semester_year_level = max(1, year_of_study - 3)
-            elif "2022/2023" in semester_name:
-                semester_year_level = max(1, year_of_study - 2)
-            elif "2023/2024" in semester_name:
-                semester_year_level = max(1, year_of_study - 1)
-            
-            # Get courses for this program and year level
-            semester_courses = get_courses_for_program_and_year(program, semester_year_level)
-            
-            # Add grades for each course
-            for course_code, course_title, credit_hours in semester_courses:
+            # approximate year level for earlier academic years
+            if "2021/2022" in sem_name:
+                sem_level = max(1, yos - 3)
+            elif "2022/2023" in sem_name:
+                sem_level = max(1, yos - 2)
+            elif "2023/2024" in sem_name:
+                sem_level = max(1, yos - 1)
+            else:
+                sem_level = yos
+            courses = select_courses(data["program"], sem_level)
+            academic_year = sem_name.split()[-1]
+            for code, title, credits in courses:
                 try:
-                    # Get course_id from database
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT course_id FROM courses WHERE course_code = %s", (course_code,))
-                    course_result = cursor.fetchone()
-                    
-                    if course_result:
-                        course_id = course_result[0]
-                        
-                        # Generate realistic score
-                        score = generate_realistic_grade(semester_year_level, course_code, ability)
-                        
-                        # Calculate grade and grade point
-                        from grade_util import calculate_grade, get_grade_point
-                        grade = calculate_grade(score)
-                        grade_point = get_grade_point(score)
-                        
-                        # Insert grade
-                        grade_id = insert_grade(
-                            conn,
-                            student_id,
-                            course_id,
-                            semester_id,
-                            score,
-                            grade,
-                            grade_point,
-                            academic_year
-                        )
-                        
-                        if grade_id:
-                            grade_count += 1
-                            logger.debug(f"Added grade: {index_number} - {course_code}: {score}")
-                            
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT course_id FROM courses WHERE course_code=%s", (code,))
+                        row = cur.fetchone()
+                    if not row:
+                        continue
+                    course_id = row[0]
+                    score = generate_score(sem_level, code, ability)
+                    if add_grade_if_missing(conn, sid, course_id, sem_id, score, academic_year):
+                        count += 1
                 except Exception as e:
-                    logger.warning(f"Failed to add grade for {index_number} in {course_code}: {e}")
-    
-    logger.info(f"SUCCESS: Successfully seeded {grade_count} grade records")
-    return grade_count
+                    logger.debug(f"Skip grade {index} {code}: {e}")
+    logger.info(f"SUCCESS: Ensured {count} grade records (may include pre-existing)")
+    return count
 
 def create_admin_accounts(conn):
-    """Create default admin accounts"""
-    logger.info("ADMIN: Creating admin accounts...")
-    
-    admin_accounts = [
-        ("admin", "admin123", "admin"),
-        ("registrar", "registrar123", "admin"),
-        ("dean", "dean123", "admin")
-    ]
-    
+    """Ensure core admin account (idempotent) and optionally extra demo admins.
+
+    By default we now ONLY guarantee the primary 'admin' user to keep the
+    role model simple (roles: admin | student). Additional legacy demo
+    accounts ('registrar', 'dean') can be seeded by setting the environment
+    variable SEED_EXTRA_ADMINS=true.
+    """
+    logger.info("ADMIN: Ensuring primary admin account...")
+
+    primary_admin = ("admin", "admin123", "admin")
+    extra_flag = os.getenv("SEED_EXTRA_ADMINS", "false").lower() in {"1","true","yes","on"}
+    extra_accounts = []
+    if extra_flag:
+        extra_accounts = [
+            ("registrar", "registrar123", "admin"),
+            ("dean", "dean123", "admin")
+        ]
+        logger.info("SEED_EXTRA_ADMINS enabled: will ensure registrar and dean demo accounts")
+
+    accounts = [primary_admin] + extra_accounts
     success_count = 0
-    for username, password, role in admin_accounts:
+    for username, password, role in accounts:
         try:
-            if create_user(username, password, role):
+            created = create_user(username, password, role)
+            if created:
                 success_count += 1
                 logger.info(f"Created admin account: {username}")
+            else:
+                logger.debug(f"Admin account already exists: {username}")
         except Exception as e:
-            logger.warning(f"Admin account {username} may already exist: {e}")
-    
-    logger.info(f"SUCCESS: Successfully created {success_count}/{len(admin_accounts)} admin accounts")
+            logger.warning(f"Admin account {username} creation error (may already exist): {e}")
+
+    logger.info(f"SUCCESS: Ensured {success_count}/{len(accounts)} new admin account inserts (existing skipped)")
     return success_count
 
 # ========================================
 # DATABASE CLEANUP FUNCTIONS
 # ========================================
 
-def cleanup_existing_data(conn):
-    """Clean up existing data to avoid conflicts"""
-    logger.info("CLEANUP: Removing existing data to avoid conflicts...")
-    
+def cleanup_existing_data(conn, full_reset=False):
+    """Clean up existing data to avoid conflicts.
+
+    Parameters:
+        full_reset (bool): When True also deletes notifications, user_notifications, and admin users.
+    """
+    logger.info("CLEANUP: Removing existing data to avoid conflicts..." + (" (FULL RESET)" if full_reset else ""))
     try:
         with conn.cursor() as cursor:
             # Delete in reverse dependency order
             cursor.execute("DELETE FROM grades;")
             cursor.execute("DELETE FROM assessments;")
+            if full_reset:
+                cursor.execute("DELETE FROM user_notifications;")
+                cursor.execute("DELETE FROM notifications;")
             cursor.execute("DELETE FROM student_profiles;")
             cursor.execute("DELETE FROM semesters;")
             cursor.execute("DELETE FROM courses;")
+            # Remove student accounts always; optionally admins for full reset
             cursor.execute("DELETE FROM users WHERE role = 'student';")
+            if full_reset:
+                cursor.execute("DELETE FROM users WHERE role = 'admin';")
             conn.commit()
-            logger.info("SUCCESS: Existing data cleaned up")
+            logger.info("SUCCESS: Existing data cleaned up" + (" with full reset" if full_reset else ""))
             return True
     except Exception as e:
         logger.error(f"Error during cleanup: {e}")
@@ -654,15 +242,240 @@ def cleanup_existing_data(conn):
         return False
 
 # ========================================
+# EXHAUSTIVE MODE HELPERS
+# ========================================
+
+def seed_assessments(conn, limit=None):
+    """Seed three standard assessments per course (Quiz 20, Midterm 30, Final 50)."""
+    logger.info("ASSESSMENTS: Seeding assessments...")
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT course_id, course_code FROM courses ORDER BY course_code")
+            rows = cur.fetchall()
+        if limit:
+            rows = rows[:limit]
+        count = 0
+        for r in rows:
+            cid = r['course_id']
+            for name, max_score, weight in [
+                ("Quiz", 20, 20.00), ("Midterm", 30, 30.00), ("Final Exam", 100, 50.00)
+            ]:
+                if ensure_assessment(conn, cid, name, max_score, weight):
+                    count += 1
+        logger.info(f"SUCCESS: Ensured {count} assessments")
+        return count
+    except Exception as e:
+        logger.error(f"Error seeding assessments: {e}")
+        return 0
+
+def ensure_current_semester(conn, semester_name="2nd Semester 2024/2025"):
+    from db import set_current_semester, fetch_semester_by_name
+    sem = fetch_semester_by_name(conn, semester_name)
+    if not sem:
+        logger.warning(f"Cannot set current semester: {semester_name} not found")
+        return False
+    return set_current_semester(conn, sem['semester_id'])
+
+def enforce_program_coverage(conn):
+    """Ensure at least one student exists for every program across schools."""
+    logger.info("PROGRAM COVERAGE: Ensuring one student per program...")
+    added = 0
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("SELECT program FROM student_profiles")
+        existing = {r['program'] for r in cur.fetchall() if r['program']}
+    for school, programs in UG_SCHOOLS_AND_PROGRAMS.items():
+        for program in programs:
+            if program not in existing:
+                # deterministic pseudo index
+                base = abs(hash(program)) % 90000 + 10000
+                index = generate_index(base)
+                first = program.split()[0][:6] or 'Stud'
+                last = 'Program'
+                full_name = f"{first} {last}"
+                birth = generate_birth_date(1)
+                email = generate_email(first, last, index)
+                phone = generate_phone()
+                sid = ensure_student(conn, index, full_name, birth, 'Male', email, phone, program, 1)
+                if sid:
+                    try:
+                        create_user(index, index[-4:]+"2024", 'student')
+                    except Exception:
+                        pass
+                    added += 1
+    logger.info(f"PROGRAM COVERAGE: Added {added} synthetic students for missing programs")
+    return added
+
+def create_partial_students(conn, count=5):
+    logger.info(f"PARTIAL: Creating {count} partial/no-grade students...")
+    created = 0
+    for i in range(count):
+        index = generate_index(90000 + i)
+        full_name = f"Partial Student {i+1}"
+        birth = generate_birth_date(1)
+        email = generate_email('partial', str(i+1), index)
+        phone = generate_phone()
+        if ensure_student(conn, index, full_name, birth, 'Female' if i % 2 else 'Male', email, phone, pick_program(random.choice(list(UG_SCHOOLS_AND_PROGRAMS.keys()))), 1):
+            try:
+                create_user(index, index[-4:]+"2024", 'student')
+            except Exception:
+                pass
+            created += 1
+    logger.info(f"PARTIAL: Created {created} partial students")
+    return created
+
+def curate_edge_case_students(conn):
+    """Adjust a few students to have perfect, failing, and boundary scores (updates)."""
+    logger.info("EDGE CASES: Curating GPA boundary students...")
+    updated = 0
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT student_id, index_number FROM student_profiles ORDER BY index_number LIMIT 12")
+            students = cur.fetchall()
+        if not students:
+            return 0
+        boundary_scores = [49,50,59,60,69,70,79,80]
+        from db import fetch_all_courses, fetch_all_semesters
+        courses = fetch_all_courses(connect_to_db())
+        semesters = fetch_all_semesters(connect_to_db())
+        course_ids = [c['course_id'] for c in courses[:len(boundary_scores)]]
+        sem_ids = [s['semester_id'] for s in semesters[:2]]  # use two semesters
+        # Perfect student (first)
+        if students:
+            sid = students[0]['student_id']
+            _set_scores_for_student(conn, sid, course_ids, sem_ids, 95)
+            updated += 1
+        # Failing student (second)
+        if len(students) > 1:
+            sid = students[1]['student_id']
+            _set_scores_for_student(conn, sid, course_ids, sem_ids, 35)
+            updated += 1
+        # Boundary student (third)
+        if len(students) > 2:
+            sid = students[2]['student_id']
+            _set_scores_for_student(conn, sid, course_ids[:len(boundary_scores)], sem_ids[:1], None, boundary_scores)
+            updated += 1
+        logger.info(f"EDGE CASES: Updated {updated} curated students")
+        return updated
+    except Exception as e:
+        logger.error(f"EDGE CASES: Error curating boundary students: {e}")
+        return updated
+
+def _set_scores_for_student(conn, student_id, course_ids, semester_ids, uniform_score=None, score_list=None):
+    from db import update_student_score
+    with conn.cursor() as cur:
+        # Map semesters if needed
+        for sem_id in semester_ids:
+            for idx, course_id in enumerate(course_ids):
+                score = uniform_score if uniform_score is not None else (score_list[idx % len(score_list)] if score_list else 75)
+                # Derive grade & grade_point using helpers
+                from grade_util import calculate_grade, get_grade_point
+                grade = calculate_grade(score)
+                gp = get_grade_point(score)
+                # Fetch academic year
+                cur.execute("SELECT academic_year FROM semesters WHERE semester_id=%s", (sem_id,))
+                ay = cur.fetchone()[0]
+                update_student_score(conn, student_id, course_id, sem_id, score, grade, gp, ay)
+
+def seed_sample_notifications(conn):
+    if os.getenv("SUPPRESS_SEED_NOTIFICATIONS"):
+        logger.info("NOTIFICATIONS: Suppressed; skipping sample notifications")
+        return 0,0
+    logger.info("NOTIFICATIONS: Seeding sample notifications...")
+    created = 0
+    linked = 0
+    try:
+        msgs = [
+            ("system_welcome","Welcome","System initialization complete","info","all"),
+            ("semester_upcoming","Upcoming Semester","Next semester begins soon","warning","students"),
+            ("maintenance","Maintenance Window","Planned downtime this weekend","critical","all"),
+            ("policy_update","Policy Update","Assessment policy updated","info","admins")
+        ]
+        for type_, title, msg, sev, audience in msgs:
+            nid = insert_notification(conn, type_, title, msg, sev, audience)
+            if nid:
+                created += 1
+                uids = _expand_audience_user_ids(conn, audience)
+                linked += create_user_notification_links(conn, nid, uids)
+        logger.info(f"NOTIFICATIONS: Created {created} notifications; linked {linked} user notifications")
+        return created, linked
+    except Exception as e:
+        logger.error(f"NOTIFICATIONS: Error seeding notifications: {e}")
+        return created, linked
+
+def flip_some_notifications_read(conn, fraction=0.4):
+    if os.getenv("SUPPRESS_SEED_NOTIFICATIONS"):
+        return 0
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id FROM user_notifications ORDER BY id")
+            rows = cur.fetchall()
+        to_mark = rows[:int(len(rows)*fraction)]
+        changed = 0
+        from db import mark_notification_read
+        for r in to_mark:
+            # Need user_id; fetch
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT user_id FROM user_notifications WHERE id=%s", (r['id'],))
+                res = cur.fetchone()
+            if res:
+                uid = res['user_id']
+                if mark_notification_read(conn, uid, r['id']):
+                    changed += 1
+        logger.info(f"NOTIFICATIONS: Marked {changed} user notifications read")
+        return changed
+    except Exception as e:
+        logger.error(f"NOTIFICATIONS: Error marking read: {e}")
+        return 0
+
+# ========================================
 # MAIN EXECUTION FUNCTION
 # ========================================
 
-def seed_comprehensive_database(num_students=100, cleanup_first=True):
-    """Main function to seed comprehensive University of Ghana database"""
+def seed_comprehensive_database(num_students=100, cleanup_first=True, random_seed=None, suppress_notifications=False,
+                                baseline=False, exhaustive=False, assessments_sample=None, full_reset=False):
+    """Main function to seed comprehensive University of Ghana database
+
+    Parameters:
+        num_students (int): Number of student profiles to create.
+        cleanup_first (bool): Whether to wipe existing related data first.
+        random_seed (Optional[Union[int,str]]): If provided (or if env var SEED_RANDOM_SEED set),
+            the global random module will be seeded for deterministic reproducibility.
+            This affects index generation, course selection ordering, ability assignment,
+            scores, names, etc. Use this for stable test fixtures.
+        suppress_notifications (bool): When True, sets an environment flag
+            SUPPRESS_SEED_NOTIFICATIONS=1 that downstream logic (future notification
+            emitters) can honor to avoid generating noisy bulk notifications during seeding.
+            Currently no notifications are emitted by seeding, but this scaffolds future use.
+    """
     try:
         print("UNIVERSITY OF GHANA COMPREHENSIVE DATABASE SEEDING")
         print("=" * 60)
         logger.info("Starting comprehensive database seeding...")
+
+        # Resolve deterministic random seed (parameter overrides env var)
+        env_seed = os.getenv("SEED_RANDOM_SEED")
+        effective_seed = random_seed if random_seed is not None else env_seed
+        if effective_seed is not None and effective_seed != "":
+            # Coerce to int when possible for readability; else use raw string
+            try:
+                seed_val = int(str(effective_seed))
+            except ValueError:
+                seed_val = str(effective_seed)
+            random.seed(seed_val)
+            logger.info(f"Deterministic random seed set: {seed_val}")
+            print(f"DETERMINISM: Using random seed = {seed_val}")
+        else:
+            logger.info("Random seed not specified; using nondeterministic run")
+
+        # Handle suppression flag
+        if suppress_notifications:
+            os.environ["SUPPRESS_SEED_NOTIFICATIONS"] = "1"
+            logger.info("Notifications suppressed for this seeding run (flag set)")
+            print("NOTIFICATIONS: Suppression enabled (no bulk notifications will be emitted)")
+        else:
+            # Clear any stale flag from prior processes if present
+            if os.environ.get("SUPPRESS_SEED_NOTIFICATIONS"):
+                os.environ.pop("SUPPRESS_SEED_NOTIFICATIONS", None)
         
         # Connect to database
         conn = connect_to_db()
@@ -673,7 +486,7 @@ def seed_comprehensive_database(num_students=100, cleanup_first=True):
         # Clean up existing data if requested
         if cleanup_first:
             print("CLEANUP: Removing existing data...")
-            if not cleanup_existing_data(conn):
+            if not cleanup_existing_data(conn, full_reset=full_reset):
                 logger.error("Failed to cleanup existing data")
                 return False
             print("SUCCESS: Cleanup completed")
@@ -683,6 +496,10 @@ def seed_comprehensive_database(num_students=100, cleanup_first=True):
         create_tables_if_not_exist(conn)
         print("SUCCESS: Database schema ready")
         
+        # Determine mode description
+        mode_label = 'BASELINE' if baseline else ('EXHAUSTIVE' if exhaustive else 'COMPREHENSIVE')
+        print(f"MODE: {mode_label}")
+
         # Seed courses
         course_count = seed_comprehensive_courses(conn)
         print(f"SUCCESS: Courses seeded: {course_count}")
@@ -695,19 +512,38 @@ def seed_comprehensive_database(num_students=100, cleanup_first=True):
         admin_count = create_admin_accounts(conn)
         print(f"SUCCESS: Admin accounts created: {admin_count}")
         
-        # Seed students
-        student_ids = seed_diverse_students(conn, num_students)
+        # Seed students (baseline fewer students override)
+        target_students = num_students if not baseline else min(num_students, 10)
+        student_ids = seed_diverse_students(conn, target_students)
         print(f"SUCCESS: Students seeded: {len(student_ids)}")
         
-        # Seed grades
-        grade_count = seed_comprehensive_grades(conn, student_ids, semester_ids)
-        print(f"SUCCESS: Grades seeded: {grade_count}")
+        grade_count = 0
+        if not baseline:
+            grade_count = seed_comprehensive_grades(conn, student_ids, semester_ids)
+            print(f"SUCCESS: Grades seeded: {grade_count}")
+        else:
+            print("BASELINE: Skipping full grade expansion")
+
+        # Exhaustive enhancements
+        added_program_students = partial_students = curated = assessments_count = notif_created = notif_links = notif_marked = 0
+        current_sem = False
+        if exhaustive:
+            added_program_students = enforce_program_coverage(conn)
+            partial_students = create_partial_students(conn, count=5)
+            curated = curate_edge_case_students(conn)
+            assessments_count = seed_assessments(conn, limit=assessments_sample)
+            current_sem = ensure_current_semester(conn)
+            notif_created, notif_links = seed_sample_notifications(conn)
+            notif_marked = flip_some_notifications_read(conn)
+        elif assessments_sample:
+            # allow sampling assessments in non-exhaustive mode
+            assessments_count = seed_assessments(conn, limit=assessments_sample)
         
         conn.close()
         
         # Final summary
         print("\n" + "=" * 60)
-        print("COMPREHENSIVE SEEDING COMPLETED SUCCESSFULLY!")
+        print(f"{mode_label} SEEDING COMPLETED SUCCESSFULLY!")
         print("=" * 60)
         print(f"SUMMARY:")
         print(f"   Courses: {course_count}")
@@ -715,6 +551,13 @@ def seed_comprehensive_database(num_students=100, cleanup_first=True):
         print(f"   Admin accounts: {admin_count}")
         print(f"   Students: {len(student_ids)}")
         print(f"   Grade records: {grade_count}")
+        if exhaustive:
+            print(f"   Added program coverage students: {added_program_students}")
+            print(f"   Partial students: {partial_students}")
+            print(f"   Curated edge-case students: {curated}")
+            print(f"   Assessments: {assessments_count}")
+            print(f"   Notifications created: {notif_created} (links: {notif_links}, marked read: {notif_marked})")
+            print(f"   Current semester set: {current_sem}")
         print(f"   Schools represented: {len(UG_SCHOOLS_AND_PROGRAMS)}")
         print("=" * 60)
         
@@ -741,35 +584,83 @@ def seed_comprehensive_database(num_students=100, cleanup_first=True):
         return False
 
 if __name__ == "__main__":
-    print("University of Ghana Comprehensive Database Seeding")
-    print("This will create a complete academic dataset with:")
-    print("• 130+ courses across all UG schools")
-    print("• 8 academic semesters (2021-2025)")
-    print("• 100 diverse students with realistic profiles")
-    print("• Comprehensive grade records")
-    print("• Multiple admin accounts")
-    print()
-    
-    # Ask about cleanup
-    cleanup = input("Clean up existing data first? (Y/n): ").strip().lower()
-    cleanup_first = cleanup != 'n'
-    
-    num_students = input("Enter number of students to create (default 100): ").strip()
-    if not num_students:
-        num_students = 100
-    else:
-        try:
-            num_students = int(num_students)
-        except ValueError:
+    description = (
+        "Comprehensive University of Ghana dataset seeder. Generates courses, semesters, admin accounts, "
+        "students, and grades. Supports deterministic runs and notification suppression."
+    )
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--num-students", type=int, default=100, help="Number of students to seed (default 100)")
+    parser.add_argument("--no-clean", action="store_true", help="Do NOT cleanup existing data first")
+    parser.add_argument("--seed", dest="seed", help="Deterministic random seed (int or string)")
+    parser.add_argument("--suppress-notifications", action="store_true", help="Suppress notifications during seeding (sets SUPPRESS_SEED_NOTIFICATIONS=1)")
+    parser.add_argument("--yes", "-y", action="store_true", help="Auto-confirm without interactive prompts")
+    parser.add_argument("--baseline", action="store_true", help="Seed minimal baseline dataset (overrides some counts)")
+    parser.add_argument("--exhaustive", action="store_true", help="Seed exhaustive dataset (edge cases, assessments, notifications)")
+    parser.add_argument("--assessments-sample", type=int, help="Limit number of courses for which assessments are generated")
+    parser.add_argument("--full-reset", action="store_true", help="Full reset including notifications and admin users")
+
+    # If no additional CLI args beyond script name, fall back to legacy interactive mode
+    if len(sys.argv) == 1:
+        print("University of Ghana Comprehensive Database Seeding")
+        print("This will create a complete academic dataset with:")
+        print("• 130+ courses across all UG schools")
+        print("• 8 academic semesters (2021-2025)")
+        print("• 100 diverse students with realistic profiles")
+        print("• Comprehensive grade records")
+        print("• Multiple admin accounts")
+        print()
+        cleanup = input("Clean up existing data first? (Y/n): ").strip().lower()
+        cleanup_first = cleanup != 'n'
+        num_students = input("Enter number of students to create (default 100): ").strip()
+        if not num_students:
             num_students = 100
-    
-    confirm = input(f"Proceed with seeding {num_students} students? (y/N): ")
-    if confirm.lower() in ['y', 'yes']:
-        success = seed_comprehensive_database(num_students, cleanup_first)
-        if success:
-            print("\nSUCCESS: Database seeding completed successfully!")
-            print("You can now use the full system with comprehensive UG data.")
         else:
-            print("\nERROR: Database seeding failed. Check logs for details.")
+            try:
+                num_students = int(num_students)
+            except ValueError:
+                num_students = 100
+        seed_in = input("Optional deterministic random seed (blank for random): ").strip() or None
+        suppress = input("Suppress notifications during seeding? (y/N): ").strip().lower() in ["y", "yes"]
+        confirm = input(f"Proceed with seeding {num_students} students (seed={seed_in or 'auto'}, suppress_notifications={suppress})? (y/N): ")
+        if confirm.lower() in ['y', 'yes']:
+            success = seed_comprehensive_database(num_students, cleanup_first, random_seed=seed_in, suppress_notifications=suppress)
+            if success:
+                print("\nSUCCESS: Database seeding completed successfully!")
+                print("You can now use the full system with comprehensive UG data.")
+            else:
+                print("\nERROR: Database seeding failed. Check logs for details.")
+        else:
+            print("Operation cancelled.")
+        sys.exit(0)
+
+    args = parser.parse_args()
+    cleanup_first = not args.no_clean
+    seed_val = args.seed
+    suppress = args.suppress_notifications
+
+    if not args.yes:
+        prompt = f"Proceed with seeding {args.num_students} students (seed={seed_val or 'auto'}, suppress_notifications={suppress}, cleanup_first={cleanup_first})? (y/N): "
+        if input(prompt).strip().lower() not in ['y', 'yes']:
+            print("Operation cancelled.")
+            sys.exit(0)
+
+    # Validate mutually exclusive modes
+    if args.baseline and args.exhaustive:
+        print("ERROR: --baseline and --exhaustive cannot be used together.")
+        sys.exit(1)
+
+    success = seed_comprehensive_database(
+        num_students=args.num_students,
+        cleanup_first=cleanup_first,
+        random_seed=seed_val,
+        suppress_notifications=suppress,
+        baseline=args.baseline,
+        exhaustive=args.exhaustive,
+        assessments_sample=args.assessments_sample,
+        full_reset=args.full_reset
+    )
+    if success:
+        print("\nSUCCESS: Database seeding completed successfully!")
+        print("You can now use the full system with comprehensive UG data.")
     else:
-        print("Operation cancelled.")
+        print("\nERROR: Database seeding failed. Check logs for details.")

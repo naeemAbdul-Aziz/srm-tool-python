@@ -13,12 +13,23 @@
 
 ## 🔐 Quick Access Credentials
 
-### 👨‍💼 Admin Accounts (Test/Demo)
+### 👨‍💼 Admin Account (Primary)
 ```
-Username: admin      | Password: admin123     | Full Access
-Username: registrar  | Password: registrar123 | Admin Rights  
-Username: dean       | Password: dean123      | Admin Rights
+Username: admin  | Password: admin123 | Full Access
 ```
+
+Optional legacy demo admins (registrar / dean) are NOT created by default anymore to keep the role model simple. To include them for demonstrations, set the environment variable before seeding:
+
+Windows PowerShell:
+```
+$env:SEED_EXTRA_ADMINS="true"; python comprehensive_seed.py --students 50
+```
+They will be created with:
+```
+registrar / registrar123
+dean      / dean123
+```
+All admin-like accounts share the same single role value: `admin`.
 
 ### 🎓 Sample Student Accounts (After Seeding)
 ```
@@ -28,7 +39,7 @@ ug10003 | 00032024 | Kofi Osei        | Medicine
 ug10004 | 00042024 | Efua Boateng     | Law
 ug10005 | 00052024 | Yaw Owusu        | Engineering
 
-Password Format: [last4digits]2024
+Password Format (students): last 4 digits of index_number + "2024"
 Example: ug12345 → password: 23452024
 ```
 
@@ -75,7 +86,7 @@ curl http://localhost:8000/health
 
 ---
 
-## 📱 Key API Endpoints
+## 📱 Key API Endpoints (Updated October 6, 2025)
 
 ### Public Access
 - `GET /ug/schools-programs` - UG academic structure
@@ -93,6 +104,25 @@ curl http://localhost:8000/health
 - `GET /student/gpa` - GPA calculations
 
 ---
+
+### Notification & Alerts (Phase 1)
+- `GET /notifications` (query: unread_only, limit, before_id)
+- `GET /notifications/unread-count`
+- `POST /notifications/{user_notification_id}/read`
+- `POST /notifications/read-all`
+- `POST /admin/notifications` (admin broadcast / targeted)
+
+### Assessments (Phase 1)
+- `GET /assessments` (optional query: `course_code=`)
+- `POST /assessments` (admin) body: { course_code, assessment_name, max_score, weight }
+- `PUT /assessments/{assessment_id}` (admin) body: { assessment_name?, max_score?, weight? }
+- `DELETE /assessments/{assessment_id}` (admin)
+
+### Reporting & Export
+- `GET /admin/reports/summary?format=pdf|txt|csv|excel` (multi-format; excel is multi-sheet)
+- `GET /admin/reports/transcript/{student_index}?format=excel|pdf` (student transcript)
+- `GET /admin/reports/personal/{student_index}?format=txt|pdf` (admin personal academic report)
+- `GET /student/report/pdf` & `/student/report/txt` (self personal academic report)
 
 ## 🎯 Complete Feature Capabilities
 
@@ -117,6 +147,19 @@ curl http://localhost:8000/health
 - Multi-format report generation
 
 ### ✅ University of Ghana Integration
+
+### ✅ Export & Reporting
+- Multi-format summary reports (PDF, TXT, CSV, streaming Excel)
+- In-memory Excel generation with `xlsxwriter`
+- Transcript generation (Excel)
+- Proper download headers & cross-browser support
+
+### ✅ Notification Center (Phase 1)
+- In-app bell with unread badge
+- Mark single/all read
+- Severity levels (info, success, warning, error)
+- Event-driven triggers (course, semester, grade changes)
+- Polling-based unread count refresh
 - Authentic school/program structure
 - Real UG course codes & titles
 - Ghanaian naming conventions

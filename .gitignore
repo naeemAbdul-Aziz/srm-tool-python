@@ -17,6 +17,24 @@ ENV/
 
 # Logs
 *.log
+app.log
+backend/app.log
+
+# Generated report artifacts
+*.pdf
+*.xlsx
+*.csv
+!backend/README.md
+
+# Test artifacts / caches
+.pytest_cache/
+coverage*/
+htmlcov/
+
+# Bytecode cache already covered
+
+# Temporary exports directory (if introduced)
+exports/
 
 # IDE
 .vscode/

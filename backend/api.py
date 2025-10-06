@@ -1,10 +1,10 @@
 # api.py - FastAPI application for Student Result Management System
 # Production-ready REST API with comprehensive endpoints, authentication, and error handling
 
-from fastapi import FastAPI, HTTPException, Depends, status, Query, Path, Response
+from fastapi import FastAPI, HTTPException, Depends, status, Query, Path, Response, Request
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import os
 from pydantic import BaseModel, Field, validator
@@ -15,14 +15,24 @@ from db import (
     connect_to_db, delete_student_profile, fetch_all_records, insert_student_profile, fetch_student_by_index_number,
     insert_course, fetch_all_courses, fetch_course_by_code, insert_semester, fetch_all_semesters, update_course, update_semester, update_student_profile,
     update_student_score, delete_course, delete_semester, insert_grade,
-    fetch_semester_by_name, create_tables_if_not_exist
+    fetch_semester_by_name, create_tables_if_not_exist,
+    insert_notification, _expand_audience_user_ids, create_user_notification_links,
+    fetch_user_notifications, mark_notification_read, mark_all_notifications_read, count_unread_notifications,
+    fetch_assessments, create_assessment, update_assessment, delete_assessment
 )
 from grade_util import calculate_grade, get_grade_point, calculate_gpa, summarize_grades
 from auth import (
     authenticate_user, create_user, create_student_account, reset_student_password
 )
 from bulk_importer import bulk_import_from_file
-from report_utils import export_summary_report_pdf, export_summary_report_txt
+from report_utils import (
+    export_summary_report_pdf, 
+    export_summary_report_txt,
+    export_summary_report_excel,
+    export_summary_report_csv,
+    export_academic_transcript_excel,
+    export_academic_transcript_pdf
+)
 from logger import get_logger
 from session import session_manager
 import traceback
@@ -31,13 +41,102 @@ import traceback
 logger = get_logger(__name__)
 
 # Initialize FastAPI app with metadata
+from contextlib import asynccontextmanager
+import asyncio
+
+@asynccontextmanager
+async def lifespan(app_instance):
+    """Custom lifespan context to perform startup/shutdown while swallowing
+    benign asyncio.CancelledError that occurs during uvicorn --reload restarts.
+    """
+    try:
+        logger.info("Starting Student Result Management System API (lifespan)...")
+        # Startup tasks (mirrors existing startup_event logic but we keep backward compat by still firing handlers)
+        yield
+    except asyncio.CancelledError:
+        # Suppress noisy stack during reload
+        logger.debug("Lifespan cancelled (reload) – suppressing traceback")
+        raise
+    finally:
+        logger.info("Lifespan shutdown sequence executing")
+
 app = FastAPI(
     title="Student Result Management System API",
     description="Comprehensive API for managing student records, grades, and academic reports",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
+
+# =====================================================
+# SIMPLE IN-PROCESS SSE BROADCASTER FOR NOTIFICATIONS
+# =====================================================
+import asyncio, json, time
+from typing import Set
+
+class NotificationBroadcaster:
+    """Minimal async pub/sub for server-sent notification events."""
+    def __init__(self):
+        self._listeners: Set[asyncio.Queue] = set()
+        self._lock = asyncio.Lock()
+
+    async def register(self) -> asyncio.Queue:
+        q: asyncio.Queue = asyncio.Queue()
+        async with self._lock:
+            self._listeners.add(q)
+        return q
+
+    async def unregister(self, q: asyncio.Queue):
+        async with self._lock:
+            self._listeners.discard(q)
+
+    async def publish(self, event: str, data: dict):
+        payload = json.dumps({"event": event, "data": data, "ts": time.time()})
+        async with self._lock:
+            stale = []
+            for q in list(self._listeners):
+                try:
+                    q.put_nowait(payload)
+                except Exception:
+                    stale.append(q)
+            for q in stale:
+                self._listeners.discard(q)
+
+broadcaster = NotificationBroadcaster()
+
+async def _sse_generator(queue: asyncio.Queue, request: Request):
+    try:
+        # Initial comment (ignored by EventSource but useful for debugging)
+        yield b": connected to notification stream\n\n"
+        while True:
+            if await request.is_disconnected():
+                break
+            msg = await queue.get()
+            yield f"data: {msg}\n\n".encode("utf-8")
+    except asyncio.CancelledError:
+        return
+
+@app.get("/notifications/stream")
+async def notifications_stream(request: Request, current_user: dict = Depends(authenticate_user)):
+    """Server-Sent Events stream for real-time notification events.
+
+    Events emitted:
+      - notification.new { notification_id, title, severity, audience, recipients }
+      - notification.read { user_notification_id, user }
+      - notification.read_all { user, count }
+      - hello (synthetic init) { user, role }
+    """
+    q = await broadcaster.register()
+    # Send a synthetic hello event (non-blocking best effort)
+    await broadcaster.publish("hello", {"user": current_user.get("username"), "role": current_user.get("role")})
+    async def stream():
+        try:
+            async for chunk in _sse_generator(q, request):
+                yield chunk
+        finally:
+            await broadcaster.unregister(q)
+    return StreamingResponse(stream(), media_type="text/event-stream")
 
 # Configure CORS for production
 app.add_middleware(
@@ -167,6 +266,33 @@ class APIResponse(BaseModel):
     data: Optional[Any] = None
     error: Optional[str] = None
 
+# =============================
+# NOTIFICATION MODELS
+# =============================
+
+class NotificationCreate(BaseModel):
+    type: str
+    title: str
+    message: str
+    severity: Optional[str] = 'info'
+    audience: Optional[str] = 'all'  # all|admins|students|user
+    target_user_id: Optional[int] = None
+    expires_at: Optional[datetime] = None
+
+class UserNotificationOut(BaseModel):
+    user_notification_id: int
+    notification_id: int
+    type: str
+    title: str
+    message: str
+    severity: str
+    audience: str
+    is_read: bool
+    read_at: Optional[datetime]
+    created_at: datetime
+
+    error: Optional[str] = None
+
 class StudentResponse(BaseModel):
     """Student profile response"""
     index_number: str
@@ -211,6 +337,30 @@ class GradeResponse(BaseModel):
     score: float
     grade: str
     grade_point: float
+
+# =============================
+# ASSESSMENT MODELS
+# =============================
+
+class AssessmentCreate(BaseModel):
+    course_code: str = Field(..., description="Course code the assessment belongs to")
+    assessment_name: str = Field(..., min_length=1, max_length=100)
+    max_score: int = Field(..., ge=1, le=1000)
+    weight: float = Field(..., ge=0, le=100, description="Weight percentage contributing to final grade")
+
+class AssessmentUpdate(BaseModel):
+    assessment_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    max_score: Optional[int] = Field(None, ge=1, le=1000)
+    weight: Optional[float] = Field(None, ge=0, le=100)
+
+class AssessmentOut(BaseModel):
+    assessment_id: int
+    assessment_name: str
+    max_score: int
+    weight: float
+    course_id: int
+    course_code: str
+    course_title: str
 
 class GPAResponse(BaseModel):
     """GPA calculation response"""
@@ -1072,7 +1222,7 @@ async def global_search_courses(
             
             # Search in multiple fields
             query = """
-                SELECT course_id, course_code, course_title, credits, department
+                SELECT course_id, course_code, course_title, credit_hours, department
                 FROM courses 
                 WHERE course_title ILIKE %s 
                    OR course_code ILIKE %s 
@@ -2225,7 +2375,7 @@ async def generate_summary_report_endpoint(
     """Generate comprehensive summary report (Admin only)"""
     return await generate_summary_report_common(current_user, semester, academic_year, format)
 
-@app.get("/admin/reports/summary/pdf", response_model=APIResponse)
+@app.get("/admin/reports/summary/pdf")
 async def generate_summary_report_pdf_endpoint(
     current_user: dict = Depends(require_admin_role),
     semester: Optional[str] = Query(None, description="Filter by semester"),
@@ -2234,7 +2384,7 @@ async def generate_summary_report_pdf_endpoint(
     """Generate comprehensive summary report in PDF format (Admin only)"""
     return await generate_summary_report_common(current_user, semester, academic_year, "pdf")
 
-@app.get("/admin/reports/summary/txt", response_model=APIResponse)
+@app.get("/admin/reports/summary/txt")
 async def generate_summary_report_txt_endpoint(
     current_user: dict = Depends(require_admin_role),
     semester: Optional[str] = Query(None, description="Filter by semester"),
@@ -2242,6 +2392,156 @@ async def generate_summary_report_txt_endpoint(
 ):
     """Generate comprehensive summary report in TXT format (Admin only)"""
     return await generate_summary_report_common(current_user, semester, academic_year, "txt")
+
+@app.get("/admin/reports/summary/excel")
+async def generate_summary_report_excel_endpoint(
+    current_user: dict = Depends(require_admin_role),
+    semester: Optional[str] = Query(None, description="Filter by semester"),
+    academic_year: Optional[str] = Query(None, description="Filter by academic year")
+):
+    """Generate comprehensive summary report in Excel format (Admin only).
+    Direct in-memory construction (multi-sheet) to avoid temp files. Returns raw bytes Response with
+    explicit Content-Length for maximal browser compatibility.
+    Sheets:
+      - Summary: high-level stats & filters
+      - GradeDistribution: grade counts
+    """
+    from io import BytesIO
+    import xlsxwriter
+    try:
+        logger.info("[ExcelDownload] Building excel directly without intermediate JSON call")
+
+        # Re-run core data logic manually (subset of generate_comprehensive_report) to avoid re-parsing
+        def op(conn):
+            return generate_comprehensive_report(conn, semester, academic_year, "json")
+        core_data = handle_db_operation(op)
+        if not core_data:
+            logger.warning("[ExcelDownload] core_data is empty; continuing with placeholder workbook")
+            core_data = {}
+
+        stats = core_data.get("summary_statistics", {}) if isinstance(core_data, dict) else {}
+        grade_distribution = core_data.get("grade_distribution", {}) if isinstance(core_data, dict) else {}
+        avg_gpa = core_data.get("average_gpa", 0)
+        filters = core_data.get("filters", {"semester": semester, "academic_year": academic_year})
+
+        output = BytesIO()
+        workbook = xlsxwriter.Workbook(output, {"in_memory": True})
+
+        # Formats
+        fmt_header = workbook.add_format({"bold": True, "bg_color": "#D9E1F2"})
+        fmt_key = workbook.add_format({"bold": True})
+        fmt_num = workbook.add_format({"num_format": "0.00"})
+
+        # Summary sheet
+        ws_summary = workbook.add_worksheet("Summary")
+        row = 0
+        ws_summary.write(row, 0, "Metric", fmt_header)
+        ws_summary.write(row, 1, "Value", fmt_header)
+        row += 1
+        for k, v in stats.items():
+            ws_summary.write(row, 0, k, fmt_key)
+            ws_summary.write(row, 1, v)
+            row += 1
+        ws_summary.write(row, 0, "average_gpa", fmt_key)
+        ws_summary.write(row, 1, avg_gpa, fmt_num)
+        row += 2
+        ws_summary.write(row, 0, "Filters", fmt_header); row += 1
+        ws_summary.write(row, 0, "semester", fmt_key); ws_summary.write(row, 1, str(filters.get("semester"))) ; row +=1
+        ws_summary.write(row, 0, "academic_year", fmt_key); ws_summary.write(row, 1, str(filters.get("academic_year"))) ; row +=1
+        ws_summary.write(row, 0, "generated_at", fmt_key); ws_summary.write(row, 1, core_data.get("generated_at", "")); row +=1
+        ws_summary.set_column(0, 0, 24)
+        ws_summary.set_column(1, 1, 32)
+
+        # Grade distribution sheet
+        ws_dist = workbook.add_worksheet("GradeDistribution")
+        ws_dist.write(0, 0, "Grade", fmt_header)
+        ws_dist.write(0, 1, "Count", fmt_header)
+        r = 1
+        for grade, count in grade_distribution.items():
+            ws_dist.write(r, 0, grade)
+            ws_dist.write(r, 1, count)
+            r += 1
+        ws_dist.autofilter(0, 0, max(r-1,0), 1)
+        ws_dist.set_column(0, 0, 12)
+        ws_dist.set_column(1, 1, 12)
+
+        workbook.close()
+        output.seek(0)
+        data = output.getvalue()
+        size = len(data)
+        logger.info(f"[ExcelDownload] Final workbook size={size} bytes; stats_keys={list(stats.keys())}; grades={len(grade_distribution)}")
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"summary_report_{timestamp}.xlsx"
+        headers = {
+            "Content-Disposition": f"attachment; filename=\"{filename}\"",
+            "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "Content-Length": str(size),
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "X-Debug-Excel-Size": str(size),
+            "Access-Control-Expose-Headers": "Content-Disposition, Content-Type, Content-Length, X-Debug-Excel-Size"
+        }
+        logger.info(f"[ExcelDownload] Returning excel with headers: {headers}")
+        # Direct Response (not StreamingResponse) for explicit content-length behavior
+        return Response(content=data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers=headers)
+    except Exception as e:
+        logger.exception(f"[ExcelDownload] Direct build failed: {e}; falling back to legacy file path mechanism")
+        return await generate_summary_report_common(current_user, semester, academic_year, "excel")
+
+@app.get("/admin/reports/summary/csv")
+async def generate_summary_report_csv_endpoint(
+    current_user: dict = Depends(require_admin_role),
+    semester: Optional[str] = Query(None, description="Filter by semester"),
+    academic_year: Optional[str] = Query(None, description="Filter by academic year")
+):
+    """Generate comprehensive summary report in CSV format (Admin only)"""
+    return await generate_summary_report_common(current_user, semester, academic_year, "csv")
+
+@app.get("/admin/reports/transcript/{student_index}")
+async def generate_academic_transcript(
+    student_index: str,
+    current_user: dict = Depends(require_admin_role),
+    format: str = Query("excel", description="Export format (excel|pdf)")
+):
+    """Generate individual student academic transcript (Admin only)
+
+    Returns JSON metadata for excel (current pattern) or direct PDF file response.
+    """
+    try:
+        logger.info(f"Admin {current_user.get('username')} generating transcript for {student_index} format={format}")
+        if format == "excel":
+            filename = export_academic_transcript_excel(student_index)
+            if not filename:
+                raise HTTPException(status_code=500, detail="Failed to generate academic transcript (excel)")
+            return APIResponse(
+                success=True,
+                message="Academic transcript generated successfully in Excel format",
+                data={"filename": filename, "student_index": student_index, "format": format}
+            )
+        elif format == "pdf":
+            filename = export_academic_transcript_pdf(student_index)
+            if not filename:
+                raise HTTPException(status_code=500, detail="Failed to generate academic transcript (pdf)")
+            try:
+                with open(filename, 'rb') as f:
+                    data = f.read()
+            except FileNotFoundError:
+                raise HTTPException(status_code=500, detail="Transcript PDF disappeared before sending")
+            headers = {
+                "Content-Disposition": f"attachment; filename=\"{filename}\"",
+                "Content-Type": "application/pdf",
+                "Cache-Control": "no-cache"
+            }
+            return Response(content=data, media_type="application/pdf", headers=headers)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid format. Use excel or pdf")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Academic transcript generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Academic transcript generation failed: {str(e)}")
 
 async def generate_summary_report_common(
     current_user: dict,
@@ -2251,64 +2551,50 @@ async def generate_summary_report_common(
 ):
     """Generate comprehensive summary report (Admin only)"""
     try:
-        logger.info(f"Admin {current_user.get('username')} generating summary report")
+        logger.info(f"Admin {current_user.get('username')} generating summary report in {format} format")
         
-        if format not in ["json", "pdf", "txt"]:
+        if format not in ["json", "pdf", "txt", "excel", "csv"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid format. Supported formats: json, pdf, txt"
+                detail="Invalid format. Supported formats: json, pdf, txt, excel, csv"
             )
         
-        def operation(conn):
-            return generate_comprehensive_report(conn, semester, academic_year, format)
-        
-        report_data = handle_db_operation(operation)
-        
-        if report_data:
-            logger.info(f"Summary report generated successfully in {format} format")
-            
-            # For PDF and TXT formats, we need to return the file content directly
-            if format in ["pdf", "txt"]:
-                # Get the file path from the report data
-                file_path = report_data.get(f"{format}_path")
-                if file_path and os.path.exists(file_path):
-                    # Read the file content
-                    with open(file_path, "rb") as f:
-                        file_content = f.read()
-                    
-                    # Clean up the file after reading
-                    try:
-                        os.remove(file_path)
-                    except Exception as e:
-                        logger.warning(f"Failed to remove temporary file {file_path}: {e}")
-                    
-                    # Return the file content directly
-                    return Response(
-                        content=file_content,
-                        media_type="application/pdf" if format == "pdf" else "text/plain",
-                        headers={
-                            "Content-Disposition": f"attachment; filename=summary_report.{format}"
-                        }
-                    )
-                else:
-                    return APIResponse(
-                        success=False,
-                        message=f"Failed to generate {format.upper()} report",
-                        data=None
-                    )
-            else:
-                # For JSON format, return the report data as usual
-                return APIResponse(
-                    success=True,
-                    message=f"Summary report generated successfully ({format})",
-                    data=report_data
-                )
-        else:
-            return APIResponse(
-                success=True,
-                message="No data available for report generation",
-                data={"report": "No data available"}
-            )
+        # Always build core data in JSON mode to obtain records/aggregates
+        def op(conn):
+            return generate_comprehensive_report(conn, semester, academic_year, "json")
+        core_json = handle_db_operation(op)
+
+        if format == "json":
+            if not core_json:
+                return APIResponse(success=True, message="No data available for report generation", data={"report": "No data available"})
+            return APIResponse(success=True, message="Summary report generated successfully (json)", data=core_json)
+
+        if format == "excel":
+            # Delegate to dedicated excel endpoint logic (caller already uses separate route)
+            # Keeping legacy behavior: return metadata not file here.
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            return APIResponse(success=True, message="Use /admin/reports/summary/excel for excel bytes", data={"hint": "Call dedicated excel endpoint", "generated_at": timestamp})
+
+        # Handle pdf/txt/csv via unified helper
+        if format in {"pdf", "txt", "csv"}:
+            from report_utils import build_summary_file
+            built = build_summary_file(format)
+            if not built:
+                raise HTTPException(status_code=500, detail=f"Failed to generate {format} summary report")
+            content_bytes, filename, media_type = built
+            headers = {
+                "Content-Disposition": f"attachment; filename=\"{filename}\"",
+                "Content-Type": media_type,
+                "Content-Length": str(len(content_bytes)),
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Expose-Headers": "Content-Disposition, Content-Type, Content-Length"
+            }
+            logger.info(f"Returning unified {format} summary report size={len(content_bytes)} bytes")
+            return Response(content=content_bytes, media_type=media_type, headers=headers)
+
+        raise HTTPException(status_code=400, detail="Unsupported format")
             
     except HTTPException:
         raise
@@ -2419,6 +2705,54 @@ async def download_student_personal_report_txt(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Personal TXT report generation failed: {str(e)}"
         )
+
+# ADMIN ENDPOINT - PERSONAL REPORTS (added to satisfy export tests expecting /admin/reports/personal)
+@app.get("/admin/reports/personal/{student_index}")
+async def admin_personal_report(
+    student_index: str,
+    format: str = Query("txt", description="Report format: txt or pdf", pattern="^(txt|pdf)$"),
+    current_user: dict = Depends(require_admin_role)
+):
+    """Generate a personal academic report for a specific student (Admin only).
+    Supports txt (default) or pdf.
+    """
+    try:
+        logger.info(f"Admin {current_user.get('username')} generating personal report for {student_index} as {format}")
+        from report_utils import export_personal_academic_report
+        
+        if format == 'pdf':
+            pdf_path = export_personal_academic_report(student_index, 'pdf')
+            if not pdf_path or not os.path.exists(pdf_path):
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unable to generate personal PDF report")
+            with open(pdf_path, 'rb') as f:
+                content = f.read()
+            try:
+                os.remove(pdf_path)
+            except Exception as e:
+                logger.warning(f"Failed to remove temporary file {pdf_path}: {e}")
+            return Response(
+                content=content,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f"attachment; filename=personal_academic_report_{student_index}.pdf"
+                }
+            )
+        else:  # txt format
+            txt_content = export_personal_academic_report(student_index, 'txt')
+            if not txt_content:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unable to generate personal TXT report")
+            return Response(
+                content=txt_content.encode('utf-8'),
+                media_type="text/plain",
+                headers={
+                    "Content-Disposition": f"attachment; filename=personal_academic_report_{student_index}.txt"
+                }
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Admin personal report generation failed: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Admin personal report generation failed: {e}")
 
 @app.get("/admin/analytics/dashboard", response_model=APIResponse)
 async def get_admin_dashboard_endpoint(
@@ -3361,6 +3695,98 @@ def generate_comprehensive_report(conn, semester=None, academic_year=None, forma
                 # Create empty report if no data
                 txt_path = export_summary_report_txt([], f"summary_report_{semester or 'all'}.txt")
             report_data["txt_path"] = txt_path
+        elif format == "excel":
+            all_records = fetch_all_records(conn)
+            if all_records and all_records.get('students') and all_records.get('grades'):
+                # Transform the data structure for the Excel report
+                student_records = []
+                students_dict = {s['student_id']: s for s in all_records['students']}
+                
+                # Group grades by student
+                student_grades = {}
+                for grade in all_records['grades']:
+                    student_id = None
+                    # Find student_id from index_number
+                    for sid, student in students_dict.items():
+                        if student['index_number'] == grade['index_number']:
+                            student_id = sid
+                            break
+                    
+                    if student_id:
+                        if student_id not in student_grades:
+                            student_grades[student_id] = []
+                        student_grades[student_id].append({
+                            'course_code': grade['course_code'],
+                            'score': grade['score']
+                        })
+                
+                # Create the expected structure
+                for student_id, student_profile in students_dict.items():
+                    student_record = {
+                        'profile': {
+                            'index_number': student_profile['index_number'],
+                            'name': student_profile['full_name'],
+                            'program': student_profile['program'],
+                            'year_of_study': student_profile['year_of_study'],
+                            'dob': str(student_profile['dob']) if student_profile['dob'] else '',
+                            'gender': student_profile['gender'],
+                            'contact_email': student_profile['contact_email']
+                        },
+                        'grades': student_grades.get(student_id, [])
+                    }
+                    student_records.append(student_record)
+                
+                excel_path = export_summary_report_excel(student_records, f"summary_report_{semester or 'all'}.xlsx")
+            else:
+                # Create empty report if no data
+                excel_path = export_summary_report_excel([], f"summary_report_{semester or 'all'}.xlsx")
+            report_data["excel_path"] = excel_path
+        elif format == "csv":
+            all_records = fetch_all_records(conn)
+            if all_records and all_records.get('students') and all_records.get('grades'):
+                # Transform the data structure for the CSV report
+                student_records = []
+                students_dict = {s['student_id']: s for s in all_records['students']}
+                
+                # Group grades by student
+                student_grades = {}
+                for grade in all_records['grades']:
+                    student_id = None
+                    # Find student_id from index_number
+                    for sid, student in students_dict.items():
+                        if student['index_number'] == grade['index_number']:
+                            student_id = sid
+                            break
+                    
+                    if student_id:
+                        if student_id not in student_grades:
+                            student_grades[student_id] = []
+                        student_grades[student_id].append({
+                            'course_code': grade['course_code'],
+                            'score': grade['score']
+                        })
+                
+                # Create the expected structure
+                for student_id, student_profile in students_dict.items():
+                    student_record = {
+                        'profile': {
+                            'index_number': student_profile['index_number'],
+                            'name': student_profile['full_name'],
+                            'program': student_profile['program'],
+                            'year_of_study': student_profile['year_of_study'],
+                            'dob': str(student_profile['dob']) if student_profile['dob'] else '',
+                            'gender': student_profile['gender'],
+                            'contact_email': student_profile['contact_email']
+                        },
+                        'grades': student_grades.get(student_id, [])
+                    }
+                    student_records.append(student_record)
+                
+                csv_path = export_summary_report_csv(student_records, f"summary_report_{semester or 'all'}.csv")
+            else:
+                # Create empty report if no data
+                csv_path = export_summary_report_csv([], f"summary_report_{semester or 'all'}.csv")
+            report_data["csv_path"] = csv_path
         
         return report_data
         
@@ -3446,6 +3872,181 @@ def get_dashboard_analytics(conn):
     except Exception as e:
         logger.error(f"Error getting dashboard analytics: {str(e)}")
         return {}
+
+# =============================
+# ASSESSMENT ENDPOINTS
+# =============================
+
+@app.get("/assessments", response_model=List[AssessmentOut])
+async def list_assessments(course_code: Optional[str] = Query(None, description="Filter by course code"), current_user: dict = Depends(get_current_user)):
+    conn = connect_to_db()
+    try:
+        rows = fetch_assessments(conn, course_code)
+        return [AssessmentOut(**r) for r in rows]
+    except Exception as e:
+        logger.error(f"Error listing assessments: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list assessments")
+    finally:
+        if conn: conn.close()
+
+@app.post("/assessments", response_model=APIResponse)
+async def create_assessment_endpoint(payload: AssessmentCreate, current_user: dict = Depends(require_admin_role)):
+    conn = connect_to_db()
+    try:
+        aid = create_assessment(conn, payload.course_code, payload.assessment_name, payload.max_score, payload.weight)
+        if not aid:
+            raise HTTPException(status_code=400, detail="Assessment create failed")
+        # Return new list subset for convenience
+        rows = fetch_assessments(conn, payload.course_code)
+        return APIResponse(success=True, message="Assessment created", data={"assessment_id": aid, "assessments": rows})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating assessment: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create assessment")
+    finally:
+        if conn: conn.close()
+
+@app.put("/assessments/{assessment_id}", response_model=APIResponse)
+async def update_assessment_endpoint(assessment_id: int = Path(...), payload: Optional[AssessmentUpdate] = None, current_user: dict = Depends(require_admin_role)):
+    conn = connect_to_db()
+    try:
+        ok = update_assessment(conn, assessment_id,
+                               assessment_name=payload.assessment_name if payload else None,
+                               max_score=payload.max_score if payload else None,
+                               weight=payload.weight if payload else None)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Assessment not found or no changes")
+        return APIResponse(success=True, message="Assessment updated")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating assessment {assessment_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update assessment")
+    finally:
+        if conn: conn.close()
+
+@app.delete("/assessments/{assessment_id}", response_model=APIResponse)
+async def delete_assessment_endpoint(assessment_id: int = Path(...), current_user: dict = Depends(require_admin_role)):
+    conn = connect_to_db()
+    try:
+        ok = delete_assessment(conn, assessment_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Assessment not found")
+        return APIResponse(success=True, message="Assessment deleted")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting assessment {assessment_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete assessment")
+    finally:
+        if conn: conn.close()
+
+# =============================
+# NOTIFICATION ENDPOINTS
+# =============================
+
+@app.get("/notifications", response_model=List[UserNotificationOut])
+async def list_notifications(
+    unread_only: Optional[bool] = Query(False),
+    limit: Optional[int] = Query(20, ge=1, le=50),
+    before_id: Optional[int] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    conn = connect_to_db()
+    try:
+        results = fetch_user_notifications(conn, current_user.get('user_id'), unread_only=unread_only or False, limit=limit or 20, before_id=before_id)
+        return [UserNotificationOut(**r) for r in results]
+    except Exception as e:
+        logger.error(f"Error listing notifications: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch notifications")
+    finally:
+        if conn: conn.close()
+
+@app.get("/notifications/unread-count")
+async def unread_count(current_user: dict = Depends(get_current_user)):
+    conn = connect_to_db()
+    try:
+        count = count_unread_notifications(conn, current_user.get('user_id'))
+        return {"unread": count}
+    except Exception as e:
+        logger.error(f"Error counting unread notifications: {e}")
+        raise HTTPException(status_code=500, detail="Failed to count unread notifications")
+    finally:
+        if conn: conn.close()
+
+@app.post("/notifications/{user_notification_id}/read")
+async def mark_one_read(user_notification_id: int, current_user: dict = Depends(get_current_user)):
+    conn = connect_to_db()
+    try:
+        success = mark_notification_read(conn, current_user.get('user_id'), user_notification_id)
+        if success:
+            try:
+                await broadcaster.publish("notification.read", {"user_notification_id": user_notification_id, "user": current_user.get('username')})
+            except Exception:
+                logger.warning("Failed to publish notification.read event")
+        return {"success": success}
+    except Exception as e:
+        logger.error(f"Error marking notification read: {e}")
+        raise HTTPException(status_code=500, detail="Failed to mark read")
+    finally:
+        if conn: conn.close()
+
+@app.post("/notifications/read-all")
+async def mark_all_read(current_user: dict = Depends(get_current_user)):
+    conn = connect_to_db()
+    try:
+        changed = mark_all_notifications_read(conn, current_user.get('user_id'))
+        if changed:
+            try:
+                await broadcaster.publish("notification.read_all", {"user": current_user.get('username'), "count": changed})
+            except Exception:
+                logger.warning("Failed to publish notification.read_all event")
+        return {"updated": changed}
+    except Exception as e:
+        logger.error(f"Error marking all notifications read: {e}")
+        raise HTTPException(status_code=500, detail="Failed to mark all read")
+    finally:
+        if conn: conn.close()
+
+@app.post("/admin/notifications", response_model=APIResponse)
+async def create_notification_endpoint(payload: NotificationCreate, current_user: dict = Depends(require_admin_role)):
+    conn = connect_to_db()
+    try:
+        nid = insert_notification(
+            conn,
+            payload.type,
+            payload.title,
+            payload.message,
+            payload.severity or 'info',
+            payload.audience or 'all',
+            payload.target_user_id,
+            None,
+            None,
+            payload.expires_at
+        )
+        if not nid:
+            raise HTTPException(status_code=500, detail="Failed to create notification")
+        user_ids = _expand_audience_user_ids(conn, payload.audience, payload.target_user_id, None)
+        create_user_notification_links(conn, nid, user_ids)
+        try:
+            await broadcaster.publish("notification.new", {
+                "notification_id": nid,
+                "title": payload.title,
+                "severity": payload.severity or 'info',
+                "audience": payload.audience or 'all',
+                "recipients": len(user_ids)
+            })
+        except Exception:
+            logger.warning("Failed to publish notification.new event")
+        return APIResponse(success=True, message="Notification created", data={"notification_id": nid, "recipients": len(user_ids)})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating notification: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create notification")
+    finally:
+        if conn: conn.close()
 
 # ========================================
 # APPLICATION STARTUP EVENT

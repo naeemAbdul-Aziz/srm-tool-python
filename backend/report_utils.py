@@ -2,9 +2,15 @@ from collections import Counter
 from datetime import datetime
 import os
 import logging
+import csv
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils.dataframe import dataframe_to_rows
+import xlsxwriter
 from session import session_manager
 from db import connect_to_db, fetch_student_by_index_number, fetch_all_records # For fetching data for reports
-from grade_util import calculate_grade, calculate_gpa # For GPA calculation in reports
+from grade_util import calculate_grade, calculate_gpa, get_grade_point # For GPA calculation in reports
 from fpdf import FPDF # For PDF generation
 
 logger = logging.getLogger(__name__)
@@ -36,10 +42,11 @@ logger.info("Processing records for display...")
 
 # Modularized data processing logic
 def process_student_profile(record):
-    """Process individual student profile."""
+    """Process individual student profile - Fixed field mapping."""
     return {
         'index_number': record.get('index_number', 'unknown'),
-        'name': record.get('full_name', 'N/A'),
+        'name': record.get('full_name', 'N/A'),  # Fixed: was looking for 'name' but should be 'full_name'
+        'full_name': record.get('full_name', 'N/A'),  # Added for consistency
         'program': record.get('program', 'N/A'),
         'year_of_study': record.get('year_of_study', 'N/A'),
         'dob': record.get('dob', 'N/A'),
@@ -563,6 +570,76 @@ def export_admin_comprehensive_report(records, format_type='txt'):
         logger.error(f"error generating admin comprehensive report: {e}")
         return None
 
+def build_summary_file(format_type='txt'):
+    """Fallback builder for summary report files when primary path-based generation fails.
+    Returns tuple (content_bytes, filename, media_type) or None on unrecoverable failure.
+    This re-fetches records directly from the database to avoid coupling with prior call state.
+    """
+    try:
+        from db import connect_to_db, fetch_all_records
+        conn = connect_to_db()
+        if not conn:
+            logger.error("build_summary_file: failed to connect to DB")
+            return None
+        raw = fetch_all_records(conn)
+        conn.close()
+        records = aggregate_student_data_for_reports(raw)
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        format_type = format_type.lower()
+        if format_type == 'pdf':
+            filename = f"summary_report_{ts}.pdf"
+            path = export_summary_report_pdf(records, filename)
+            media = 'application/pdf'
+        elif format_type == 'txt':
+            filename = f"summary_report_{ts}.txt"
+            path = export_summary_report_txt(records, filename)
+            media = 'text/plain'
+        elif format_type == 'csv':
+            # Reuse existing csv exporter if present else simple inline writer
+            try:
+                from report_utils import export_summary_report_csv  # circular if we rename; safe if exists
+                filename = f"summary_report_{ts}.csv"
+                path = export_summary_report_csv(records, filename)
+            except Exception:
+                # Minimal CSV inline
+                filename = f"summary_report_{ts}.csv"
+                headers = ['index_number','full_name','program','num_grades']
+                import csv
+                with open(filename,'w',newline='',encoding='utf-8') as f:
+                    w = csv.writer(f)
+                    w.writerow(headers)
+                    for student in records:
+                        profile = student.get('profile',{}) if isinstance(student, dict) else {}
+                        grades = student.get('grades',[]) if isinstance(student, dict) else []
+                        w.writerow([
+                            profile.get('index_number',''),
+                            profile.get('full_name',''),
+                            profile.get('program',''),
+                            len(grades)
+                        ])
+                path = filename
+            media = 'text/csv'
+        else:
+            logger.error(f"build_summary_file: unsupported format {format_type}")
+            return None
+
+        if not path or not os.path.exists(path):
+            logger.error(f"build_summary_file: exporter did not produce path for {format_type}")
+            return None
+        with open(path, 'rb') as f:
+            data = f.read()
+        try:
+            os.remove(path)
+        except Exception as e:
+            logger.warning(f"build_summary_file: could not remove temp file {path}: {e}")
+        if not data:
+            logger.error("build_summary_file: empty data produced")
+            return None
+        return data, filename, media
+    except Exception as e:
+        logger.exception(f"build_summary_file unexpected error: {e}")
+        return None
+
 def fetch_all_records_with_admin_check(conn):
     """Fetch all records with admin validation."""
     current_user = session_manager.get_current_user()
@@ -629,3 +706,624 @@ def aggregate_student_data_for_reports(db_records):
         else:
             logger.error(f"Cannot process data structure: {type(db_records)}")
             return []
+
+# Enhanced Export Functions for Excel and CSV
+
+def export_summary_report_excel(records: list, filename="summary_report.xlsx"):
+    """
+    Export a comprehensive summary report to Excel format with multiple sheets.
+    """
+    try:
+        if not filename.endswith('.xlsx'):
+            filename += '.xlsx'
+        
+        # Ensure absolute path in current working directory
+        import os
+        if not os.path.isabs(filename):
+            filename = os.path.abspath(filename)
+        
+        logger.info(f"Starting Excel export to: {filename}")
+        
+        header_info = get_report_header_info()
+        
+        # Helper function to clean text for Excel
+        def clean_text(text):
+            if text is None:
+                return ''
+            text = str(text)
+            # Remove or replace problematic characters
+            text = text.replace('\x00', '').replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ')
+            # Limit text length to avoid Excel cell limits
+            return text[:32767] if len(text) > 32767 else text
+        
+        # Create a workbook with xlsxwriter for better formatting
+        logger.info(f"Creating Excel workbook: {filename}")
+        workbook = xlsxwriter.Workbook(filename, {'remove_timezone': True})
+        
+        # Define formats
+        header_format = workbook.add_format({
+            'bold': True,
+            'font_size': 14,
+            'bg_color': '#4472C4',
+            'font_color': 'white',
+            'align': 'center'
+        })
+        
+        subheader_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#D9E2F3',
+            'border': 1
+        })
+        
+        data_format = workbook.add_format({
+            'border': 1,
+            'align': 'left'
+        })
+        
+        number_format = workbook.add_format({
+            'border': 1,
+            'num_format': '0.00'
+        })
+        
+        # Sheet 1: Summary Statistics
+        summary_sheet = workbook.add_worksheet('Summary Statistics')
+        
+        # Write header information
+        summary_sheet.merge_range(0, 0, 0, 4, 'STUDENT RESULTS SUMMARY REPORT', header_format)
+        
+        summary_sheet.write('A3', 'Generated By:', subheader_format)
+        summary_sheet.write('B3', clean_text(header_info['generated_by']), data_format)
+        summary_sheet.write('A4', 'Generation Time:', subheader_format)
+        summary_sheet.write('B4', clean_text(header_info['generation_time']), data_format)
+        summary_sheet.write('A5', 'Session Duration:', subheader_format)
+        summary_sheet.write('B5', clean_text(header_info['session_duration']), data_format)
+        
+        # Calculate statistics
+        valid_scores = []
+        total_students = len([s for s in records if isinstance(s, dict) and 'profile' in s])
+        
+        for student in records:
+            if isinstance(student, dict) and 'grades' in student:
+                for grade in student['grades']:
+                    if isinstance(grade, dict):
+                        score = grade.get('score')
+                        if score is not None and isinstance(score, (int, float)):
+                            valid_scores.append(score)
+        
+        # Write statistics
+        summary_sheet.write('A7', 'STATISTICS', subheader_format)
+        summary_sheet.write('A8', 'Total Students:', subheader_format)
+        summary_sheet.write('B8', total_students, data_format)
+        
+        if valid_scores:
+            summary_sheet.write('A9', 'Average Score:', subheader_format)
+            summary_sheet.write('B9', sum(valid_scores) / len(valid_scores), number_format)
+            summary_sheet.write('A10', 'Highest Score:', subheader_format)
+            summary_sheet.write('B10', max(valid_scores), number_format)
+            summary_sheet.write('A11', 'Lowest Score:', subheader_format)
+            summary_sheet.write('B11', min(valid_scores), number_format)
+        
+        # Grade distribution
+        grade_counts = {"A": 0, "B": 0, "C": 0, "D": 0, "F": 0}
+        for score in valid_scores:
+            grade = calculate_grade(score)
+            if grade in grade_counts:
+                grade_counts[grade] += 1
+        
+        summary_sheet.write('A13', 'GRADE DISTRIBUTION', subheader_format)
+        row = 14
+        for grade, count in grade_counts.items():
+            summary_sheet.write(f'A{row}', f'Grade {grade}:', subheader_format)
+            summary_sheet.write(f'B{row}', count, data_format)
+            row += 1
+        
+        # Sheet 2: Student Details
+        students_sheet = workbook.add_worksheet('Student Details')
+        
+        # Headers for student details
+        headers = ['Index Number', 'Full Name', 'Program', 'Year of Study', 'DOB', 'Gender', 'Email', 'Average Score', 'Overall Grade']
+        for col, header in enumerate(headers):
+            students_sheet.write(0, col, header, subheader_format)
+        
+        # Student data
+        row = 1
+        for student in records:
+            if isinstance(student, dict) and 'profile' in student:
+                profile = student['profile']
+                grades = student.get('grades', [])
+                
+                # Calculate student average
+                student_scores = [g.get('score') for g in grades if isinstance(g, dict) and g.get('score') is not None and isinstance(g.get('score'), (int, float))]
+                valid_scores = [score for score in student_scores if score is not None and isinstance(score, (int, float))]
+                avg_score = sum(valid_scores) / len(valid_scores) if valid_scores else 0
+                try:
+                    overall_grade = calculate_grade(avg_score) if avg_score > 0 else 'N/A'
+                except Exception as e:
+                    logger.warning(f"Error calculating overall grade for average {avg_score}: {e}")
+                    overall_grade = 'N/A'
+                
+                students_sheet.write(row, 0, profile.get('index_number', ''), data_format)
+                students_sheet.write(row, 1, profile.get('full_name', profile.get('name', '')), data_format)  # Fixed field mapping
+                students_sheet.write(row, 2, profile.get('program', ''), data_format)
+                students_sheet.write(row, 3, profile.get('year_of_study', ''), data_format)
+                students_sheet.write(row, 4, profile.get('dob', ''), data_format)
+                students_sheet.write(row, 5, profile.get('gender', ''), data_format)
+                students_sheet.write(row, 6, profile.get('contact_email', ''), data_format)
+                students_sheet.write(row, 7, avg_score, number_format)
+                students_sheet.write(row, 8, overall_grade, data_format)
+                row += 1
+        
+        # Sheet 3: Detailed Grades
+        grades_sheet = workbook.add_worksheet('Detailed Grades')
+        
+        # Headers for grades
+        grade_headers = ['Index Number', 'Student Name', 'Course Code', 'Score', 'Grade']
+        for col, header in enumerate(grade_headers):
+            grades_sheet.write(0, col, header, subheader_format)
+        
+        # Grade data
+        row = 1
+        for student in records:
+            if isinstance(student, dict):
+                profile = student.get('profile', {})
+                grades = student.get('grades', [])
+                
+                for grade in grades:
+                    if isinstance(grade, dict):
+                        score = grade.get('score')
+                        try:
+                            grade_letter = calculate_grade(score) if score is not None else 'N/A'
+                        except Exception as e:
+                            logger.warning(f"Error calculating grade letter for score {score}: {e}")
+                            grade_letter = 'N/A'
+                        
+                        grades_sheet.write(row, 0, clean_text(profile.get('index_number', '')), data_format)
+                        grades_sheet.write(row, 1, clean_text(profile.get('full_name', profile.get('name', ''))), data_format)  # Fixed field mapping
+                        grades_sheet.write(row, 2, clean_text(grade.get('course_code', '')), data_format)
+                        grades_sheet.write(row, 3, score if score is not None else '', number_format if score is not None else data_format)
+                        grades_sheet.write(row, 4, clean_text(grade_letter), data_format)
+                        row += 1
+        
+        # Auto-adjust column widths
+        for sheet in [summary_sheet, students_sheet, grades_sheet]:
+            sheet.set_column('A:Z', 15)
+        
+        # Close workbook properly
+        logger.info("Closing Excel workbook...")
+        workbook.close()
+        logger.info(f"Excel workbook closed successfully")
+        
+        # Verify file was created and is accessible
+        import os
+        logger.info(f"Checking if file exists: {filename}")
+        if not os.path.exists(filename):
+            logger.error(f"Excel file was not created: {filename}")
+            # List directory contents for debugging
+            dir_path = os.path.dirname(filename)
+            if os.path.exists(dir_path):
+                logger.error(f"Directory {dir_path} contents: {os.listdir(dir_path)}")
+            return None
+            
+        file_size = os.path.getsize(filename)
+        logger.info(f"Excel file size: {file_size} bytes")
+        if file_size == 0:
+            logger.error(f"Excel file is empty: {filename}")
+            return None
+        
+        logger.info(f"Excel report generated successfully: {filename} (Size: {file_size} bytes)")
+        return filename
+        
+    except Exception as e:
+        logger.error(f"Error generating Excel report: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return None
+
+def export_summary_report_csv(records: list, filename="summary_report.csv"):
+    """
+    Export a summary report to CSV format.
+    """
+    try:
+        if not filename.endswith('.csv'):
+            filename += '.csv'
+        
+        header_info = get_report_header_info()
+        
+        # Prepare data for CSV
+        csv_data = []
+        
+        # Add header information as comments
+        csv_data.append(['# STUDENT RESULTS SUMMARY REPORT'])
+        csv_data.append([f'# Generated By: {header_info["generated_by"]}'])
+        csv_data.append([f'# Generation Time: {header_info["generation_time"]}'])
+        csv_data.append([f'# Session Duration: {header_info["session_duration"]}'])
+        csv_data.append([''])  # Empty row
+        
+        # Headers
+        csv_data.append(['Index Number', 'Full Name', 'Program', 'Year of Study', 'DOB', 'Gender', 'Email', 'Course Code', 'Score', 'Grade', 'Average Score', 'Overall Grade'])
+        
+        # Student data
+        for student in records:
+            if isinstance(student, dict) and 'profile' in student:
+                profile = student['profile']
+                grades = student.get('grades', [])
+                
+                # Calculate student average
+                student_scores = [g.get('score') for g in grades if isinstance(g, dict) and g.get('score') is not None and isinstance(g.get('score'), (int, float))]
+                valid_scores = [score for score in student_scores if isinstance(score, (int, float))]
+                avg_score = sum(valid_scores) / len(valid_scores) if valid_scores else 0
+                try:
+                    overall_grade = calculate_grade(avg_score) if avg_score > 0 else 'N/A'
+                except Exception as e:
+                    logger.warning(f"Error calculating overall grade for average {avg_score}: {e}")
+                    overall_grade = 'N/A'
+                
+                if grades:
+                    # One row per grade
+                    for grade in grades:
+                        if isinstance(grade, dict):
+                            score = grade.get('score')
+                            try:
+                                grade_letter = calculate_grade(score) if score is not None else 'N/A'
+                            except Exception as e:
+                                logger.warning(f"Error calculating grade letter for score {score}: {e}")
+                                grade_letter = 'N/A'
+                            
+                            csv_data.append([
+                                profile.get('index_number', ''),
+                                profile.get('full_name', profile.get('name', '')),  # Fixed field mapping
+                                profile.get('program', ''),
+                                profile.get('year_of_study', ''),
+                                profile.get('dob', ''),
+                                profile.get('gender', ''),
+                                profile.get('contact_email', ''),
+                                grade.get('course_code', ''),
+                                score if score is not None else '',
+                                grade_letter,
+                                f'{avg_score:.2f}' if avg_score > 0 else '',
+                                overall_grade
+                            ])
+                else:
+                    # Student without grades
+                    csv_data.append([
+                        profile.get('index_number', ''),
+                        profile.get('full_name', profile.get('name', '')),  # Fixed field mapping
+                        profile.get('program', ''),
+                        profile.get('year_of_study', ''),
+                        profile.get('dob', ''),
+                        profile.get('gender', ''),
+                        profile.get('contact_email', ''),
+                        '', '', '', '', ''
+                    ])
+        
+        # Write to CSV
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerows(csv_data)
+        
+        logger.info(f"CSV report generated successfully: {filename}")
+        return filename
+        
+    except Exception as e:
+        logger.error(f"Error generating CSV report: {str(e)}")
+        return None
+
+def export_academic_transcript_excel(student_index: str, filename=None):
+    """
+    Export individual student academic transcript to Excel format.
+    """
+    try:
+        if filename is None:
+            filename = f"transcript_{student_index}.xlsx"
+        elif not filename.endswith('.xlsx'):
+            filename += '.xlsx'
+        
+        # Fetch student data
+        conn = connect_to_db()
+        if not conn:
+            logger.error("Database connection failed")
+            return None
+        
+        try:
+            with conn.cursor() as cursor:
+                # Get student profile - Fixed column name from date_of_birth to dob
+                cursor.execute("""
+                    SELECT index_number, full_name, program, year_of_study, 
+                           dob, gender, contact_email
+                    FROM student_profiles 
+                    WHERE index_number = %s
+                """, (student_index,))
+                
+                student_data = cursor.fetchone()
+                if not student_data:
+                    logger.error(f"Student with index {student_index} not found")
+                    return None
+                
+                # Get student grades - Fixed to use proper table structure
+                cursor.execute("""
+                    SELECT c.course_code, c.course_title, c.credit_hours,
+                           g.score, g.grade, s.semester_name, s.academic_year
+                    FROM grades g
+                    JOIN courses c ON g.course_id = c.course_id
+                    JOIN semesters s ON g.semester_id = s.semester_id
+                    JOIN student_profiles sp ON g.index_number = sp.index_number
+                    WHERE sp.index_number = %s
+                    ORDER BY s.academic_year, s.semester_name, c.course_code
+                """, (student_index,))
+                
+                grades_data = cursor.fetchall()
+                
+        except Exception as db_error:
+            logger.error(f"Database query error: {db_error}")
+            return None
+        finally:
+            conn.close()
+        
+        # Create workbook
+        workbook = xlsxwriter.Workbook(filename)
+        
+        # Define formats
+        title_format = workbook.add_format({
+            'bold': True,
+            'font_size': 16,
+            'align': 'center',
+            'bg_color': '#4472C4',
+            'font_color': 'white'
+        })
+        
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#D9E2F3',
+            'border': 1,
+            'align': 'center'
+        })
+        
+        data_format = workbook.add_format({
+            'border': 1
+        })
+        
+        number_format = workbook.add_format({
+            'border': 1,
+            'num_format': '0.00'
+        })
+        
+        # Create worksheet
+        worksheet = workbook.add_worksheet('Academic Transcript')
+        
+        # Title
+        worksheet.merge_range(0, 0, 0, 6, 'OFFICIAL ACADEMIC TRANSCRIPT', title_format)
+        
+        # Student information
+        row = 3
+        worksheet.merge_range(row-1, 0, row-1, 6, 'Student Information:', header_format)
+        
+        row += 1
+        fields = [
+            ('Index Number:', student_data[0]),
+            ('Full Name:', student_data[1]),
+            ('Program:', student_data[2]),
+            ('Year of Study:', student_data[3]),
+            ('Date of Birth:', str(student_data[4]) if student_data[4] else ''),
+            ('Gender:', student_data[5]),
+            ('Email:', student_data[6])
+        ]
+        
+        for field, value in fields:
+            worksheet.write(f'A{row}', field, header_format)
+            worksheet.write(f'B{row}', value, data_format)
+            row += 1
+        
+        # Academic record
+        row += 2
+        worksheet.merge_range(row, 0, row, 6, 'Academic Record:', header_format)
+        
+        row += 1
+        headers = ['Course Code', 'Course Title', 'Credit Hours', 'Score', 'Grade', 'Semester', 'Academic Year']
+        for col, header in enumerate(headers):
+            worksheet.write(row, col, header, header_format)
+        
+        row += 1
+        total_credits = 0
+        total_grade_points = 0
+        
+        for grade_record in grades_data:
+            course_code, course_title, credit_hours, score, grade, semester, academic_year = grade_record
+            
+            worksheet.write(row, 0, course_code or '', data_format)
+            worksheet.write(row, 1, course_title or '', data_format)
+            worksheet.write(row, 2, credit_hours or 0, data_format)
+            worksheet.write(row, 3, score if score is not None else '', number_format if score is not None else data_format)
+            worksheet.write(row, 4, grade or '', data_format)
+            worksheet.write(row, 5, semester or '', data_format)
+            worksheet.write(row, 6, academic_year or '', data_format)
+            
+            # Calculate GPA components
+            if credit_hours and score is not None:
+                total_credits += credit_hours
+                try:
+                    # Use direct grade point mapping; calculate_gpa expects list of dicts with credits
+                    grade_point = get_grade_point(score) if score is not None else 0
+                    total_grade_points += grade_point * credit_hours
+                except Exception as gpa_error:
+                    logger.warning(f"Error calculating GPA for score {score}: {gpa_error}")
+            
+            row += 1
+        
+        # GPA calculation
+        row += 2
+        gpa = total_grade_points / total_credits if total_credits > 0 else 0
+        worksheet.write(f'A{row}', 'Cumulative GPA:', header_format)
+        worksheet.write(f'B{row}', gpa, number_format)
+        worksheet.write(f'A{row+1}', 'Total Credits:', header_format)
+        worksheet.write(f'B{row+1}', total_credits, data_format)
+        
+        # Auto-adjust column widths
+        worksheet.set_column('A:A', 12)
+        worksheet.set_column('B:B', 25)
+        worksheet.set_column('C:G', 15)
+        
+        workbook.close()
+        
+        logger.info(f"Academic transcript generated successfully: {filename}")
+        return filename
+        
+    except Exception as e:
+        logger.error(f"Error generating academic transcript: {str(e)}")
+        return None
+
+def export_academic_transcript_pdf(student_index: str, filename=None):
+    """Generate a PDF academic transcript for a single student using fpdf2.
+
+    Returns path to generated PDF file or None on failure.
+    """
+    try:
+        from fpdf import FPDF
+    except Exception as e:
+        logger.error(f"fpdf2 not installed or failed to import: {e}")
+        return None
+    try:
+        if filename is None:
+            filename = f"transcript_{student_index}.pdf"
+        elif not filename.endswith('.pdf'):
+            filename += '.pdf'
+
+        conn = connect_to_db()
+        if not conn:
+            logger.error("Database connection failed for PDF transcript")
+            return None
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT index_number, full_name, program, year_of_study, dob, gender, contact_email
+                    FROM student_profiles WHERE index_number=%s
+                """, (student_index,))
+                student_row = cur.fetchone()
+                if not student_row:
+                    logger.warning(f"Student {student_index} not found for PDF transcript")
+                    return None
+                
+                # Convert tuple to dictionary
+                student = {
+                    'index_number': student_row[0],
+                    'full_name': student_row[1], 
+                    'program': student_row[2],
+                    'year_of_study': student_row[3],
+                    'dob': student_row[4],
+                    'gender': student_row[5],
+                    'contact_email': student_row[6]
+                }
+                
+                cur.execute("""
+                    SELECT c.course_code, c.course_title, c.credit_hours, g.score, g.grade,
+                           s.semester_name, s.academic_year
+                    FROM grades g
+                    JOIN courses c ON g.course_id = c.course_id
+                    JOIN semesters s ON g.semester_id = s.semester_id
+                    JOIN student_profiles sp ON g.student_id = sp.student_id
+                    WHERE sp.index_number = %s
+                    ORDER BY s.academic_year, s.semester_name, c.course_code
+                """, (student_index,))
+                grades_rows = cur.fetchall()
+                
+                # Convert tuples to dictionaries
+                grades = []
+                for row in grades_rows:
+                    grades.append({
+                        'course_code': row[0],
+                        'course_title': row[1],
+                        'credit_hours': row[2],
+                        'score': row[3],
+                        'grade': row[4],
+                        'semester_name': row[5],
+                        'academic_year': row[6]
+                    })
+        finally:
+            conn.close()
+
+        pdf = FPDF(format='A4', orientation='P', unit='mm')
+        pdf.set_auto_page_break(auto=True, margin=12)
+        pdf.add_page()
+        pdf.set_font('Helvetica', 'B', 16)
+        pdf.set_text_color(40,40,40)
+        pdf.cell(0, 10, 'OFFICIAL ACADEMIC TRANSCRIPT', ln=1, align='C')
+        pdf.set_font('Helvetica', '', 10)
+        pdf.ln(4)
+        # Student info box
+        info_lines = [
+            ('Index Number', student['index_number']),
+            ('Full Name', student['full_name']),
+            ('Program', student.get('program') or ''),
+            ('Year of Study', student.get('year_of_study') or ''),
+            ('Date of Birth', str(student.get('dob') or '')),
+            ('Gender', student.get('gender') or ''),
+            ('Email', student.get('contact_email') or '')
+        ]
+        for label, value in info_lines:
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.cell(32, 5, f"{label}:")
+            pdf.set_font('Helvetica', '', 9)
+            pdf.cell(0, 5, str(value), ln=1)
+
+        pdf.ln(4)
+        pdf.set_font('Helvetica', 'B', 11)
+        pdf.cell(0, 7, 'Academic Record', ln=1)
+        pdf.set_font('Helvetica', 'B', 8)
+        headers = ['Course', 'Title', 'CH', 'Score', 'Grade', 'Semester', 'Year']
+        widths = [22, 60, 10, 15, 14, 30, 25]
+        for h, w in zip(headers, widths):
+            pdf.cell(w, 6, h, border=1, align='C')
+        pdf.ln(6)
+        pdf.set_font('Helvetica', '', 8)
+
+        total_credits = 0
+        total_points = 0.0
+        for g in grades:
+            # GPA component
+            score = g.get('score')
+            ch = g.get('credit_hours') or 0
+            if score is not None and ch:
+                try:
+                    gp = get_grade_point(score)
+                    total_points += gp * ch
+                    total_credits += ch
+                except Exception as gp_err:
+                    logger.warning(f"Failed to map score {score} to grade point: {gp_err}")
+            row_vals = [
+                g.get('course_code',''),
+                (g.get('course_title') or '')[:40],
+                str(ch),
+                '' if score is None else f"{score:.2f}",
+                g.get('grade') or '',
+                g.get('semester_name') or '',
+                g.get('academic_year') or ''
+            ]
+            for val, w in zip(row_vals, widths):
+                pdf.cell(w, 5, val, border=1)
+            pdf.ln(5)
+
+        pdf.ln(4)
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.cell(32, 5, 'Total Credits:')
+        pdf.set_font('Helvetica', '', 9)
+        pdf.cell(0,5,str(total_credits), ln=1)
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.cell(32, 5, 'Cumulative GPA:')
+        pdf.set_font('Helvetica', '', 9)
+        gpa = round(total_points/total_credits,2) if total_credits>0 else 0.0
+        pdf.cell(0,5,f"{gpa:.2f}", ln=1)
+
+        pdf.ln(6)
+        pdf.set_font('Helvetica','I',7)
+        pdf.multi_cell(0,4,"This document is system generated and valid without signature.")
+
+        try:
+            pdf.output(filename)
+        except Exception as e:
+            logger.error(f"Failed writing PDF transcript: {e}")
+            return None
+        logger.info(f"PDF academic transcript generated: {filename}")
+        return filename
+    except Exception as e:
+        logger.error(f"Error generating PDF transcript: {e}")
+        return None

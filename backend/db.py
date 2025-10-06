@@ -93,6 +93,36 @@ TABLES = {
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
     """,
+    "notifications": """
+        CREATE TABLE IF NOT EXISTS notifications (
+            notification_id SERIAL PRIMARY KEY,
+            type VARCHAR(40) NOT NULL,
+            title VARCHAR(150) NOT NULL,
+            message TEXT NOT NULL,
+            severity VARCHAR(20) DEFAULT 'info',
+            audience VARCHAR(20) NOT NULL DEFAULT 'all', -- all|admins|students|user|program
+            target_user_id INT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            target_program VARCHAR(100),
+            actionable JSONB,
+            expires_at TIMESTAMP WITH TIME ZONE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_notifications_audience ON notifications(audience);
+        CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_notifications_target_user ON notifications(target_user_id);
+    """,
+    "user_notifications": """
+        CREATE TABLE IF NOT EXISTS user_notifications (
+            id SERIAL PRIMARY KEY,
+            notification_id INT NOT NULL REFERENCES notifications(notification_id) ON DELETE CASCADE,
+            user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            is_read BOOLEAN DEFAULT FALSE,
+            read_at TIMESTAMP WITH TIME ZONE,
+            delivered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(notification_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_user_notifications_user_read ON user_notifications(user_id, is_read);
+    """,
     "assessments": """
         CREATE TABLE IF NOT EXISTS assessments (
             assessment_id SERIAL PRIMARY KEY,
@@ -125,6 +155,277 @@ def create_tables_if_not_exist(conn):
     """Create all necessary tables if they don't exist."""
     for table_name in TABLES.keys():
         create_table(conn, table_name)
+
+# =============================
+# ASSESSMENT HELPERS
+# =============================
+
+def ensure_assessment(conn, course_id, assessment_name, max_score, weight):
+    """Ensure an assessment exists (course_id + assessment_name uniqueness). Returns assessment_id or None."""
+    if conn is None: return None
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO assessments (course_id, assessment_name, max_score, weight)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (course_id, assessment_name) DO UPDATE SET max_score = EXCLUDED.max_score, weight = EXCLUDED.weight
+                RETURNING assessment_id;
+                """,
+                (course_id, assessment_name, max_score, weight)
+            )
+            aid = cursor.fetchone()[0]
+            conn.commit()
+            return aid
+    except Exception as e:
+        logger.debug(f"Assessment ensure failed for course {course_id} {assessment_name}: {e}")
+        conn.rollback()
+        return None
+
+# =============================
+# ASSESSMENT CRUD / FETCH HELPERS FOR API (module level)
+# =============================
+
+def fetch_assessments(conn, course_code=None):
+    """Fetch assessments. If course_code provided, filter by that course.
+    Returns list of dict rows with assessment and course context."""
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if course_code:
+                cur.execute(
+                    """
+                    SELECT a.assessment_id, a.assessment_name, a.max_score, a.weight,
+                           c.course_id, c.course_code, c.course_title
+                    FROM assessments a
+                    JOIN courses c ON a.course_id = c.course_id
+                    WHERE c.course_code = %s
+                    ORDER BY c.course_code, a.assessment_id
+                    """,
+                    (course_code,)
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT a.assessment_id, a.assessment_name, a.max_score, a.weight,
+                           c.course_id, c.course_code, c.course_title
+                    FROM assessments a
+                    JOIN courses c ON a.course_id = c.course_id
+                    ORDER BY c.course_code, a.assessment_id
+                    """
+                )
+            return cur.fetchall()
+    except Exception as e:
+        logger.error(f"Error fetching assessments: {e}")
+        return []
+
+def create_assessment(conn, course_code, assessment_name, max_score, weight):
+    """Create or upsert an assessment for a course by code. Returns assessment_id or None."""
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT course_id FROM courses WHERE course_code=%s", (course_code,))
+            row = cur.fetchone()
+            if not row:
+                raise ValueError(f"Course code {course_code} not found")
+            return ensure_assessment(conn, row['course_id'], assessment_name, max_score, weight)
+    except Exception as e:
+        logger.error(f"Error creating assessment: {e}")
+        return None
+
+def update_assessment(conn, assessment_id, **fields):
+    """Update assessment fields (assessment_name, max_score, weight). Returns bool success."""
+    allowed = {k: v for k, v in fields.items() if k in ['assessment_name', 'max_score', 'weight'] and v is not None}
+    if not allowed:
+        return False
+    sets = []
+    params = []
+    for k, v in allowed.items():
+        sets.append(f"{k} = %s")
+        params.append(v)
+    params.append(assessment_id)
+    sql = f"UPDATE assessments SET {', '.join(sets)} WHERE assessment_id = %s"
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql, tuple(params))
+            updated = cur.rowcount
+        return updated > 0
+    except Exception as e:
+        logger.error(f"Error updating assessment {assessment_id}: {e}")
+        return False
+
+def delete_assessment(conn, assessment_id):
+    """Delete an assessment by id. Returns bool success."""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM assessments WHERE assessment_id = %s", (assessment_id,))
+            deleted = cur.rowcount
+        return deleted > 0
+    except Exception as e:
+        logger.error(f"Error deleting assessment {assessment_id}: {e}")
+        return False
+
+# =============================
+# NOTIFICATION CRUD OPERATIONS
+# =============================
+
+def insert_notification(conn, type_, title, message, severity='info', audience='all', target_user_id=None, target_program=None, actionable=None, expires_at=None):
+    if conn is None: return None
+    # Suppression flag: Skip creating notifications if seeding or other bulk ops requested silence
+    if os.getenv("SUPPRESS_SEED_NOTIFICATIONS"):
+        logger.debug(f"[NOTIFY-SUPPRESSED] type={type_} title={title}")
+        return None
+    try:
+        with conn.cursor() as cursor:
+            if actionable is not None:
+                cursor.execute(
+                    """
+                    INSERT INTO notifications (type, title, message, severity, audience, target_user_id, target_program, actionable, expires_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s, %s::json, %s)
+                    RETURNING notification_id;
+                    """,
+                    (type_, title, message, severity, audience, target_user_id, target_program, actionable, expires_at)
+                )
+            else:
+                cursor.execute(
+                    """
+                    INSERT INTO notifications (type, title, message, severity, audience, target_user_id, target_program, actionable, expires_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s, NULL, %s)
+                    RETURNING notification_id;
+                    """,
+                    (type_, title, message, severity, audience, target_user_id, target_program, expires_at)
+                )
+            nid = cursor.fetchone()[0]
+            conn.commit()
+            logger.info(f"Notification {nid} created (type={type_}, audience={audience})")
+            return nid
+    except Exception as e:
+        logger.error(f"Error inserting notification: {e}")
+        conn.rollback()
+        return None
+
+def _expand_audience_user_ids(conn, audience, target_user_id=None, target_program=None):
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            if audience == 'all':
+                cursor.execute("SELECT user_id FROM users")
+            elif audience == 'admins':
+                cursor.execute("SELECT user_id FROM users WHERE role = 'admin'")
+            elif audience == 'students':
+                cursor.execute("SELECT user_id FROM users WHERE role = 'student'")
+            elif audience == 'user' and target_user_id:
+                cursor.execute("SELECT user_id FROM users WHERE user_id = %s", (target_user_id,))
+            else:
+                # program audience reserved for later when program is linked to users
+                return []
+            rows = cursor.fetchall()
+            return [r['user_id'] for r in rows]
+    except Exception as e:
+        logger.error(f"Error expanding audience {audience}: {e}")
+        return []
+
+def create_user_notification_links(conn, notification_id, user_ids):
+    if conn is None: return 0
+    if not user_ids: return 0
+    try:
+        with conn.cursor() as cursor:
+            for uid in user_ids:
+                try:
+                    cursor.execute(
+                        """
+                        INSERT INTO user_notifications (notification_id, user_id)
+                        VALUES (%s, %s) ON CONFLICT DO NOTHING;
+                        """,
+                        (notification_id, uid)
+                    )
+                except Exception as inner_e:
+                    logger.warning(f"Skipping user {uid} link for notification {notification_id}: {inner_e}")
+            conn.commit()
+            return len(user_ids)
+    except Exception as e:
+        logger.error(f"Error creating user notification links: {e}")
+        conn.rollback()
+        return 0
+
+def fetch_user_notifications(conn, user_id, unread_only=False, limit=20, before_id=None):
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            conditions = ["un.user_id = %s"]
+            params = [user_id]
+            if unread_only:
+                conditions.append("un.is_read = FALSE")
+            if before_id:
+                conditions.append("un.id < %s")
+                params.append(before_id)
+            where_clause = " AND ".join(conditions)
+            query = f"""
+                SELECT un.id as user_notification_id, un.is_read, un.read_at, n.notification_id, n.type, n.title, n.message,
+                       n.severity, n.audience, n.created_at
+                FROM user_notifications un
+                JOIN notifications n ON un.notification_id = n.notification_id
+                WHERE {where_clause}
+                ORDER BY un.id DESC
+                LIMIT %s;
+            """
+            params.append(limit)
+            cursor.execute(query, tuple(params))
+            return cursor.fetchall()
+    except Exception as e:
+        logger.error(f"Error fetching notifications for user {user_id}: {e}")
+        return []
+
+def mark_notification_read(conn, user_id, user_notification_id):
+    if conn is None: return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE user_notifications SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+                WHERE id = %s AND user_id = %s AND is_read = FALSE;
+                """,
+                (user_notification_id, user_id)
+            )
+            changed = cursor.rowcount
+            if changed:
+                conn.commit()
+            return changed > 0
+    except Exception as e:
+        logger.error(f"Error marking notification {user_notification_id} read for user {user_id}: {e}")
+        conn.rollback()
+        return False
+
+def mark_all_notifications_read(conn, user_id):
+    if conn is None: return 0
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE user_notifications SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+                WHERE user_id = %s AND is_read = FALSE;
+                """,
+                (user_id,)
+            )
+            changed = cursor.rowcount
+            if changed:
+                conn.commit()
+            return changed
+    except Exception as e:
+        logger.error(f"Error marking all notifications read for user {user_id}: {e}")
+        conn.rollback()
+        return 0
+
+def count_unread_notifications(conn, user_id):
+    if conn is None: return 0
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM user_notifications WHERE user_id = %s AND is_read = FALSE;",
+                (user_id,)
+            )
+            return cursor.fetchone()[0]
+    except Exception as e:
+        logger.error(f"Error counting unread notifications for user {user_id}: {e}")
+        return 0
 
 # --- STUDENT PROFILE CRUD OPERATIONS ---
 def insert_student_profile(conn, index_number, full_name, dob, gender, contact_email=None, contact_phone=None, program=None, year_of_study=None):
@@ -292,6 +593,14 @@ def insert_course(conn, course_code, course_title, credit_hours):
             course_id = cursor.fetchone()[0]
             conn.commit()
             logger.info(f"Course '{course_code}' inserted with ID: {course_id}")
+            # Notification: new course (guarded by suppression in insert_notification)
+            try:
+                nid = insert_notification(conn, 'new_course', 'New Course Added', f"Course {course_code} - {course_title} created", 'info', 'admins')
+                if nid:
+                    user_ids = _expand_audience_user_ids(conn, 'admins')
+                    create_user_notification_links(conn, nid, user_ids)
+            except Exception as notify_err:
+                logger.warning(f"Failed to create new_course notification: {notify_err}")
             return course_id
     except psycopg2.errors.UniqueViolation:
         logger.warning(f"Course with code {course_code} already exists.")
@@ -391,6 +700,14 @@ def insert_semester(conn, semester_name, start_date, end_date, academic_year=Non
             semester_id = cursor.fetchone()[0]
             conn.commit()
             logger.info(f"Semester '{semester_name}' inserted with ID: {semester_id}")
+            # Notification: new semester (guarded by suppression in insert_notification)
+            try:
+                nid = insert_notification(conn, 'new_semester', 'New Semester Created', f"Semester {semester_name} ({academic_year or ''}) added", 'info', 'admins')
+                if nid:
+                    user_ids = _expand_audience_user_ids(conn, 'admins')
+                    create_user_notification_links(conn, nid, user_ids)
+            except Exception as notify_err:
+                logger.warning(f"Failed to create new_semester notification: {notify_err}")
             return semester_id
     except psycopg2.errors.UniqueViolation:
         logger.warning(f"Semester with name {semester_name} already exists.")
@@ -453,6 +770,14 @@ def set_current_semester(conn, semester_id):
             if updated_id:
                 conn.commit()
                 logger.info(f"Semester {semester_id} successfully set as current.")
+                # Notification: current semester changed (guarded by suppression)
+                try:
+                    nid = insert_notification(conn, 'semester_change', 'Current Semester Updated', f"Semester ID {semester_id} is now current", 'info', 'admins')
+                    if nid:
+                        user_ids = _expand_audience_user_ids(conn, 'admins')
+                        create_user_notification_links(conn, nid, user_ids)
+                except Exception as notify_err:
+                    logger.warning(f"Failed to create semester_change notification: {notify_err}")
                 return True
             else:
                 conn.rollback() # Rollback if no semester was updated (e.g., ID not found)
@@ -534,6 +859,14 @@ def insert_grade(conn, student_id, course_id, semester_id, score, grade, grade_p
             grade_id = cursor.fetchone()[0]
             conn.commit()
             logger.info(f"Grade inserted for student {student_id}, course {course_id}, semester {semester_id} with ID: {grade_id}")
+            # Notification: grade inserted (guarded by suppression)
+            try:
+                nid = insert_notification(conn, 'grade_entry', 'Grade Recorded', f"Grade recorded for student {student_id} course {course_id}", 'info', 'admins')
+                if nid:
+                    user_ids = _expand_audience_user_ids(conn, 'admins')
+                    create_user_notification_links(conn, nid, user_ids)
+            except Exception as notify_err:
+                logger.warning(f"Failed to create grade_entry notification: {notify_err}")
             return grade_id
     except psycopg2.errors.UniqueViolation:
         logger.warning(f"Grade already exists for student {student_id} in course {course_id} for semester {semester_id}.")
@@ -583,6 +916,14 @@ def update_student_score(conn, student_id, course_id, semester_id, new_score, ne
             if cursor.rowcount > 0:
                 conn.commit()
                 logger.info(f"Score for student_id {student_id} in course_id {course_id} (semester_id {semester_id}) updated to {new_score}.")
+                # Notification: grade updated (guarded by suppression)
+                try:
+                    nid = insert_notification(conn, 'grade_update', 'Grade Updated', f"Updated score for student {student_id} course {course_id}", 'info', 'admins')
+                    if nid:
+                        user_ids = _expand_audience_user_ids(conn, 'admins')
+                        create_user_notification_links(conn, nid, user_ids)
+                except Exception as notify_err:
+                    logger.warning(f"Failed to create grade_update notification: {notify_err}")
                 return True
             else:
                 logger.warning(f"Could not find matching grade to update for student_id {student_id}, course_id {course_id}, semester_id {semester_id}.")

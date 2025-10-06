@@ -8,3 +8,6 @@ python-multipart == 0.0.20 # for handling file uploads
 colorlog == 1.7.0 # for colored terminal output
 pytest == 8.4.1 # for running tests
 httpx == 0.28.1 # 
+openpyxl == 3.1.5 # for Excel file generation (.xlsx)
+pandas == 2.2.3 # for data manipulation and CSV export
+xlsxwriter == 3.2.0 # alternative Excel writer with advanced formatting
