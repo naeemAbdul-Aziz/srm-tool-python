@@ -2,31 +2,58 @@
 
 import getpass
 from pprint import pprint
-from db import (
-    connect_to_db,
-    fetch_all_records,
-    insert_student_profile,
-    insert_grade,
-    fetch_student_by_index_number,
-    update_student_score, # This function is still used for direct score updates
-    insert_complete_student_record, # Used for bulk import
-    fetch_course_by_code, # Added for resolving course_id
-    fetch_semester_by_name, # Added for resolving semester_id
-    insert_course, # Added for creating courses if not exist during grade add
-    insert_semester # Added for creating semesters if not exist during grade add
-)
-from grade_util import summarize_grades, calculate_grade, calculate_gpa, get_grade_point
-from logger import get_logger
-from report_utils import export_summary_report_pdf, export_summary_report_txt
-from auth import sign_up, create_user, create_student_account, reset_student_password, get_student_accounts, delete_student_account, authenticate_user
-from bulk_importer import bulk_import_from_file
-from file_handler import REQUIRED_FIELDS # Assuming this provides a list of required fields for bulk import
-from course_management import (
-    course_management_main,
-    semester_management_main,
-    initialize_enhanced_system
-)
-from session import session_manager
+try:
+    from .db import (
+        connect_to_db,
+        fetch_all_records,
+        insert_student_profile,
+        insert_grade,
+        fetch_student_by_index_number,
+        update_student_score,
+        insert_complete_student_record,
+        fetch_course_by_code,
+        fetch_semester_by_name,
+        insert_course,
+        insert_semester
+    )
+    from .grade_util import summarize_grades, calculate_grade, calculate_gpa, get_grade_point
+    from .logger import get_logger
+    from .report_utils import export_summary_report_pdf, export_summary_report_txt
+    from .auth import sign_up, create_user, create_student_account, reset_student_password, get_student_accounts, delete_student_account, authenticate_user
+    from .bulk_importer import bulk_import_from_file
+    from .file_handler import REQUIRED_FIELDS
+    from .course_management import (
+        course_management_main,
+        semester_management_main,
+        initialize_enhanced_system
+    )
+    from .session import session_manager
+except ImportError:
+    from db import (
+        connect_to_db,
+        fetch_all_records,
+        insert_student_profile,
+        insert_grade,
+        fetch_student_by_index_number,
+        update_student_score,
+        insert_complete_student_record,
+        fetch_course_by_code,
+        fetch_semester_by_name,
+        insert_course,
+        insert_semester
+    )
+    from grade_util import summarize_grades, calculate_grade, calculate_gpa, get_grade_point
+    from logger import get_logger
+    from report_utils import export_summary_report_pdf, export_summary_report_txt
+    from auth import sign_up, create_user, create_student_account, reset_student_password, get_student_accounts, delete_student_account, authenticate_user
+    from bulk_importer import bulk_import_from_file
+    from file_handler import REQUIRED_FIELDS
+    from course_management import (
+        course_management_main,
+        semester_management_main,
+        initialize_enhanced_system
+    )
+    from session import session_manager
 
 logger = get_logger(__name__)
 

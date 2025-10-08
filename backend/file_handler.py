@@ -2,8 +2,12 @@
 
 import os
 import csv
-from logger import get_logger
-from grade_util import calculate_grade # Still used for internal logic if needed, but not for final grade assignment in main process
+try:
+    from .logger import get_logger
+    from .grade_util import calculate_grade  # Still used for internal logic if needed
+except ImportError:
+    from logger import get_logger
+    from grade_util import calculate_grade
 
 logger = get_logger(__name__)
 

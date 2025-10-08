@@ -5,15 +5,26 @@ Separating generation logic from orchestration allows reuse and unit testing.
 import random
 from datetime import date
 from typing import Optional, Dict, Tuple, List
-from db import (
-    insert_course, insert_semester, insert_student_profile, insert_grade,
-)
-from grade_util import calculate_grade, get_grade_point
-from logger import get_logger
-from seed_constants import (
-    GHANAIAN_MALE_NAMES, GHANAIAN_FEMALE_NAMES, GHANAIAN_SURNAMES,
-    UG_SCHOOLS_AND_PROGRAMS, UG_COMPREHENSIVE_COURSES
-)
+try:
+    from .db import (
+        insert_course, insert_semester, insert_student_profile, insert_grade,
+    )
+    from .grade_util import calculate_grade, get_grade_point
+    from .logger import get_logger
+    from .seed_constants import (
+        GHANAIAN_MALE_NAMES, GHANAIAN_FEMALE_NAMES, GHANAIAN_SURNAMES,
+        UG_SCHOOLS_AND_PROGRAMS, UG_COMPREHENSIVE_COURSES
+    )
+except ImportError:
+    from db import (
+        insert_course, insert_semester, insert_student_profile, insert_grade,
+    )
+    from grade_util import calculate_grade, get_grade_point
+    from logger import get_logger
+    from seed_constants import (
+        GHANAIAN_MALE_NAMES, GHANAIAN_FEMALE_NAMES, GHANAIAN_SURNAMES,
+        UG_SCHOOLS_AND_PROGRAMS, UG_COMPREHENSIVE_COURSES
+    )
 
 logger = get_logger(__name__)
 

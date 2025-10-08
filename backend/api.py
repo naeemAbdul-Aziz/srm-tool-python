@@ -11,30 +11,56 @@ from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from psycopg2.extras import RealDictCursor
-from db import (
-    connect_to_db, delete_student_profile, fetch_all_records, insert_student_profile, fetch_student_by_index_number,
-    insert_course, fetch_all_courses, fetch_course_by_code, insert_semester, fetch_all_semesters, update_course, update_semester, update_student_profile,
-    update_student_score, delete_course, delete_semester, insert_grade,
-    fetch_semester_by_name, create_tables_if_not_exist,
-    insert_notification, _expand_audience_user_ids, create_user_notification_links,
-    fetch_user_notifications, mark_notification_read, mark_all_notifications_read, count_unread_notifications,
-    fetch_assessments, create_assessment, update_assessment, delete_assessment
-)
-from grade_util import calculate_grade, get_grade_point, calculate_gpa, summarize_grades
-from auth import (
-    authenticate_user, create_user, create_student_account, reset_student_password
-)
-from bulk_importer import bulk_import_from_file
-from report_utils import (
-    export_summary_report_pdf, 
-    export_summary_report_txt,
-    export_summary_report_excel,
-    export_summary_report_csv,
-    export_academic_transcript_excel,
-    export_academic_transcript_pdf
-)
-from logger import get_logger
-from session import session_manager
+try:  # Prefer package-relative imports
+    from .db import (
+        connect_to_db, delete_student_profile, fetch_all_records, insert_student_profile, fetch_student_by_index_number,
+        insert_course, fetch_all_courses, fetch_course_by_code, insert_semester, fetch_all_semesters, update_course, update_semester, update_student_profile,
+        update_student_score, delete_course, delete_semester, insert_grade,
+        fetch_semester_by_name, create_tables_if_not_exist,
+        insert_notification, _expand_audience_user_ids, create_user_notification_links,
+        fetch_user_notifications, mark_notification_read, mark_all_notifications_read, count_unread_notifications,
+        fetch_assessments, create_assessment, update_assessment, delete_assessment
+    )
+    from .grade_util import calculate_grade, get_grade_point, calculate_gpa, summarize_grades
+    from .auth import (
+        authenticate_user, create_user, create_student_account, reset_student_password
+    )
+    from .bulk_importer import bulk_import_from_file
+    from .report_utils import (
+        export_summary_report_pdf,
+        export_summary_report_txt,
+        export_summary_report_excel,
+        export_summary_report_csv,
+        export_academic_transcript_excel,
+        export_academic_transcript_pdf
+    )
+    from .logger import get_logger
+    from .session import session_manager
+except ImportError:  # Fallback for legacy direct execution (e.g. `uvicorn api:app`)
+    from db import (
+        connect_to_db, delete_student_profile, fetch_all_records, insert_student_profile, fetch_student_by_index_number,
+        insert_course, fetch_all_courses, fetch_course_by_code, insert_semester, fetch_all_semesters, update_course, update_semester, update_student_profile,
+        update_student_score, delete_course, delete_semester, insert_grade,
+        fetch_semester_by_name, create_tables_if_not_exist,
+        insert_notification, _expand_audience_user_ids, create_user_notification_links,
+        fetch_user_notifications, mark_notification_read, mark_all_notifications_read, count_unread_notifications,
+        fetch_assessments, create_assessment, update_assessment, delete_assessment
+    )
+    from grade_util import calculate_grade, get_grade_point, calculate_gpa, summarize_grades
+    from auth import (
+        authenticate_user, create_user, create_student_account, reset_student_password
+    )
+    from bulk_importer import bulk_import_from_file
+    from report_utils import (
+        export_summary_report_pdf,
+        export_summary_report_txt,
+        export_summary_report_excel,
+        export_summary_report_csv,
+        export_academic_transcript_excel,
+        export_academic_transcript_pdf
+    )
+    from logger import get_logger
+    from session import session_manager
 import traceback
 
 # Initialize logger
@@ -69,74 +95,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# =====================================================
-# SIMPLE IN-PROCESS SSE BROADCASTER FOR NOTIFICATIONS
-# =====================================================
-import asyncio, json, time
-from typing import Set
-
-class NotificationBroadcaster:
-    """Minimal async pub/sub for server-sent notification events."""
-    def __init__(self):
-        self._listeners: Set[asyncio.Queue] = set()
-        self._lock = asyncio.Lock()
-
-    async def register(self) -> asyncio.Queue:
-        q: asyncio.Queue = asyncio.Queue()
-        async with self._lock:
-            self._listeners.add(q)
-        return q
-
-    async def unregister(self, q: asyncio.Queue):
-        async with self._lock:
-            self._listeners.discard(q)
-
-    async def publish(self, event: str, data: dict):
-        payload = json.dumps({"event": event, "data": data, "ts": time.time()})
-        async with self._lock:
-            stale = []
-            for q in list(self._listeners):
-                try:
-                    q.put_nowait(payload)
-                except Exception:
-                    stale.append(q)
-            for q in stale:
-                self._listeners.discard(q)
-
-broadcaster = NotificationBroadcaster()
-
-async def _sse_generator(queue: asyncio.Queue, request: Request):
-    try:
-        # Initial comment (ignored by EventSource but useful for debugging)
-        yield b": connected to notification stream\n\n"
-        while True:
-            if await request.is_disconnected():
-                break
-            msg = await queue.get()
-            yield f"data: {msg}\n\n".encode("utf-8")
-    except asyncio.CancelledError:
-        return
-
-@app.get("/notifications/stream")
-async def notifications_stream(request: Request, current_user: dict = Depends(authenticate_user)):
-    """Server-Sent Events stream for real-time notification events.
-
-    Events emitted:
-      - notification.new { notification_id, title, severity, audience, recipients }
-      - notification.read { user_notification_id, user }
-      - notification.read_all { user, count }
-      - hello (synthetic init) { user, role }
-    """
-    q = await broadcaster.register()
-    # Send a synthetic hello event (non-blocking best effort)
-    await broadcaster.publish("hello", {"user": current_user.get("username"), "role": current_user.get("role")})
-    async def stream():
-        try:
-            async for chunk in _sse_generator(q, request):
-                yield chunk
-        finally:
-            await broadcaster.unregister(q)
-    return StreamingResponse(stream(), media_type="text/event-stream")
+#! Notification broadcaster moved below auth dependency definitions
 
 # Configure CORS for production
 app.add_middleware(
@@ -421,6 +380,72 @@ def require_student_role(current_user: dict = Depends(get_current_user)):
             detail="Student access required"
         )
     return current_user
+
+# =====================================================
+# SIMPLE IN-PROCESS SSE BROADCASTER FOR NOTIFICATIONS (after auth deps)
+# =====================================================
+import json, time
+from typing import Set
+
+class NotificationBroadcaster:
+    """Minimal async pub/sub for server-sent notification events."""
+    def __init__(self):
+        self._listeners: Set[asyncio.Queue] = set()
+        self._lock = asyncio.Lock()
+
+    async def register(self) -> asyncio.Queue:
+        q: asyncio.Queue = asyncio.Queue()
+        async with self._lock:
+            self._listeners.add(q)
+        return q
+
+    async def unregister(self, q: asyncio.Queue):
+        async with self._lock:
+            self._listeners.discard(q)
+
+    async def publish(self, event: str, data: dict):
+        payload = json.dumps({"event": event, "data": data, "ts": time.time()})
+        async with self._lock:
+            stale = []
+            for q in list(self._listeners):
+                try:
+                    q.put_nowait(payload)
+                except Exception:
+                    stale.append(q)
+            for q in stale:
+                self._listeners.discard(q)
+
+broadcaster = NotificationBroadcaster()
+
+async def _sse_generator(queue: asyncio.Queue, request: Request):
+    try:
+        yield b": connected to notification stream\n\n"
+        while True:
+            if await request.is_disconnected():
+                break
+            msg = await queue.get()
+            yield f"data: {msg}\n\n".encode("utf-8")
+    except asyncio.CancelledError:
+        return
+
+@app.get("/notifications/stream")
+async def notifications_stream(request: Request, current_user: dict = Depends(get_current_user)):
+    """Server-Sent Events stream for real-time notification events."""
+    q = await broadcaster.register()
+    await broadcaster.publish("hello", {"user": current_user.get("username"), "role": current_user.get("role")})
+    async def stream():
+        try:
+            async for chunk in _sse_generator(q, request):
+                yield chunk
+        finally:
+            await broadcaster.unregister(q)
+    return StreamingResponse(stream(), media_type="text/event-stream")
+
+@app.get("/auth/me")
+def auth_me(current_user: dict = Depends(get_current_user)):
+    """Return the currently authenticated user's basic profile (sanitized)."""
+    sanitized = {k: v for k, v in current_user.items() if k not in {"password", "hashed_password"}}
+    return {"success": True, "data": sanitized}
 
 # ========================================
 # ERROR HANDLERS

@@ -12,25 +12,44 @@ Functions:
 - Enhanced Grade Management: Course-specific grading with proper validation
 """
 
-from db import (
-    connect_to_db,
-    create_tables_if_not_exist, # Updated function name
-    insert_course,
-    fetch_all_courses,
-    fetch_course_by_code,
-    update_course,
-    delete_course,
-    insert_semester,
-    fetch_all_semesters,
-    fetch_current_semester,
-    set_current_semester,
-    update_semester, # Added for completeness as it exists in db.py
-    delete_semester # Added for completeness as it exists in db.py
-)
-from logger import get_logger
+try:
+    from .db import (
+        connect_to_db,
+        create_tables_if_not_exist,
+        insert_course,
+        fetch_all_courses,
+        fetch_course_by_code,
+        update_course,
+        delete_course,
+        insert_semester,
+        fetch_all_semesters,
+        fetch_current_semester,
+        set_current_semester,
+        update_semester,
+        delete_semester
+    )
+    from .logger import get_logger
+    from .config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+except ImportError:
+    from db import (
+        connect_to_db,
+        create_tables_if_not_exist,
+        insert_course,
+        fetch_all_courses,
+        fetch_course_by_code,
+        update_course,
+        delete_course,
+        insert_semester,
+        fetch_all_semesters,
+        fetch_current_semester,
+        set_current_semester,
+        update_semester,
+        delete_semester
+    )
+    from logger import get_logger
+    from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 from datetime import datetime
 from psycopg2.pool import SimpleConnectionPool
-from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 
 logger = get_logger(__name__)
 

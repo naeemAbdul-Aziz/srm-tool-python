@@ -8,9 +8,14 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils.dataframe import dataframe_to_rows
 import xlsxwriter
-from session import session_manager
-from db import connect_to_db, fetch_student_by_index_number, fetch_all_records # For fetching data for reports
-from grade_util import calculate_grade, calculate_gpa, get_grade_point # For GPA calculation in reports
+try:
+    from .session import session_manager
+    from .db import connect_to_db, fetch_student_by_index_number, fetch_all_records  # For fetching data for reports
+    from .grade_util import calculate_grade, calculate_gpa, get_grade_point  # For GPA calculation in reports
+except ImportError:
+    from session import session_manager
+    from db import connect_to_db, fetch_student_by_index_number, fetch_all_records
+    from grade_util import calculate_grade, calculate_gpa, get_grade_point
 from fpdf import FPDF # For PDF generation
 
 logger = logging.getLogger(__name__)
@@ -576,7 +581,10 @@ def build_summary_file(format_type='txt'):
     This re-fetches records directly from the database to avoid coupling with prior call state.
     """
     try:
-        from db import connect_to_db, fetch_all_records
+        try:
+            from .db import connect_to_db, fetch_all_records
+        except ImportError:
+            from db import connect_to_db, fetch_all_records
         conn = connect_to_db()
         if not conn:
             logger.error("build_summary_file: failed to connect to DB")

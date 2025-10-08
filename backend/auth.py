@@ -7,9 +7,14 @@ import getpass
 # (left commented for future specific exception handling if desired)
 # import psycopg2
 # from psycopg2 import errors
-from db import connect_to_db, fetch_student_by_index_number # fetch_student_by_index_number now handles its own connection
-from logger import get_logger
-from session import session_manager, set_user # Assuming session.py exists and works as expected
+try:  # Prefer package-relative imports for normal operation
+    from .db import connect_to_db, fetch_student_by_index_number  # fetch_student_by_index_number now handles its own connection
+    from .logger import get_logger
+    from .session import session_manager, set_user  # Assuming session.py exists and works as expected
+except ImportError:  # Fallback for direct script execution (python auth.py)
+    from db import connect_to_db, fetch_student_by_index_number
+    from logger import get_logger
+    from session import session_manager, set_user
 
 logger = get_logger(__name__)
 
@@ -217,7 +222,10 @@ def sign_up(role='student'):
                 conn_profile = connect_to_db()
                 if conn_profile:
                     try:
-                        from db import insert_student_profile # Import here to avoid circular dependency
+                        try:
+                            from .db import insert_student_profile  # Import here to avoid circular dependency
+                        except ImportError:
+                            from db import insert_student_profile
                         # Using username as index_number for student profile
                         # Defaulting dob/gender/contact_info for now, can be updated later via profile management
                         student_id = insert_student_profile(conn_profile, username, full_name, None, None, None, None, None, None)
@@ -269,7 +277,10 @@ def create_student_account(index_number, full_name, password=None):
             logger.info(f"Student profile already exists for {index_number}, creating user account only")
         else:
             # Create student profile first
-            from db import insert_student_profile
+            try:
+                from .db import insert_student_profile
+            except ImportError:
+                from db import insert_student_profile
             student_id = insert_student_profile(conn, index_number, full_name, None, None, None, None, None, None)
             
             if not student_id:

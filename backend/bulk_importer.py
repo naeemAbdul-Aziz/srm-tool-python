@@ -1,12 +1,21 @@
 # bulk_importer.py - handles bulk importing of student records from files
 
-from db import (
-    connect_to_db,
-    insert_complete_student_record # This function handles profile and grade insertion transactionally
-)
-from file_handler import read_student_records, REQUIRED_FIELDS # Ensure REQUIRED_FIELDS is imported
-from grade_util import calculate_grade
-from logger import get_logger
+try:
+    from .db import (
+        connect_to_db,
+        insert_complete_student_record  # This function handles profile and grade insertion transactionally
+    )
+    from .file_handler import read_student_records, REQUIRED_FIELDS  # Ensure REQUIRED_FIELDS is imported
+    from .grade_util import calculate_grade
+    from .logger import get_logger
+except ImportError:
+    from db import (
+        connect_to_db,
+        insert_complete_student_record
+    )
+    from file_handler import read_student_records, REQUIRED_FIELDS
+    from grade_util import calculate_grade
+    from logger import get_logger
 
 logger = get_logger(__name__)
 

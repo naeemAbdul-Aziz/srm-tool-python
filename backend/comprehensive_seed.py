@@ -16,22 +16,38 @@ import random
 import sys
 import argparse
 from datetime import date
-from db import (
-    connect_to_db, create_tables_if_not_exist, fetch_semester_by_name,
-    fetch_course_by_code, fetch_student_by_index_number
-)
-from auth import create_user
-from logger import get_logger
-from seed_constants import (
-    GHANAIAN_MALE_NAMES, GHANAIAN_FEMALE_NAMES, GHANAIAN_SURNAMES,
-    UG_SCHOOLS_AND_PROGRAMS, UG_COMPREHENSIVE_COURSES, UG_ACADEMIC_CALENDAR
-)
-from seed_helpers import (
-    generate_index, generate_email, generate_phone, generate_birth_date,
-    pick_program, select_courses, generate_score,
-    ensure_course, ensure_semester, ensure_student, add_grade_if_missing
-)
-from db import ensure_assessment, insert_notification, _expand_audience_user_ids, create_user_notification_links
+try:
+    from .db import (
+        connect_to_db, create_tables_if_not_exist, fetch_semester_by_name,
+        fetch_course_by_code, fetch_student_by_index_number, ensure_assessment, insert_notification, _expand_audience_user_ids, create_user_notification_links
+    )
+    from .auth import create_user
+    from .logger import get_logger
+    from .seed_constants import (
+        GHANAIAN_MALE_NAMES, GHANAIAN_FEMALE_NAMES, GHANAIAN_SURNAMES,
+        UG_SCHOOLS_AND_PROGRAMS, UG_COMPREHENSIVE_COURSES, UG_ACADEMIC_CALENDAR
+    )
+    from .seed_helpers import (
+        generate_index, generate_email, generate_phone, generate_birth_date,
+        pick_program, select_courses, generate_score,
+        ensure_course, ensure_semester, ensure_student, add_grade_if_missing
+    )
+except ImportError:
+    from db import (
+        connect_to_db, create_tables_if_not_exist, fetch_semester_by_name,
+        fetch_course_by_code, fetch_student_by_index_number, ensure_assessment, insert_notification, _expand_audience_user_ids, create_user_notification_links
+    )
+    from auth import create_user
+    from logger import get_logger
+    from seed_constants import (
+        GHANAIAN_MALE_NAMES, GHANAIAN_FEMALE_NAMES, GHANAIAN_SURNAMES,
+        UG_SCHOOLS_AND_PROGRAMS, UG_COMPREHENSIVE_COURSES, UG_ACADEMIC_CALENDAR
+    )
+    from seed_helpers import (
+        generate_index, generate_email, generate_phone, generate_birth_date,
+        pick_program, select_courses, generate_score,
+        ensure_course, ensure_semester, ensure_student, add_grade_if_missing
+    )
 from psycopg2.extras import RealDictCursor
 
 logger = get_logger(__name__)

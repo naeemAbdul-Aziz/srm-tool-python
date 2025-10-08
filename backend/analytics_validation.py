@@ -32,13 +32,19 @@ from typing import Any, Dict, List, Optional, Tuple
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Local imports
+# Local imports with graceful fallback for script/packaged execution
 try:
-    from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
-    from db import connect_to_db
-except ImportError:  # Fallback if executed differently
-    DB_NAME = DB_USER = DB_PASSWORD = DB_HOST = DB_PORT = None
-    def connect_to_db():
+    try:
+        from .config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT  # type: ignore
+    except ImportError:
+        from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT  # type: ignore
+    try:
+        from .db import connect_to_db  # type: ignore
+    except ImportError:
+        from db import connect_to_db  # type: ignore
+except Exception:
+    DB_NAME = DB_USER = DB_PASSWORD = DB_HOST = DB_PORT = None  # type: ignore
+    def connect_to_db():  # type: ignore
         raise RuntimeError("Could not import database configuration; supply --dsn.")
 
 @dataclass

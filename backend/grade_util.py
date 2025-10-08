@@ -4,7 +4,10 @@ Robust GPA/CGPA calculation and grade utility functions with logging.
 """
 
 import logging
-from logger import get_logger
+try:
+    from .logger import get_logger
+except ImportError:  # Fallback for direct execution
+    from logger import get_logger
 
 logger = get_logger(__name__)
 

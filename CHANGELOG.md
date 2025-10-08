@@ -9,8 +9,14 @@ The format loosely follows Keep a Changelog principles.
 - Admin notification compose UI
 - Analytics QA automation script
 - Performance tracking instrumentation
+#### Added
+- `/auth/me` endpoint for lightweight credential verification and client session introspection.
+#### Changed
+- Refactored `/notifications/stream` to load after authentication dependency definitions and now using `Depends(get_current_user)` for consistent Basic auth handling.
+- Internal module import strategy refactored: all intra-backend imports now use package-relative form with safe absolute fallbacks to support both `uvicorn backend.api:app` (project root) and `python backend/main.py` from root or inside the `backend` directory. Added adaptive startup logic in `backend/main.py` that adjusts `sys.path` when invoked from inside the package.
 #### Fixed
 - Incorrect FastAPI dependency usage (`Depends(authenticate_user)`) on assessments and notification CRUD endpoints causing authentication failures/422 errors. Replaced with proper `Depends(get_current_user)` wrapper (SSE stream kept on direct `authenticate_user` until refactor of definition order).
+- Startup ImportError (`attempted relative import with no known parent package`) when launching with relative imports but using non-package execution context. Resolved by enforcing fully qualified uvicorn target and adaptive path injection.
 
 ### [2.1.2] - 2025-10-06
 #### Added

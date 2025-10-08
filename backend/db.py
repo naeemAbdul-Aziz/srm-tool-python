@@ -4,8 +4,12 @@ from datetime import datetime
 from dotenv import load_dotenv
 import logging
 from psycopg2.extras import RealDictCursor
-from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
-from grade_util import calculate_grade, get_grade_point
+try:  # Prefer relative imports when part of package
+    from .config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+    from .grade_util import calculate_grade, get_grade_point
+except ImportError:  # Fallback for direct execution (python db.py)
+    from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+    from grade_util import calculate_grade, get_grade_point
 
 load_dotenv()
 logger = logging.getLogger(__name__)

@@ -1,7 +1,11 @@
 import os
 import pytest
-from comprehensive_seed import seed_comprehensive_database
-from db import connect_to_db
+try:
+    from backend.comprehensive_seed import seed_comprehensive_database
+    from backend.db import connect_to_db
+except ImportError:
+    from comprehensive_seed import seed_comprehensive_database
+    from db import connect_to_db
 
 @pytest.mark.seeding
 def test_deterministic_seed_produces_stable_counts(monkeypatch):
