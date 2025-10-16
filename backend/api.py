@@ -193,12 +193,12 @@ class UserCreate(BaseModel):
     """Schema for creating a new user account"""
     username: str = Field(..., min_length=3, max_length=50, description="Username")
     password: str = Field(..., min_length=6, description="Password (minimum 6 characters)")
-    role: str = Field(..., description="User role (admin/student)")
+    role: str = Field(..., description="User role (admin/student/instructor)")
 
     @validator('role')
     def validate_role(cls, v):
-        if v not in ['admin', 'student']:
-            raise ValueError('Role must be either "admin" or "student"')
+        if v not in ['admin', 'student', 'instructor']:
+            raise ValueError('Role must be one of: admin, student, instructor')
         return v
 
 class StudentAccountCreate(BaseModel):
@@ -330,6 +330,17 @@ class GPAResponse(BaseModel):
     total_credit_hours: int
     semester_credit_hours: int
 
+# -----------------------------
+# INSTRUCTOR FEATURE MODELS
+# -----------------------------
+class InstructorAssignRequest(BaseModel):
+    instructor_username: str = Field(..., min_length=3, max_length=50)
+
+class CourseMaterialCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = Field(None, max_length=5000)
+    url: Optional[str] = Field(None, max_length=2000)
+
 # ========================================
 # AUTHENTICATION & DEPENDENCIES
 # ========================================
@@ -380,6 +391,45 @@ def require_student_role(current_user: dict = Depends(get_current_user)):
             detail="Student access required"
         )
     return current_user
+
+def require_instructor_role(current_user: dict = Depends(get_current_user)):
+    """Dependency that requires instructor role"""
+    if current_user.get('role') != 'instructor':
+        logger.warning(f"Access denied: User {current_user.get('username')} attempted instructor operation")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Instructor access required"
+        )
+    return current_user
+
+def require_admin_or_instructor(current_user: dict = Depends(get_current_user)):
+    """Allow admins or instructors. Used for endpoints where either can proceed (with course scoping)."""
+    if current_user.get('role') not in ('admin', 'instructor'):
+        logger.warning(f"Access denied: User {current_user.get('username')} attempted admin/instructor operation")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin or Instructor access required"
+        )
+    return current_user
+
+def require_admin_or_course_instructor(course_id: int, current_user: dict = Depends(get_current_user)):
+    """Composite dependency: user must be admin OR an instructor assigned to the given course_id."""
+    if current_user.get('role') == 'admin':
+        return current_user
+    if current_user.get('role') == 'instructor':
+        try:
+            from .db import is_instructor_for_course as _is_instructor
+        except ImportError:
+            from db import is_instructor_for_course as _is_instructor
+        conn = connect_to_db()
+        if conn:
+            try:
+                if _is_instructor(conn, current_user.get('user_id') or current_user.get('id'), course_id):
+                    return current_user
+            finally:
+                conn.close()
+    logger.warning(f"Access denied: User {current_user.get('username')} not authorized for course {course_id}")
+    raise HTTPException(status_code=403, detail="Not authorized for this course")
 
 # =====================================================
 # SIMPLE IN-PROCESS SSE BROADCASTER FOR NOTIFICATIONS (after auth deps)
@@ -508,7 +558,275 @@ def handle_db_operation(operation, *args, **kwargs):
     finally:
         if conn:
             conn.close()
-            logger.debug("Database connection closed")
+
+# ========================================
+# INSTRUCTOR & COURSE MATERIAL ENDPOINTS
+# ========================================
+from fastapi import Body
+
+@app.post("/courses/{course_id}/instructors", status_code=201)
+def assign_instructor(course_id: int = Path(..., gt=0), payload: InstructorAssignRequest = Body(...), current_user: dict = Depends(require_admin_role)):
+    """Assign an instructor to a course (idempotent). Admin only."""
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT course_id FROM courses WHERE course_id=%s", (course_id,))
+            if not cur.fetchone():
+                raise HTTPException(404, detail="Course not found")
+            cur.execute("SELECT user_id, role FROM users WHERE username=%s", (payload.instructor_username,))
+            u = cur.fetchone()
+            if not u:
+                raise HTTPException(404, detail="User not found")
+            if u['role'] != 'instructor':
+                raise HTTPException(400, detail="User is not an instructor")
+        from .db import assign_instructor_to_course as _assign
+        ok = _assign(conn, course_id, u['user_id'])
+        try:
+            nid = insert_notification(conn, 'instructor_assigned', 'Instructor Assigned', f"{payload.instructor_username} assigned to course {course_id}", 'info', 'admins')
+            if nid:
+                admin_ids = _expand_audience_user_ids(conn, 'admins')
+                create_user_notification_links(conn, nid, admin_ids)
+        except Exception:
+            pass
+        return {"assigned": bool(ok), "course_id": course_id, "instructor_user_id": u['user_id'], "username": payload.instructor_username}
+    finally:
+        conn.close()
+
+@app.delete("/courses/{course_id}/instructors/{instructor_user_id}")
+def remove_instructor(course_id: int, instructor_user_id: int, current_user: dict = Depends(require_admin_role)):
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        from .db import remove_instructor_from_course as _remove
+        ok = _remove(conn, course_id, instructor_user_id)
+        if not ok:
+            raise HTTPException(404, detail="Assignment not found")
+        return {"removed": True}
+    finally:
+        conn.close()
+
+@app.get("/courses/{course_id}/instructors")
+def list_course_instructors(course_id: int, current_user: dict = Depends(get_current_user)):
+    if current_user.get('role') != 'admin':
+        conn_chk = connect_to_db()
+        if conn_chk:
+            try:
+                from .db import is_instructor_for_course as _is
+                if not _is(conn_chk, current_user.get('user_id'), course_id):
+                    raise HTTPException(403, detail="Not authorized for this course")
+            finally:
+                conn_chk.close()
+        else:
+            raise HTTPException(500, detail="Database connection failed")
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        from .db import list_instructors_for_course as _list
+        data = _list(conn, course_id)
+        return {"course_id": course_id, "instructors": data}
+    finally:
+        conn.close()
+
+@app.get("/instructors/me/courses")
+def my_courses(current_user: dict = Depends(require_instructor_role)):
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        from .db import list_courses_for_instructor as _courses
+        data = _courses(conn, current_user['user_id'])
+        return {"instructor_user_id": current_user['user_id'], "courses": data}
+    finally:
+        conn.close()
+
+@app.post("/courses/{course_id}/materials", status_code=201)
+def add_material(course_id: int, payload: CourseMaterialCreate, current_user: dict = Depends(get_current_user)):
+    if current_user.get('role') != 'admin':
+        conn_chk = connect_to_db()
+        if conn_chk:
+            try:
+                from .db import is_instructor_for_course as _is
+                if not _is(conn_chk, current_user.get('user_id'), course_id):
+                    raise HTTPException(403, detail="Not authorized for this course")
+            finally:
+                conn_chk.close()
+        else:
+            raise HTTPException(500, detail="Database connection failed")
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT course_id FROM courses WHERE course_id=%s", (course_id,))
+            if not cur.fetchone():
+                raise HTTPException(404, detail="Course not found")
+        from .db import add_course_material as _add
+        mid = _add(conn, course_id, payload.title, payload.description, payload.url, current_user.get('user_id'))
+        if mid is None:
+            raise HTTPException(500, detail="Failed to add material")
+        try:
+            nid = insert_notification(conn, 'material_added', 'Course Material Added', f"Material '{payload.title}' added to course {course_id}", 'info', 'admins')
+            if nid:
+                admin_ids = _expand_audience_user_ids(conn, 'admins')
+                create_user_notification_links(conn, nid, admin_ids)
+        except Exception:
+            pass
+        return {"material_id": mid, "course_id": course_id, "title": payload.title}
+    finally:
+        conn.close()
+
+@app.get("/courses/{course_id}/materials")
+def list_materials(course_id: int, current_user: dict = Depends(get_current_user)):
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        from .db import list_course_materials as _list
+        data = _list(conn, course_id)
+        return {"course_id": course_id, "materials": data}
+    finally:
+        conn.close()
+
+@app.delete("/courses/{course_id}/materials/{material_id}")
+def delete_material(course_id: int, material_id: int, current_user: dict = Depends(get_current_user)):
+    """Delete a course material (admin or assigned instructor)."""
+    if current_user.get('role') not in ('admin','instructor'):
+        raise HTTPException(403, detail="Admin or Instructor access required")
+    if current_user.get('role') == 'instructor':
+        conn_chk = connect_to_db()
+        if not conn_chk:
+            raise HTTPException(500, detail="Database connection failed")
+        try:
+            from .db import is_instructor_for_course as _is
+            if not _is(conn_chk, current_user.get('user_id'), course_id):
+                raise HTTPException(403, detail="Not authorized for this course")
+        finally:
+            conn_chk.close()
+    conn = connect_to_db()
+    if not conn:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT material_id FROM course_materials WHERE material_id=%s AND course_id=%s",
+                (material_id, course_id)
+            )
+            if not cur.fetchone():
+                raise HTTPException(404, detail="Material not found for course")
+        try:
+            from .db import delete_course_material as _del
+        except ImportError:
+            from db import delete_course_material as _del
+        if not _del(conn, material_id):
+            raise HTTPException(500, detail="Failed to delete material")
+        return {"deleted": True}
+    finally:
+        conn.close()
+
+@app.post("/instructor/grades")
+def instructor_grade_entry(payload: GradeCreate, current_user: dict = Depends(get_current_user)):
+    if current_user.get('role') not in ('admin', 'instructor'):
+        raise HTTPException(403, detail="Admin or Instructor access required")
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT course_id FROM courses WHERE course_code=%s", (payload.course_code,))
+            course = cur.fetchone()
+            if not course:
+                raise HTTPException(404, detail="Course not found")
+            course_id = course['course_id']
+        if current_user.get('role') == 'instructor':
+            from .db import is_instructor_for_course as _is
+            if not _is(conn, current_user.get('user_id'), course_id):
+                raise HTTPException(403, detail="Not instructor for this course")
+        student_profile = fetch_student_by_index_number(conn, payload.student_index)
+        if not student_profile:
+            raise HTTPException(404, detail="Student not found")
+        semester_obj = fetch_semester_by_name(conn, payload.semester_name)
+        if not semester_obj:
+            raise HTTPException(404, detail="Semester not found")
+        semester_id = semester_obj['semester_id']
+        grade_letter = calculate_grade(payload.score)
+        grade_point = get_grade_point(payload.score)
+        try:
+            gid = insert_grade(conn, student_profile['student_id'], course_id, semester_id, payload.score, grade_letter, grade_point, payload.academic_year)
+            if gid is False:
+                updated = update_student_score(conn, student_profile['student_id'], course_id, semester_id, payload.score, grade_letter, grade_point, payload.academic_year)
+                action = 'updated' if updated else 'unchanged'
+            else:
+                action = 'created'
+        except Exception:
+            updated = update_student_score(conn, student_profile['student_id'], course_id, semester_id, payload.score, grade_letter, grade_point, payload.academic_year)
+            action = 'updated' if updated else 'failed'
+        return {"status": action, "student_index": payload.student_index, "course_code": payload.course_code}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in instructor_grade_entry: {e}")
+        raise HTTPException(500, detail="Internal error processing grade entry")
+    finally:
+        conn.close()
+    # (conn closed in finally)
+
+# =============================
+# INSTRUCTOR ANALYTICS ENDPOINTS
+# =============================
+
+@app.get("/instructors/me/overview")
+def instructor_overview(current_user: dict = Depends(get_current_user)):
+    if current_user.get('role') not in ('instructor','admin'):
+        raise HTTPException(403, detail="Instructor or admin access required")
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        from .db import instructor_overview_stats as _stats  # type: ignore
+        data = _stats(conn, current_user.get('user_id'))
+        return data
+    finally:
+        conn.close()
+
+@app.get("/instructors/me/courses/{course_id}/performance")
+def instructor_course_performance_api(course_id: int, current_user: dict = Depends(get_current_user)):
+    if current_user.get('role') not in ('instructor','admin'):
+        raise HTTPException(403, detail="Instructor or admin access required")
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        from .db import instructor_course_performance as _perf, is_instructor_for_course as _is  # type: ignore
+        # Admin bypass; instructor must be mapped
+        if current_user.get('role') == 'instructor' and not _is(conn, current_user.get('user_id'), course_id):
+            raise HTTPException(403, detail="Not authorized for this course")
+        result = _perf(conn, current_user.get('user_id'), course_id)
+        if result is None:
+            raise HTTPException(404, detail="Course not found or no performance data")
+        return result
+    finally:
+        conn.close()
+
+@app.get("/instructors/me/courses/{course_id}/students")
+def instructor_course_students_api(course_id: int, current_user: dict = Depends(get_current_user)):
+    if current_user.get('role') not in ('instructor','admin'):
+        raise HTTPException(403, detail="Instructor or admin access required")
+    conn = connect_to_db()
+    if conn is None:
+        raise HTTPException(500, detail="Database connection failed")
+    try:
+        from .db import instructor_course_students as _students, is_instructor_for_course as _is  # type: ignore
+        if current_user.get('role') == 'instructor' and not _is(conn, current_user.get('user_id'), course_id):
+            raise HTTPException(403, detail="Not authorized for this course")
+        # Admins may request even if not mapped; pass their user_id for consistency
+        data = _students(conn, current_user.get('user_id'), course_id)
+        return {"course_id": course_id, "students": data}
+    finally:
+        conn.close()
 
 def fetch_student_grades(conn, index_number, semester=None, academic_year=None):
     """Fetch student grades with optional filtering"""

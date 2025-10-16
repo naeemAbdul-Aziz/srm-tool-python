@@ -65,6 +65,98 @@ logger = get_logger(__name__)
 # MAIN SEEDING FUNCTIONS
 # ========================================
 
+def seed_realistic_instructors(conn, num_instructors=10):
+    """Generate realistic instructor users with profiles and ensure full course coverage.
+
+    Strategy:
+      1. Preload course list.
+      2. Create N instructor accounts + profiles (idempotent usernames with numeric suffixes).
+      3. First pass: round-robin assign each course to one instructor to guarantee coverage.
+      4. Second pass: add up to 2 extra random instructors per course (optional enrichment) without duplication.
+
+    Returns list of instructor usernames created or already existing.
+    """
+    usernames = []
+    try:
+        from .db import ensure_instructor_profile, assign_instructor_to_course
+    except ImportError:  # direct execution fallback
+        from db import ensure_instructor_profile, assign_instructor_to_course
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT course_id FROM courses ORDER BY course_id")
+            course_rows = cur.fetchall() or []
+        courses = [r['course_id'] for r in course_rows]
+        if not courses:
+            logger.warning("INSTRUCTORS: No courses available for assignment; creating profiles only")
+        titles = ["Prof.", "Dr.", "Mr.", "Ms.", "Mrs."]
+        instructor_ids = []
+        # Create instructors
+        for _ in range(num_instructors):
+            gender = random.choice(["Male", "Female"])
+            first = random.choice(GHANAIAN_MALE_NAMES if gender == "Male" else GHANAIAN_FEMALE_NAMES)
+            last = random.choice(GHANAIAN_SURNAMES)
+            base_username = f"{first.lower()}.{last.lower()}".replace(" ", "")
+            username = base_username
+            suffix = 1
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                while True:
+                    cur.execute("SELECT 1 FROM users WHERE username=%s", (username,))
+                    if not cur.fetchone():
+                        break
+                    suffix += 1
+                    username = f"{base_username}{suffix}"
+            password = f"{username}123"
+            try:
+                uid = create_user(username, password, role='instructor')
+            except Exception:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT user_id FROM users WHERE username=%s", (username,))
+                    row = cur.fetchone()
+                    if not row:
+                        continue
+                    uid = row['user_id']
+            school = random.choice(list(UG_SCHOOLS_AND_PROGRAMS.keys()))
+            program = random.choice(UG_SCHOOLS_AND_PROGRAMS[school])
+            specialization = random.choice([
+                "Machine Learning", "Educational Policy", "Corporate Law", "Microbiology",
+                "Renewable Energy", "Public Health", "Finance", "Cybersecurity"
+            ])
+            email = f"{username}@ug.edu.gh"
+            phone = f"+23320{random.randint(1000000, 9999999)}"
+            office = f"Block {random.choice(['A','B','C','D'])}{random.randint(1, 30)}"
+            title = random.choice(titles)
+            ensure_instructor_profile(
+                conn, uid, f"{first} {last}", title=title, school=school, program=program,
+                specialization=specialization, email=email, phone=phone, office=office
+            )
+            usernames.append(username)
+            instructor_ids.append(uid)
+
+        # Assignment phase: ensure each course gets at least one instructor
+        if courses and instructor_ids:
+            for idx, cid in enumerate(courses):
+                primary_instructor = instructor_ids[idx % len(instructor_ids)]
+                try:
+                    assign_instructor_to_course(conn, cid, primary_instructor)
+                except Exception:
+                    pass  # ignore duplicate assignment errors
+            # Optional enrichment: add secondary/tertiary instructors randomly
+            for cid in courses:
+                extra = random.sample(instructor_ids, k=min(len(instructor_ids), random.randint(0, 2)))
+                seen = set()
+                for inst_id in extra:
+                    if inst_id in seen:
+                        continue
+                    seen.add(inst_id)
+                    try:
+                        assign_instructor_to_course(conn, cid, inst_id)
+                    except Exception:
+                        continue
+        return usernames
+    except Exception as e:
+        logger.error(f"INSTRUCTORS: Error realistic seeding: {e}")
+        return usernames
+
 def seed_comprehensive_courses(conn):
     """Seed all University of Ghana courses (idempotent)."""
     logger.info("COURSES: Seeding comprehensive UG course catalog...")
@@ -222,6 +314,47 @@ def create_admin_accounts(conn):
 
     logger.info(f"SUCCESS: Ensured {success_count}/{len(accounts)} new admin account inserts (existing skipped)")
     return success_count
+
+def create_instructor_accounts(conn, assign_sample_courses=True, sample_course_limit=5):
+    """Ensure a small set of demo instructor accounts and optionally assign them to initial courses.
+
+    Idempotent: uses create_user (ON CONFLICT DO NOTHING). Returns list of (username, user_id) actually present.
+    """
+    logger.info("INSTRUCTORS: Ensuring demo instructor accounts...")
+    demo = [
+        ("instructor1", "instructor123"),
+        ("instructor2", "instructor123"),
+        ("instructor3", "instructor123"),
+    ]
+    created = 0
+    from .db import assign_instructor_to_course, list_instructors_for_course  # type: ignore
+    out = []
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        for uname, pwd in demo:
+            try:
+                if create_user(uname, pwd, 'instructor'):
+                    created += 1
+                cur.execute("SELECT user_id FROM users WHERE username=%s", (uname,))
+                row = cur.fetchone()
+                if row:
+                    out.append((uname, row['user_id']))
+            except Exception as e:
+                logger.debug(f"Instructor create skip {uname}: {e}")
+    logger.info(f"INSTRUCTORS: Ensured {len(out)} demo instructor accounts (newly created: {created})")
+
+    if assign_sample_courses and out:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT course_id FROM courses ORDER BY course_code LIMIT %s", (sample_course_limit,))
+                course_rows = cur.fetchall()
+            if course_rows:
+                for idx, course in enumerate(course_rows):
+                    uname, uid = out[idx % len(out)]
+                    assign_instructor_to_course(conn, course['course_id'], uid)
+                logger.info(f"INSTRUCTORS: Assigned instructors to {len(course_rows)} sample courses")
+        except Exception as e:
+            logger.warning(f"INSTRUCTORS: Failed assigning sample courses: {e}")
+    return out
 
 # ========================================
 # DATABASE CLEANUP FUNCTIONS
@@ -527,12 +660,28 @@ def seed_comprehensive_database(num_students=100, cleanup_first=True, random_see
         # Create admin accounts
         admin_count = create_admin_accounts(conn)
         print(f"SUCCESS: Admin accounts created: {admin_count}")
+        # Instructor seeding strategy (realistic by default unless explicitly disabled)
+        realist_env = os.getenv("SEED_REALISTIC_INSTRUCTORS")
+        # Default True when env unset; explicit false disables
+        realist_flag = True if realist_env is None else realist_env.lower() in {"1", "true", "yes", "on"}
+        inst_count_env = os.getenv("SEED_INSTRUCTORS_COUNT")
+        instructors = []
+        if (realist_flag or exhaustive) and not (realist_env is not None and realist_env.lower() in {"0","false","no","off"}):
+            try:
+                inst_num = int(inst_count_env) if inst_count_env else 15
+            except ValueError:
+                inst_num = 15
+            instructors = seed_realistic_instructors(conn, num_instructors=inst_num)
+            print(f"SUCCESS: Realistic instructors seeded: {len(instructors)}")
+        else:
+            instructors = create_instructor_accounts(conn)
+            print(f"SUCCESS: Legacy demo instructor accounts ensured: {len(instructors)}")
         
         # Seed students (baseline fewer students override)
         target_students = num_students if not baseline else min(num_students, 10)
         student_ids = seed_diverse_students(conn, target_students)
         print(f"SUCCESS: Students seeded: {len(student_ids)}")
-        
+
         grade_count = 0
         if not baseline:
             grade_count = seed_comprehensive_grades(conn, student_ids, semester_ids)
@@ -566,6 +715,11 @@ def seed_comprehensive_database(num_students=100, cleanup_first=True, random_see
         print(f"   Semesters: {len(semester_ids)}")
         print(f"   Admin accounts: {admin_count}")
         print(f"   Students: {len(student_ids)}")
+        if instructors:
+            realism_label = 'realistic' if (realist_flag or exhaustive) else 'legacy-demo'
+            print(f"   Instructors: {len(instructors)} ({realism_label})")
+        else:
+            print("   Instructors: 0 (skipped)")
         print(f"   Grade records: {grade_count}")
         if exhaustive:
             print(f"   Added program coverage students: {added_program_students}")
@@ -614,6 +768,8 @@ if __name__ == "__main__":
     parser.add_argument("--exhaustive", action="store_true", help="Seed exhaustive dataset (edge cases, assessments, notifications)")
     parser.add_argument("--assessments-sample", type=int, help="Limit number of courses for which assessments are generated")
     parser.add_argument("--full-reset", action="store_true", help="Full reset including notifications and admin users")
+    parser.add_argument("--instructors", type=int, help="Number of realistic instructors to seed (implies SEED_REALISTIC_INSTRUCTORS)")
+    parser.add_argument("--no-instructors", action="store_true", help="Skip instructor seeding even if env var set")
 
     # If no additional CLI args beyond script name, fall back to legacy interactive mode
     if len(sys.argv) == 1:
@@ -664,6 +820,13 @@ if __name__ == "__main__":
     if args.baseline and args.exhaustive:
         print("ERROR: --baseline and --exhaustive cannot be used together.")
         sys.exit(1)
+
+    # Instructor flag env coordination
+    if args.instructors is not None:
+        os.environ['SEED_REALISTIC_INSTRUCTORS'] = 'true'
+        os.environ['SEED_INSTRUCTORS_COUNT'] = str(args.instructors)
+    if args.no_instructors:
+        os.environ['SEED_REALISTIC_INSTRUCTORS'] = 'false'
 
     success = seed_comprehensive_database(
         num_students=args.num_students,

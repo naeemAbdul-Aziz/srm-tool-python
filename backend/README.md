@@ -51,9 +51,10 @@ backend/
 
 The system uses HTTP Basic Auth (no JWT). Passwords are stored hashed (bcrypt).
 
-Roles (intentionally minimal):
-- `admin` – full access (management, reports, notifications publishing, seeding)
-- `student` – personal profile, grades, personal reports
+ Roles:
+ - `admin` – full access (management, reports, notifications, seeding, instructor assignment)
+ - `instructor` – limited management: view assigned courses, add/list/delete materials for those courses, enter/update grades, view notifications
+ - `student` – personal profile, grades, personal reports
 
 Seeded credentials (comprehensive seed):
 ```
@@ -68,6 +69,19 @@ registrar / registrar123
 dean      / dean123
 ```
 All admin-like accounts share the same `admin` role value.
+
+ Instructor accounts – now REALISTIC BY DEFAULT:
+
+ • By default the seeder generates realistic instructors unless you pass `--no-instructors` or set `SEED_REALISTIC_INSTRUCTORS=false`.
+ • Control count via `--instructors N` or env `SEED_INSTRUCTORS_COUNT` (fallback = 15 default now).
+ • Each instructor gets: Ghanaian full name, academic title (Prof./Dr./Mr./Ms./Mrs.), school, program, specialization, contact info & office.
+ • Usernames follow `firstname.lastname` with numeric suffix collision handling; password = `<username>123` (demo only!).
+ • Course Coverage Guarantee: Every course is assigned at least one instructor (primary round‑robin). Up to two additional random instructors may be associated for richer analytics.
+ • Legacy simple demo accounts (`instructor1 / instructor123`) are only created if you explicitly set `SEED_REALISTIC_INSTRUCTORS=false` AND omit `--no-instructors`.
+
+ Disable all instructor creation entirely with `--no-instructors`.
+
+Assignments can then be created via API (see endpoints below) or automatically by the realistic seeder.
 
 ## 🧮 Grading & GPA
 
@@ -190,6 +204,85 @@ Transcript (official academic record):
 
 Reliability features: size validation, unified headers (`Content-Disposition`, `Content-Length`), temporary file cleanup, deterministic seeding for test fixtures. Automated coverage in `tests/test_exports.py`.
 
+## 📚 Course Materials & Instructor Workflows
+
+New instructor-focused endpoints enable distributing per-course reference material links and delegated grade entry.
+
+Endpoints:
+```
+POST /courses/{course_id}/instructors            # (admin) assign instructor by username
+GET  /courses/{course_id}/instructors            # (admin or assigned instructor)
+DELETE /courses/{course_id}/instructors/{user_id}# (admin) remove assignment
+GET  /instructors/me/courses                     # (instructor) list own courses
+POST /courses/{course_id}/materials              # (admin or assigned instructor) add material
+GET  /courses/{course_id}/materials              # (admin or assigned instructor)
+DELETE /courses/{course_id}/materials/{material_id}
+POST /instructor/grades                          # (admin or assigned instructor) grade entry using course_code + student_index
+```
+
+### Instructor Analytics Endpoints (New)
+Provide role-scoped performance and engagement insight. All require Basic Auth. Instructors are limited to their own assigned courses; admins bypass mapping checks.
+
+```
+GET  /instructors/me/overview                               # Aggregated overview (course list, student counts, avg score, pass rate, grade distributions)
+GET  /instructors/me/courses/{course_id}/performance         # Per-course stats (avg, median, pass rate, grade distribution, top/bottom N students)
+GET  /instructors/me/courses/{course_id}/students            # Roster (index_number, full_name, score, grade)
+```
+
+Sample /instructors/me/overview response (abridged):
+```json
+{
+  "courses": [
+    {
+      "course_id": 12,
+      "course_code": "UGCS201",
+      "course_title": "Data Structures",
+      "student_count": 48,
+      "avg_score": 73.54,
+      "pass_rate": 0.8958,
+      "grade_distribution": {"A": 9, "B": 18, "C": 15, "D": 1, "F": 5}
+    }
+  ],
+  "totals": {"course_count": 3, "distinct_students": 120}
+}
+```
+
+Performance endpoint example:
+```json
+{
+  "course": {"course_id": 12, "course_code": "UGCS201", "course_title": "Data Structures"},
+  "avg_score": 73.54,
+  "median_score": 74.0,
+  "pass_rate": 0.8958,
+  "grade_distribution": {"A": 9, "B": 18, "C": 15, "D": 1, "F": 5},
+  "top_students": [{"score": 95.0, "grade": "A", "index_number": "ug10123", "full_name": "Ama Mensah"}],
+  "bottom_students": [{"score": 42.0, "grade": "F", "index_number": "ug10077", "full_name": "Yaw Asare"}]
+}
+```
+
+Error Cases:
+- 403 if instructor attempts performance/students endpoint for an unassigned course.
+- 404 if course not found or no data (performance endpoint).
+
+Use Cases:
+- Instructor dashboards (course load, at-risk detection).
+- Admin supervision & quality assurance.
+- Future extension: caching, trend deltas, anonymized benchmarking.
+
+Authorization Logic Highlights:
+- Material and grade entry checks confirm instructor-course assignment via `course_instructors` mapping.
+- Admin bypasses course assignment checks.
+- Students currently cannot view materials (policy placeholder; can be extended later).
+
+Frontend Enhancements:
+- Solid-color design tokens (`:root` CSS variables) providing neutral palette.
+- Instructor dashboard panel (course list with inline materials management & grade entry form).
+- Admin instructor management panel (assign/remove instructors, real-time list refresh).
+
+Testing Additions:
+- `tests/test_instructors.py` exercises assignment, materials CRUD, and grade entry permissions.
+
+
 ## 🧪 Testing
 
 Run all tests:
@@ -198,6 +291,7 @@ pytest -q
 ```
 
 Exports & transcript tests rely on the deterministic seed fixture creating `STUD001` with at least one course & grade.
+Instructor & materials tests rely on seeded or dynamically created instructor users; seeding helper can populate `instructor1`.
 
 ## 🧬 Seeding Modes
 
@@ -221,6 +315,8 @@ Environment variables:
 |----------|---------|---------|
 | `SEED_RANDOM_SEED` | Default deterministic seed (overridden by `--seed`) | `SEED_RANDOM_SEED=12345` |
 | `SUPPRESS_SEED_NOTIFICATIONS` | Skip creating notifications during seeding | `SUPPRESS_SEED_NOTIFICATIONS=1` |
+| `SEED_REALISTIC_INSTRUCTORS` | (Default ON) Realistic instructor generation (`false` to fall back to legacy) | `SEED_REALISTIC_INSTRUCTORS=false` |
+| `SEED_INSTRUCTORS_COUNT` | Number of instructors if CLI flag absent | `SEED_INSTRUCTORS_COUNT=8` |
 
 CLI flags (view all with `python comprehensive_seed.py --help`):
 
@@ -233,6 +329,8 @@ CLI flags (view all with `python comprehensive_seed.py --help`):
 | `--baseline` | Use baseline mode (minimal quick seed) |
 | `--exhaustive` | Enable exhaustive mode features |
 | `--assessments-sample N` | Limit number of courses for which assessments are created |
+| `--instructors N` | Override default count of realistic instructors |
+| `--no-instructors` | Skip instructor creation entirely |
 | `--full-reset` | Wipe all data including admin users & notifications before seeding |
 | `-y / --yes` | Auto-confirm (non-interactive) |
 

@@ -86,7 +86,7 @@ curl http://localhost:8000/health
 
 ---
 
-## 📱 Key API Endpoints (Updated October 6, 2025)
+## 📱 Key API Endpoints (Updated October 8, 2025)
 
 ### Public Access
 - `GET /ug/schools-programs` - UG academic structure
@@ -119,6 +119,37 @@ curl http://localhost:8000/health
 - `DELETE /assessments/{assessment_id}` (admin)
 
 ### Reporting & Export
+### Instructor Operations (New)
+> Seeding note: Realistic instructor accounts (Ghanaian names + profiles) are now created by default. Every course is guaranteed at least one assigned instructor. Disable with `--no-instructors` or env `SEED_REALISTIC_INSTRUCTORS=false`.
+- `POST /courses/{course_id}/instructors` (admin) – assign instructor by username.
+- `GET /courses/{course_id}/instructors` (admin or course instructor) – list assigned instructors.
+- `DELETE /courses/{course_id}/instructors/{instructor_user_id}` (admin) – remove assignment.
+- `GET /instructors/me/courses` (instructor) – list courses for authenticated instructor.
+- `POST /courses/{course_id}/materials` (admin or assigned instructor) – add course material (title + url).
+- `GET /courses/{course_id}/materials` (admin, assigned instructor, or (optionally) student if policy expanded) – list materials.
+- `DELETE /courses/{course_id}/materials/{material_id}` (admin or assigned instructor) – delete material.
+- `POST /instructor/grades` (admin or assigned instructor) – submit or update a grade using `{ student_index, course_code, semester_name, academic_year, score }`.
+ - `GET /instructors/me/overview` (instructor/admin) – aggregated overview (courses taught, distinct students, per-course stats & grade distribution).
+ - `GET /instructors/me/courses/{course_id}/performance` (instructor/admin) – detailed course analytics (avg, median, pass rate, top/bottom students).
+ - `GET /instructors/me/courses/{course_id}/students` (instructor/admin) – roster with scores and grades.
+
+Role Matrix Snapshot:
+
+| Capability | Admin | Instructor | Student |
+|------------|:-----:|:----------:|:-------:|
+| Assign Instructors | ✅ | ❌ | ❌ |
+| List Instructors for Course | ✅ | ✅ (if assigned) | ❌ |
+| Manage Materials | ✅ | ✅ (assigned) | ❌* |
+| View Own Courses | ✅ | ✅ | ❌ |
+| Grade Entry | ✅ | ✅ (assigned) | ❌ |
+| Instructor Overview Analytics | ✅ | ✅ | ❌ |
+| Instructor Course Performance | ✅ | ✅ (assigned) | ❌ |
+| Instructor Course Students | ✅ | ✅ (assigned) | ❌ |
+| View Notifications | ✅ | ✅ | ✅ |
+| Personal Reports | ✅ (any student) | ❌ | ✅ (self) |
+
+*Student material access pending policy decision – currently restricted.
+
 - `GET /admin/reports/summary?format=pdf|txt|csv|excel` (multi-format; excel is multi-sheet)
 - `GET /admin/reports/transcript/{student_index}?format=excel|pdf` (student transcript)
 - `GET /admin/reports/personal/{student_index}?format=txt|pdf` (admin personal academic report)

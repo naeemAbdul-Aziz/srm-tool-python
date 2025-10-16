@@ -11,6 +11,20 @@ The format loosely follows Keep a Changelog principles.
 - Performance tracking instrumentation
 #### Added
 - `/auth/me` endpoint for lightweight credential verification and client session introspection.
+ - `instructor_profiles` table enabling richer instructor metadata (title, school, program, specialization, contact info).
+ - Realistic instructor seeding (Ghanaian names, academic titles, specialization mapping) gated by:
+	 - Env: `SEED_REALISTIC_INSTRUCTORS=true` (or implicit when `--instructors` CLI flag used)
+	 - Env / CLI: `SEED_INSTRUCTORS_COUNT` / `--instructors N` to control count
+	 - Disable via `--no-instructors`
+ - Instructor analytics helpers in `db.py`:
+	 - `instructor_overview_stats`
+	 - `instructor_course_performance`
+	 - `instructor_course_students`
+ - Instructor analytics API endpoints:
+	 - `GET /instructors/me/overview`
+	 - `GET /instructors/me/courses/{course_id}/performance`
+	 - `GET /instructors/me/courses/{course_id}/students`
+ - Deterministic username generation for realistic instructors + automatic course assignment distribution.
 #### Changed
 - Refactored `/notifications/stream` to load after authentication dependency definitions and now using `Depends(get_current_user)` for consistent Basic auth handling.
 - Internal module import strategy refactored: all intra-backend imports now use package-relative form with safe absolute fallbacks to support both `uvicorn backend.api:app` (project root) and `python backend/main.py` from root or inside the `backend` directory. Added adaptive startup logic in `backend/main.py` that adjusts `sys.path` when invoked from inside the package.
@@ -19,6 +33,31 @@ The format loosely follows Keep a Changelog principles.
 - Startup ImportError (`attempted relative import with no known parent package`) when launching with relative imports but using non-package execution context. Resolved by enforcing fully qualified uvicorn target and adaptive path injection.
 
 ### [2.1.2] - 2025-10-06
+### [2.2.0] - 2025-10-08
+#### Added
+- Instructor role with course-scoped permissions (grade entry, materials management, course listing).
+- Course instructor assignment endpoints:
+	- `POST /courses/{course_id}/instructors`
+	- `GET /courses/{course_id}/instructors`
+	- `DELETE /courses/{course_id}/instructors/{instructor_user_id}`
+- Instructor self-course listing: `GET /instructors/me/courses`.
+- Course materials CRUD endpoints:
+	- `POST /courses/{course_id}/materials`
+	- `GET /courses/{course_id}/materials`
+	- `DELETE /courses/{course_id}/materials/{material_id}`
+- Instructor & admin grade entry endpoint: `POST /instructor/grades` (accepts student_index + course_code + semester_name + score).
+- Frontend instructor dashboard & admin assignment panel with modernized solid-color UI tokens.
+- Design token layer (CSS variables) for consistent theming.
+- Modular tests for instructor assignment, materials, and grade entry (`tests/test_instructors.py`).
+#### Changed
+- Authorization dependencies extended to allow instructor where applicable (materials, grade entry).
+- Seeding script now optionally creates demo instructor accounts and assignments.
+- Frontend refactored to token-based neutral palette (removed gradients).
+#### Fixed
+- Edge case where instructor attempting grade entry for unassigned course returned generic 500; now explicit 403.
+#### Maintenance
+- Documentation updated (README, QUICK_REFERENCE) to reflect new role & endpoints.
+
 #### Added
 - Unified multi-format summary export streaming helper (`build_summary_file`) consolidating PDF, TXT, CSV generation.
 - Frontend support for new download buttons (PDF, TXT, Excel, CSV) with improved accessibility attributes.

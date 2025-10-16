@@ -1,13 +1,30 @@
 /* Main Styles for Student Result Management System */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Design Tokens */
+:root {
+  --color-bg: #f9fafb;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-accent: #111827; /* deep neutral for minimalist look */
+  --color-accent-hover: #1f2937;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 2px 6px rgba(0,0,0,0.08);
+  --transition: 120ms cubic-bezier(.4,0,.2,1);
+}
+
 /* Base styles */
 body {
     font-family: 'Inter', sans-serif;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    background-color: #f9fafb; /* Light gray background */
+    background: var(--color-bg);
+    color: var(--color-text);
 }
 
 *, *::before, *::after {
@@ -66,4 +83,68 @@ body {
         animation: none;
         transition: none;
     }
+}
+
+.panel { 
+    background: var(--color-surface); 
+    border: 1px solid var(--color-border); 
+    border-radius: var(--radius-md); 
+    padding: 1rem 1.25rem; 
+    box-shadow: var(--shadow-sm); 
+}
+
+.btn { 
+    background: var(--color-accent); 
+    color:#fff; 
+    border:1px solid var(--color-accent); 
+    padding:0.5rem 0.9rem; 
+    font-size:0.875rem; 
+    border-radius: var(--radius-sm); 
+    cursor:pointer; 
+    line-height:1; 
+    transition: background var(--transition), color var(--transition), box-shadow var(--transition); 
+}
+.btn:hover { 
+    background: var(--color-accent-hover); 
+}
+.btn-outline { 
+    background: transparent; 
+    color: var(--color-text); 
+    border:1px solid var(--color-border); 
+}
+.btn-outline:hover { 
+    background: #f3f4f6; 
+}
+
+.input { 
+    border:1px solid var(--color-border); 
+    border-radius: var(--radius-sm); 
+    padding:0.5rem 0.75rem; 
+    font-size:0.875rem; 
+    width:100%; 
+    background: var(--color-surface); 
+    color: var(--color-text); 
+}
+.input:focus { 
+    outline:2px solid var(--color-accent); 
+    outline-offset:2px; 
+}
+
+h2, h3 { 
+    margin:0 0 .75rem; 
+    font-weight:600; 
+}
+.text-muted { 
+    color: var(--color-text-muted); 
+}
+
+/* Minimal card variant */
+.card { 
+    border:1px solid var(--color-border); 
+    border-radius: var(--radius-md); 
+    padding:0.75rem 1rem; 
+    background: var(--color-surface); 
+}
+.card:hover { 
+    box-shadow: var(--shadow-md); 
 }

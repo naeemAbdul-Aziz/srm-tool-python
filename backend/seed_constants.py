@@ -341,7 +341,32 @@ UG_ACADEMIC_CALENDAR = [
     ("2nd Semester 2024/2025", "2024/2025", date(2025, 1, 13), date(2025, 5, 16))
 ]
 
+# Instructor related constants
+INSTRUCTOR_TITLES = ["Prof.", "Dr.", "Mr.", "Mrs.", "Ms."]
+
+# Simple specialization seeds keyed by program keyword fragments
+INSTRUCTOR_SPECIALIZATIONS = {
+    "Computer Science": ["Machine Learning", "Distributed Systems", "Cybersecurity", "Data Mining"],
+    "Information Technology": ["Cloud Infrastructure", "DevOps", "Network Security"],
+    "Mathematics": ["Applied Statistics", "Number Theory", "Computational Algebra"],
+    "Physics": ["Quantum Optics", "Condensed Matter", "Astrophysics"],
+    "Chemistry": ["Organic Synthesis", "Analytical Methods"],
+    "Biology": ["Genomics", "Microbiology"],
+    "Medicine": ["Internal Medicine", "Surgery", "Pediatrics"],
+    "Nursing": ["Community Health", "Critical Care"],
+    "Business Administration": ["Corporate Strategy", "Operations"],
+    "Accounting": ["Auditing", "Forensic Accounting"],
+    "Finance": ["Investment Banking", "Risk Management"],
+    "Marketing": ["Digital Marketing", "Consumer Analytics"],
+    "Law": ["Corporate Law", "International Law"],
+    "Economics": ["Development Economics", "Monetary Policy"],
+    "Political Science": ["Governance", "Comparative Politics"],
+    "Sociology": ["Social Change", "Urban Sociology"],
+    "Psychology": ["Cognitive Neuroscience", "Developmental Disorders"],
+}
+
 __all__ = [
     "GHANAIAN_MALE_NAMES", "GHANAIAN_FEMALE_NAMES", "GHANAIAN_SURNAMES",
-    "UG_SCHOOLS_AND_PROGRAMS", "UG_COMPREHENSIVE_COURSES", "UG_ACADEMIC_CALENDAR"
+    "UG_SCHOOLS_AND_PROGRAMS", "UG_COMPREHENSIVE_COURSES", "UG_ACADEMIC_CALENDAR",
+    "INSTRUCTOR_TITLES", "INSTRUCTOR_SPECIALIZATIONS"
 ]

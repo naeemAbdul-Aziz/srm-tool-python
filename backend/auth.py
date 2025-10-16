@@ -107,7 +107,8 @@ def authenticate_user(username, password):
 
             user_data = {
                 'username': username,
-                'role': role
+                'role': role,
+                'user_id': user[0]
             }
 
             if role == 'student':
@@ -122,8 +123,10 @@ def authenticate_user(username, password):
                 else:
                     logger.warning(f"No student profile found for index number: {username}. User authenticated as student, but no record.")
             elif role == 'admin':
-                # For admin users, ensure admin-specific data is available
                 user_data['admin_level'] = 'full'
+            elif role == 'instructor':
+                # Lazy-load instructor course list when specifically needed; keep lean here.
+                user_data['instructor'] = True
             
             # Only create session if one doesn't already exist for this user
             current_session = session_manager.get_current_user()

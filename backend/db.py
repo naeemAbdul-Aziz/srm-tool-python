@@ -152,6 +152,53 @@ TABLES = {
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(student_id, course_id, semester_id) -- A student can only have one grade per course per semester
         );
+    """,
+    # Mapping of which instructors are attached to which courses.
+    # We deliberately reference users(user_id) allowing role change or future multi-role users.
+    "course_instructors": """
+        CREATE TABLE IF NOT EXISTS course_instructors (
+            id SERIAL PRIMARY KEY,
+            course_id INT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+            instructor_user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(course_id, instructor_user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_course_instructors_course ON course_instructors(course_id);
+        CREATE INDEX IF NOT EXISTS idx_course_instructors_instructor ON course_instructors(instructor_user_id);
+    """,
+    # Simple course materials repository. For now we store metadata & an optional URL.
+    # Future: file storage integration or versioning.
+    "course_materials": """
+        CREATE TABLE IF NOT EXISTS course_materials (
+            material_id SERIAL PRIMARY KEY,
+            course_id INT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+            title VARCHAR(255) NOT NULL,
+            description TEXT,
+            url TEXT, -- could be a link or path; validation handled at API layer
+            uploaded_by INT REFERENCES users(user_id) ON DELETE SET NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_course_materials_course ON course_materials(course_id);
+    """,
+    # Extended profile metadata for instructors (one-to-one with users row where role='instructor').
+    # Allows richer analytics (school/program association) and realistic seeding (titles & contact info).
+    "instructor_profiles": """
+        CREATE TABLE IF NOT EXISTS instructor_profiles (
+            instructor_id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+            full_name VARCHAR(255) NOT NULL,
+            title VARCHAR(50),               -- e.g. Dr., Prof., Mr., Mrs., Ms.
+            school VARCHAR(150),
+            program VARCHAR(150),            -- primary program specialization
+            specialization VARCHAR(255),     -- free text (e.g. Machine Learning, Corporate Law)
+            email VARCHAR(255),
+            phone VARCHAR(50),
+            office VARCHAR(100),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_instructor_profiles_school ON instructor_profiles(school);
+        CREATE INDEX IF NOT EXISTS idx_instructor_profiles_program ON instructor_profiles(program);
     """
 }
 
@@ -159,6 +206,399 @@ def create_tables_if_not_exist(conn):
     """Create all necessary tables if they don't exist."""
     for table_name in TABLES.keys():
         create_table(conn, table_name)
+
+# =============================
+# INSTRUCTOR & COURSE MATERIAL HELPERS
+# =============================
+
+def assign_instructor_to_course(conn, course_id, instructor_user_id):
+    """Assign an instructor (user) to a course. Idempotent via UNIQUE constraint."""
+    if conn is None: return False
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO course_instructors (course_id, instructor_user_id)
+                VALUES (%s, %s)
+                ON CONFLICT (course_id, instructor_user_id) DO NOTHING
+                RETURNING id;
+                """,
+                (course_id, instructor_user_id)
+            )
+            inserted = cur.fetchone()
+            conn.commit()
+            return True if inserted or inserted is None else False
+    except Exception as e:
+        logger.error(f"Error assigning instructor {instructor_user_id} to course {course_id}: {e}")
+        conn.rollback()
+        return False
+
+def remove_instructor_from_course(conn, course_id, instructor_user_id):
+    if conn is None: return False
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM course_instructors WHERE course_id = %s AND instructor_user_id = %s",
+                (course_id, instructor_user_id)
+            )
+            deleted = cur.rowcount
+            if deleted:
+                conn.commit()
+            return deleted > 0
+    except Exception as e:
+        logger.error(f"Error removing instructor {instructor_user_id} from course {course_id}: {e}")
+        conn.rollback()
+        return False
+
+def list_instructors_for_course(conn, course_id):
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT ci.instructor_user_id AS user_id, u.username
+                FROM course_instructors ci
+                JOIN users u ON ci.instructor_user_id = u.user_id
+                WHERE ci.course_id = %s
+                ORDER BY u.username
+                """,
+                (course_id,)
+            )
+            return cur.fetchall()
+    except Exception as e:
+        logger.error(f"Error listing instructors for course {course_id}: {e}")
+        return []
+
+def list_courses_for_instructor(conn, instructor_user_id):
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT c.course_id, c.course_code, c.course_title, c.credit_hours
+                FROM course_instructors ci
+                JOIN courses c ON ci.course_id = c.course_id
+                WHERE ci.instructor_user_id = %s
+                ORDER BY c.course_code
+                """,
+                (instructor_user_id,)
+            )
+            return cur.fetchall()
+    except Exception as e:
+        logger.error(f"Error listing courses for instructor {instructor_user_id}: {e}")
+        return []
+
+def is_instructor_for_course(conn, instructor_user_id, course_id):
+    if conn is None: return False
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM course_instructors WHERE instructor_user_id = %s AND course_id = %s",
+                (instructor_user_id, course_id)
+            )
+            return cur.fetchone() is not None
+    except Exception as e:
+        logger.error(f"Error verifying instructor {instructor_user_id} for course {course_id}: {e}")
+        return False
+
+def add_course_material(conn, course_id, title, description=None, url=None, uploaded_by=None):
+    if conn is None: return None
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO course_materials (course_id, title, description, url, uploaded_by)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING material_id;
+                """,
+                (course_id, title, description, url, uploaded_by)
+            )
+            mid = cur.fetchone()[0]
+            conn.commit()
+            return mid
+    except Exception as e:
+        logger.error(f"Error adding material to course {course_id}: {e}")
+        conn.rollback()
+        return None
+
+def list_course_materials(conn, course_id):
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT material_id, title, description, url, uploaded_by, created_at FROM course_materials WHERE course_id = %s ORDER BY created_at DESC",
+                (course_id,)
+            )
+            return cur.fetchall()
+    except Exception as e:
+        logger.error(f"Error listing materials for course {course_id}: {e}")
+        return []
+
+def delete_course_material(conn, material_id):
+    if conn is None: return False
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM course_materials WHERE material_id = %s", (material_id,))
+            deleted = cur.rowcount
+            if deleted:
+                conn.commit()
+            return deleted > 0
+    except Exception as e:
+        logger.error(f"Error deleting material {material_id}: {e}")
+        conn.rollback()
+        return False
+
+# =============================
+# INSTRUCTOR PROFILE HELPERS
+# =============================
+
+def ensure_instructor_profile(conn, user_id, full_name, title=None, school=None, program=None,
+                              specialization=None, email=None, phone=None, office=None):
+    """Idempotently create or update an instructor profile for a given user_id.
+
+    If a profile exists, updates changed mutable fields (except created_at).
+    Returns instructor_id or None on failure.
+    """
+    if conn is None: return None
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT instructor_id FROM instructor_profiles WHERE user_id=%s", (user_id,))
+            existing = cur.fetchone()
+            if existing:
+                cur.execute(
+                    """
+                    UPDATE instructor_profiles SET
+                        full_name = COALESCE(%s, full_name),
+                        title = COALESCE(%s, title),
+                        school = COALESCE(%s, school),
+                        program = COALESCE(%s, program),
+                        specialization = COALESCE(%s, specialization),
+                        email = COALESCE(%s, email),
+                        phone = COALESCE(%s, phone),
+                        office = COALESCE(%s, office),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = %s
+                    RETURNING instructor_id;
+                    """,
+                    (full_name, title, school, program, specialization, email, phone, office, user_id)
+                )
+                row = cur.fetchone()
+                conn.commit()
+                return row['instructor_id'] if row else existing['instructor_id']
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO instructor_profiles (user_id, full_name, title, school, program, specialization, email, phone, office)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    RETURNING instructor_id;
+                    """,
+                    (user_id, full_name, title, school, program, specialization, email, phone, office)
+                )
+                row = cur.fetchone()
+                conn.commit()
+                return row['instructor_id'] if row else None
+    except Exception as e:
+        logger.error(f"Error ensuring instructor profile for user {user_id}: {e}")
+        conn.rollback()
+        return None
+
+def fetch_instructor_profile(conn, user_id):
+    if conn is None: return None
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM instructor_profiles WHERE user_id=%s", (user_id,))
+            return cur.fetchone()
+    except Exception as e:
+        logger.error(f"Error fetching instructor profile for user {user_id}: {e}")
+        return None
+
+def list_instructor_profiles(conn, school=None, program=None):
+    if conn is None: return []
+    try:
+        base = "SELECT * FROM instructor_profiles"
+        params = []
+        clauses = []
+        if school:
+            clauses.append("school=%s"); params.append(school)
+        if program:
+            clauses.append("program=%s"); params.append(program)
+        if clauses:
+            base += " WHERE " + " AND ".join(clauses)
+        base += " ORDER BY full_name"
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(base, tuple(params))
+            return cur.fetchall() or []
+    except Exception as e:
+        logger.error(f"Error listing instructor profiles: {e}")
+        return []
+
+# =============================
+# INSTRUCTOR ANALYTICS HELPERS
+# =============================
+
+def instructor_overview_stats(conn, instructor_user_id):
+    """Return high-level analytics for an instructor: course count, distinct students, per-course aggregates.
+    Structure: {
+        courses: [ { course_id, course_code, course_title, student_count, avg_score, pass_rate, grade_distribution:{A:..,B:..,..} } ],
+        totals: { course_count, distinct_students }
+    }
+    """
+    if conn is None: return {"courses": [], "totals": {"course_count": 0, "distinct_students": 0}}
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT c.course_id, c.course_code, c.course_title,
+                       COUNT(DISTINCT g.student_id) AS student_count,
+                       AVG(g.score) AS avg_score,
+                       AVG(CASE WHEN g.grade <> 'F' THEN 1 ELSE 0 END)::float AS pass_rate
+                FROM course_instructors ci
+                JOIN courses c ON ci.course_id = c.course_id
+                LEFT JOIN grades g ON g.course_id = c.course_id
+                WHERE ci.instructor_user_id = %s
+                GROUP BY c.course_id, c.course_code, c.course_title
+                ORDER BY c.course_code
+                """,
+                (instructor_user_id,)
+            )
+            rows = cur.fetchall() or []
+            # Grade distribution per course
+            distributions = {}
+            for r in rows:
+                cid = r['course_id']
+                cur.execute(
+                    """SELECT grade, COUNT(*) cnt FROM grades WHERE course_id=%s GROUP BY grade""",
+                    (cid,)
+                )
+                grade_rows = cur.fetchall() or []
+                dist = {gr['grade']: gr['cnt'] for gr in grade_rows if gr.get('grade')}
+                r['grade_distribution'] = dist
+                distributions[cid] = dist
+            distinct_students = 0
+            cur.execute(
+                """
+                SELECT COUNT(DISTINCT g.student_id) AS ds
+                FROM course_instructors ci
+                JOIN grades g ON g.course_id = ci.course_id
+                WHERE ci.instructor_user_id=%s
+                """,
+                (instructor_user_id,)
+            )
+            ds_row = cur.fetchone()
+            distinct_students = (ds_row or {}).get('ds', 0)
+            return {
+                "courses": rows,
+                "totals": {
+                    "course_count": len(rows),
+                    "distinct_students": distinct_students
+                }
+            }
+    except Exception as e:
+        logger.error(f"Error computing overview stats for instructor {instructor_user_id}: {e}")
+        return {"courses": [], "totals": {"course_count": 0, "distinct_students": 0}}
+
+def instructor_course_performance(conn, instructor_user_id, course_id, top_n=5):
+    """Return performance analytics for a specific course taught by an instructor.
+    Ensures instructor-course mapping exists.
+    Returns dict with: course, avg_score, median_score, pass_rate, grade_distribution, top_students, bottom_students.
+    """
+    if conn is None: return None
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT 1 FROM course_instructors WHERE instructor_user_id=%s AND course_id=%s", (instructor_user_id, course_id))
+            if not cur.fetchone():
+                return None  # not authorized
+            cur.execute("SELECT course_code, course_title FROM courses WHERE course_id=%s", (course_id,))
+            course_meta = cur.fetchone()
+            if not course_meta:
+                return None
+            cur.execute(
+                """
+                SELECT score, grade FROM grades WHERE course_id=%s ORDER BY score
+                """,
+                (course_id,)
+            )
+            grade_rows = cur.fetchall() or []
+            if not grade_rows:
+                return {
+                    "course": {"course_id": course_id, **course_meta},
+                    "avg_score": None, "median_score": None, "pass_rate": None,
+                    "grade_distribution": {}, "top_students": [], "bottom_students": []
+                }
+            scores = [gr['score'] for gr in grade_rows if gr.get('score') is not None]
+            avg_score = sum(scores)/len(scores) if scores else None
+            median_score = None
+            if scores:
+                sorted_scores = sorted(scores)
+                n = len(sorted_scores)
+                mid = n // 2
+                median_score = (sorted_scores[mid] if n % 2 == 1 else (sorted_scores[mid-1] + sorted_scores[mid]) / 2)
+            pass_rate = None
+            if grade_rows:
+                passes = sum(1 for gr in grade_rows if gr.get('grade') and gr['grade'] != 'F')
+                pass_rate = passes / len(grade_rows)
+            cur.execute("SELECT grade, COUNT(*) cnt FROM grades WHERE course_id=%s GROUP BY grade", (course_id,))
+            dist = {r['grade']: r['cnt'] for r in cur.fetchall() or [] if r.get('grade')}
+            # Top / bottom students by score (join to student_profiles for identity)
+            cur.execute(
+                """
+                SELECT g.score, g.grade, sp.index_number, sp.full_name
+                FROM grades g
+                JOIN student_profiles sp ON g.student_id = sp.student_id
+                WHERE g.course_id=%s
+                ORDER BY g.score DESC
+                LIMIT %s
+                """,
+                (course_id, top_n)
+            )
+            top_students = cur.fetchall() or []
+            cur.execute(
+                """
+                SELECT g.score, g.grade, sp.index_number, sp.full_name
+                FROM grades g
+                JOIN student_profiles sp ON g.student_id = sp.student_id
+                WHERE g.course_id=%s
+                ORDER BY g.score ASC
+                LIMIT %s
+                """,
+                (course_id, top_n)
+            )
+            bottom_students = cur.fetchall() or []
+            return {
+                "course": {"course_id": course_id, **course_meta},
+                "avg_score": avg_score,
+                "median_score": median_score,
+                "pass_rate": pass_rate,
+                "grade_distribution": dist,
+                "top_students": top_students,
+                "bottom_students": bottom_students
+            }
+    except Exception as e:
+        logger.error(f"Error computing course performance for instructor {instructor_user_id} course {course_id}: {e}")
+        return None
+
+def instructor_course_students(conn, instructor_user_id, course_id):
+    """List students (index_number, full_name, score, grade) for a course the instructor teaches."""
+    if conn is None: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT 1 FROM course_instructors WHERE instructor_user_id=%s AND course_id=%s", (instructor_user_id, course_id))
+            if not cur.fetchone():
+                return []
+            cur.execute(
+                """
+                SELECT sp.index_number, sp.full_name, g.score, g.grade
+                FROM grades g
+                JOIN student_profiles sp ON g.student_id = sp.student_id
+                WHERE g.course_id=%s
+                ORDER BY sp.index_number
+                """,
+                (course_id,)
+            )
+            return cur.fetchall() or []
+    except Exception as e:
+        logger.error(f"Error listing course students for instructor {instructor_user_id} course {course_id}: {e}")
+        return []
 
 # =============================
 # ASSESSMENT HELPERS
